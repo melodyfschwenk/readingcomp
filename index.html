@@ -255,6 +255,46 @@ const SCORING_REFERENCE = {
     notes: "2pt must connect soil/earth to turtles"
   },
   
+  // Item 78: Natural event explained by quarreling
+  q78: {
+    twoPoint: {
+      concepts: ["earthquake"],
+      patterns: [/earthquake/i, /earth\s*quake/i]
+    },
+    onePoint: {
+      concepts: ["land quakes", "ground quivers"],
+      patterns: [/land.*quake/i, /ground.*quiver/i, /shaking/i]
+    },
+    notes: "Earthquake or ground movement"
+  },
+  
+  // Item 79: Great gift from Kwawar
+  q79: {
+    twoPoint: {
+      concepts: ["california on their backs", "california was made from them"],
+      patterns: [/california.*back/i, /california.*made/i, /bear.*california/i]
+    },
+    onePoint: {
+      concepts: ["made them part of land"],
+      patterns: [/part.*land/i, /land/i],
+      requiresExplain: ["made them part of land"]
+    },
+    notes: "Connection to California"
+  },
+  
+  // Item 80: Meaning of contemplated
+  q80: {
+    twoPoint: {
+      concepts: ["to think about", "form a new plan", "pondering"],
+      patterns: [/think.*about/i, /ponder/i, /consider/i, /reflect/i, /deliberate/i]
+    },
+    onePoint: {
+      concepts: ["to think", "thought"],
+      patterns: [/think/i, /thought/i]
+    },
+    notes: "Deep thinking or consideration"
+  },
+  
   // Item 87: Why did track meet end early?
   q87: {
     twoPoint: {
@@ -706,7 +746,9 @@ function stopTimer() {
     state.timerInterval = null;
   }
   document.getElementById('timer-container').classList.add('hidden');
-  return Date.now() - state.readingStartTime;
+  const elapsed = state.readingStartTime ? Date.now() - state.readingStartTime : 0;
+  state.readingStartTime = null; // Reset for next use
+  return elapsed;
 }
 
 /* ===========================
@@ -761,7 +803,14 @@ document.getElementById('done-reading').addEventListener('click', () => {
   showQuestions(readingTime);
 });
 
-document.getElementById('qa-form').addEventListener('submit', submitAnswers);
+document.getElementById('qa-form').addEventListener('submit', (e) => {
+  try {
+    submitAnswers(e);
+  } catch (error) {
+    console.error('Error submitting answers:', error);
+    alert('An error occurred. Check console for details.');
+  }
+});
 document.getElementById('skip').addEventListener('click', skipItem);
 document.getElementById('download').addEventListener('click', downloadResults);
 document.getElementById('stop-recording').addEventListener('click', stopRecording);
@@ -789,6 +838,7 @@ function showItem() {
   }
   
   const trial = state.sequence[state.currentIndex];
+  console.log('Showing item:', trial.item, 'Index:', state.currentIndex); // Debug log
   
   showScreen('item');
   updateProgress();
@@ -859,11 +909,15 @@ function showQuestions(readingTime) {
     textarea.required = true;
     
     // Check if this question might need follow-up
-    const scoring = SCORING_REFERENCE[q.scoringKey];
-    if (scoring && scoring.onePoint && scoring.onePoint.requiresExplain) {
-      textarea.addEventListener('input', function() {
-        checkForExplain(this.value, q, scoring.onePoint.requiresExplain);
-      });
+    try {
+      const scoring = SCORING_REFERENCE[q.scoringKey];
+      if (scoring && scoring.onePoint && scoring.onePoint.requiresExplain) {
+        textarea.addEventListener('input', function() {
+          checkForExplain(this.value, q, scoring.onePoint.requiresExplain);
+        });
+      }
+    } catch (err) {
+      console.log('No special scoring requirements for', q.scoringKey);
     }
     
     qDiv.appendChild(label);
@@ -906,6 +960,8 @@ function submitAnswers(e) {
   e.preventDefault();
   
   const trial = state.sequence[state.currentIndex];
+  console.log('Submitting answers for item:', trial.item); // Debug log
+  
   let totalScore = 0;
   let allNeedReview = false;
   const responses = {};
@@ -952,6 +1008,7 @@ function submitAnswers(e) {
     timestamp: new Date().toISOString()
   });
   
+  console.log('Moving to next item from index', state.currentIndex, 'to', state.currentIndex + 1); // Debug log
   state.currentIndex++;
   showItem();
 }
