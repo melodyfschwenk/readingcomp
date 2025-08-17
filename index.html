@@ -1652,10 +1652,10 @@ document.addEventListener('DOMContentLoaded', () => {
   showScreen('welcome');
   
   // Check if Google Script URL is configured
-  if (GOOGLE_SCRIPT_URL.includes('https://script.google.com/macros/s/AKfycbyX6yfgjIVSzmL2nL73IxIWPCV4RPbxfjPTDOxB-_Ax6siB2vmKJXnCpwLP4-PUA4MCpQ/exec')) {
-    document.getElementById('config-warning').classList.remove('hidden');
-    document.getElementById('begin').disabled = true;
-  }
+if (GOOGLE_SCRIPT_URL.includes('YOUR_GOOGLE_APPS_SCRIPT_URL_HERE')) {
+  document.getElementById('config-warning').classList.remove('hidden');
+  document.getElementById('begin').disabled = true;
+}
   
   updateConnectionStatus(false);
 });
