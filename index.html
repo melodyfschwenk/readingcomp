@@ -1,407 +1,591 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Reading Comprehension - Research Version</title>
-  <meta name="description" content="Browser-based reading comprehension task with timing, video proctor option, branching rules, and CSV export. Not a standardized WIAT administration." />
-  <style>
-    :root { --bg:#0b0e11; --card:#12161c; --muted:#8c98a5; --text:#e8eef6; --accent:#5aa9ff; --ok:#10b981; --danger:#ff6b6b; }
-    html,body{height:100%}
-    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:radial-gradient(1200px 800px at 20% 0%,#111827 0%, var(--bg) 60%); color:var(--text)}
-    .wrap{max-width:980px;margin:0 auto;padding:24px}
-    .card{background:var(--card);border:1px solid #1f2630;border-radius:18px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
-    h1,h2,h3{line-height:1.2;margin:0 0 10px}
-    p{color:var(--muted)}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-    .stack{display:grid;gap:14px}
-    label{font-weight:600}
-    input[type=text],textarea,select{width:100%;background:#0d1117;border:1px solid #233046;color:var(--text);border-radius:10px;padding:10px 12px;font-size:16px}
-    textarea{min-height:100px}
-    .btn{appearance:none;border:1px solid #27476a;background:linear-gradient(180deg,#1f3b57,#182a3f);color:#d6e8ff;padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:700;font-size:16px}
-    .btn:hover{filter:brightness(1.05)}
-    .btn.secondary{background:#101722;border-color:#2a3647;color:var(--text)}
-    .btn.danger{background:#2b0e13;border-color:#5c1b25;color:#ffd7dc}
-    .hint{font-size:13px;color:var(--muted)}
-    .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#0f1723;border:1px solid #223149;font-size:12px;color:#b7c5d6}
-    .center{text-align:center}
-    .hidden{display:none!important}
-    .img-frame{background:#0b0f16;border:1px dashed #2a3a51;border-radius:14px;padding:12px;text-align:center}
-    img.stimulus{max-width:100%;height:auto;border-radius:8px}
-    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    .toolbar .btn{padding:6px 10px;font-size:14px}
-    .bigtext{font-size:1.2em}
-    .video{width:100%;background:#0d1117;border:1px solid #223149;border-radius:12px;padding:10px}
-    video{width:100%;border-radius:8px;background:#000}
-    .question{border-top:1px solid #1f2630;padding-top:14px;margin-top:14px}
-    .q-label{font-weight:700}
-    .required{color:#ffd27a;font-weight:600}
-    .footer{margin-top:24px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .muted{color:var(--muted);font-size:14px}
-    .ok{color:var(--ok)}
-    .danger-txt{color:var(--danger)}
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Reading Comprehension - Research Version</title>
+<style>
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin:0; background:#0b0e11; color:#e8eef6; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 24px; }
+  .card { background:#12161c; border:1px solid #1f2630; border-radius:16px; padding:18px; box-shadow:0 10px 30px rgba(0,0,0,.25); margin:14px 0; }
+  h1,h2,h3 { margin:0 0 10px; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+  .row > * { flex:1 1 auto; }
+  label { font-weight:600; display:block; margin:6px 0; }
+  input[type="text"], textarea, select { width:100%; background:#0d1117; color:#e8eef6; border:1px solid #233046; border-radius:10px; padding:10px 12px; }
+  button { padding:10px 14px; border-radius:10px; border:1px solid #27476a; background:#1f3b57; color:#d6e8ff; cursor:pointer; font-weight:700; }
+  button.secondary { background:#101722; border-color:#2a3647; color:#e8eef6; }
+  .hidden { display:none; }
+  .muted { color:#9fb1c7; font-size:0.95rem; }
+  .badge { display:inline-block; padding:2px 8px; border:1px solid #27476a; border-radius:999px; font-size:12px; background:#101722; color:#cfe1ff; }
+  .center { text-align:center; }
+  img.stim { max-width:100%; height:auto; border-radius:8px; display:block; margin: 0 auto; }
+  .q-block { margin: 12px 0; }
+  .explain { margin-top:8px; }
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="card" id="intro">
-      <h1>Reading Comprehension - Research Version</h1>
-      <p>This browser task measures reading time and comprehension accuracy for research. It is not a standardized WIAT administration. Video can be recorded for fidelity if enabled and consented.</p>
-      <div class="toolbar" style="margin:10px 0 14px;">
-        <span class="pill">Accessibility</span>
-        <button class="btn secondary" id="toggle-text" type="button">Text size toggle</button>
+<div class="wrap">
+
+  <div id="screen-welcome" class="card">
+    <h1>Reading Comprehension - Research Version</h1>
+    <p class="muted">ASL adapted. Timing is precise in the browser. Scores are research measures and not WIAT norms.</p>
+    <div class="row">
+      <div>
+        <label for="pid">Participant ID</label>
+        <input id="pid" type="text" placeholder="P1034" />
       </div>
-      <div class="stack">
-        <div class="row">
-          <div>
-            <label for="pid">Participant ID</label>
-            <input id="pid" type="text" placeholder="e.g., P1034" />
-            <p class="hint">Use your assigned code. Do not enter your name.</p>
-          </div>
-          <div>
-            <label for="edu">Highest level of education</label>
-            <select id="edu">
-              <option value="">Select</option>
-              <option value="9-12">Grades 9-12</option>
-              <option value="13-16">Grades 13-16</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-        </div>
-        <div>
-          <label><input id="consent" type="checkbox" /> I consent to participate. I understand video may be recorded for scoring fidelity if I enable it below.</label>
-        </div>
-        <details>
-          <summary class="pill">Optional proctor video</summary>
-          <div class="video">
-            <p class="hint">If enabled and permitted by your IRB, the app will record your webcam and mic while you complete the task. Files are stored locally until you download or submit.</p>
-            <div class="stack">
-              <div class="row">
-                <button class="btn" id="enable-video" type="button">Enable camera and mic</button>
-                <button class="btn danger hidden" id="stop-video" type="button">Stop camera</button>
-              </div>
-              <video id="preview" playsinline autoplay muted class="hidden"></video>
-              <p id="video-status" class="muted"></p>
-            </div>
-          </div>
-        </details>
-        <div class="footer">
-          <button id="begin" class="btn" type="button">Begin task</button>
-          <span class="muted">All timing occurs in the browser at millisecond precision.</span>
-        </div>
+      <div>
+        <label for="edu">Last grade completed</label>
+        <select id="edu">
+          <option value="">Select</option>
+          <option value="9-12">9-12</option>
+          <option value="13-16">13-16</option>
+        </select>
       </div>
     </div>
-
-    <div class="card hidden" id="stimulus-card">
-      <div class="toolbar">
-        <span class="pill" id="trial-indicator">Passage</span>
-        <span class="pill" id="timer-pill">00:00.000</span>
-        <span class="pill" id="status-pill">Reading</span>
-      </div>
-      <div class="stack" style="margin-top:10px;">
-        <div id="stimulus-container" class="img-frame center"></div>
-        <div class="footer center">
-          <button id="done-reading" class="btn" type="button">I am done reading</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="card hidden" id="questions-card">
-      <h2>Questions</h2>
-      <div id="questions"></div>
-      <div class="footer">
-        <button id="next-trial" class="btn" type="button">Next</button>
-        <span id="qc" class="muted"></span>
-      </div>
-    </div>
-
-    <div class="card hidden" id="finish">
-      <h2>Finished</h2>
-      <p>Thanks for completing the task. You can download your data as CSV. If you configured a submission endpoint, you can also send the data securely.</p>
-      <div class="footer">
-        <button id="download" class="btn" type="button">Download CSV</button>
-        <button id="submit" class="btn" type="button">Submit to endpoint</button>
-        <span id="submit-status" class="muted"></span>
-      </div>
-      <details style="margin-top:14px;">
-        <summary class="pill">Debug payload</summary>
-        <pre id="debug" class="mono" style="white-space:pre-wrap;">{}</pre>
-      </details>
+    <p class="muted">By continuing you confirm consent and agree to recording or observation if enabled in your protocol.</p>
+    <div class="row">
+      <button id="begin">Begin</button>
+      <button class="secondary" id="preview">Preview items</button>
     </div>
   </div>
 
-  <script>
-    // ---------- Configuration ----------
-    // Put your images in /stimuli. Each trial has: item (number), img, questions, and optional gate settings.
-    // For gate items (94 and 108), provide gateQuestionKey and gateAnswers (array of acceptable strings).
+  <div id="screen-item" class="card hidden">
+    <div class="row" style="justify-content:space-between">
+      <div><span id="crumb" class="badge">Item</span></div>
+      <div>
+        <span id="streak" class="badge">Consec 0s: 0</span>
+        <span id="points" class="badge">Total pts: 0</span>
+      </div>
+    </div>
+    <div class="center">
+      <img id="stim" class="stim" alt="Stimulus" />
+    </div>
+    <p id="readnote" class="muted center">Read the passage. When finished, click I am done reading to continue.</p>
+    <div class="center" style="margin:10px 0">
+      <button id="doneReading">I am done reading</button>
+    </div>
+    <form id="qaForm" class="hidden">
+      <div id="qaFields"></div>
+      <div class="row">
+        <button type="submit">Submit answers</button>
+        <button type="button" id="skip" class="secondary">Skip</button>
+      </div>
+    </form>
+  </div>
 
-    const SUBMIT_ENDPOINT = ""; // optional HTTPS endpoint
+  <div id="screen-finish" class="card hidden">
+    <h2 id="finishTitle">Finished</h2>
+    <p id="finishMsg" class="muted"></p>
+    <div class="row">
+      <button id="download">Download CSV</button>
+      <button id="restart" class="secondary">Restart</button>
+    </div>
+  </div>
 
-    // Minimal demo set with placeholders. Replace imgs and question/keys with your real content.
-    const TRIALS = [
-      // 75 (placeholder)
-      trial(75, "stimuli/placeholder_75.png", [ t("q75", "Who is Kwawar?", true) ]),
-      // 94 - GATE for 9-12 start
-      trial(94, "stimuli/placeholder_94.png", [ t("q94", "Main idea?", true) ], { gateQuestionKey:"q94", gateAnswers:["gold rush", "family journey"] }),
-      // 95..98 (optional examples)
-      trial(95, "stimuli/placeholder_95.png", [ t("q95", "Detail question", true) ]),
-      trial(96, "stimuli/placeholder_96.png", [ t("q96", "Vocabulary meaning", true) ]),
-      trial(97, "stimuli/placeholder_97.png", [ t("q97", "Inference", true) ]),
-      trial(98, "stimuli/placeholder_98.png", [ t("q98", "Why did...", true) ]),
-      // 99 destination after 75-93 remedial
-      trial(99, "stimuli/placeholder_99.png", [ t("q99", "Comprehension question", true) ]),
-      // 108 - GATE for 13-16 start
-      trial(108, "stimuli/placeholder_108.png", [ t("q108", "Synthesis question", true) ], { gateQuestionKey:"q108", gateAnswers:["theme of resilience", "perseverance"] }),
-      // 109..112 (optional examples)
-      trial(109, "stimuli/placeholder_109.png", [ t("q109", "Detail", true) ]),
-      trial(110, "stimuli/placeholder_110.png", [ t("q110", "Inference", true) ]),
-      trial(111, "stimuli/placeholder_111.png", [ t("q111", "Vocabulary", true) ]),
-      trial(112, "stimuli/placeholder_112.png", [ t("q112", "Reasoning", true) ]),
-      // 113 destination after 94-107 remedial
-      trial(113, "stimuli/placeholder_113.png", [ t("q113", "Wrap-up question", true) ])
-    ];
+  <div id="screen-preview" class="card hidden">
+    <h3>Item list</h3>
+    <ul id="previewList"></ul>
+    <div class="row">
+      <button id="closePreview" class="secondary">Close</button>
+    </div>
+  </div>
 
-    function t(key, label, required=false, type='textarea'){ return { key, label, type, required }; }
-    function trial(item, img, questions, extra={}){
-      return Object.assign({ item, img, readingInstructions:"Read carefully. Click the button when finished.", questions }, extra);
+</div>
+
+<script>
+/* ===========================
+   Helpers to reference images
+   =========================== */
+const IMG = n => `${n}.jpeg`; // if you move to /stimuli, use `stimuli/${n}.jpeg`
+
+/* ===========================
+   Admin knobs
+   =========================== */
+const DISCONTINUE_STREAK = 5; // stop after N consecutive zero-point items
+const SUBMIT_ENDPOINT = "";   // optional JSON endpoint, leave blank to disable
+
+/* ===========================
+   Start rules and branching
+   =========================== */
+const START_RULES = {
+  "9-12": { startAt: 94, gate: 94, remedialRange: [75, 93], jumpTo: 99 },
+  "13-16": { startAt: 108, gate: 108, remedialRange: [94, 107], jumpTo: 113 }
+};
+
+/* ===========================
+   Trial schema
+   - item: item number
+   - img: image filename for the passage
+   - type: "qa" or "readaloud"
+   - prompts: array of question specs for this item
+   - scoring:
+       two: keywords for 2 points
+       one: keywords for 1 point
+       minTwo: for count type questions (need at least this many hits for 2)
+       minOne: for 1 point
+       countMode: "any" or "count"
+       gate: true marks this item as the gate for branching
+   - followupTriggers: strings or regex-like fragments that require explanation
+   - discontinueEligible: whether this item counts toward zero-streak discontinue
+   =========================== */
+function qa(item, img, label, scoring = {}, followupTriggers = [], extra = {}) {
+  return {
+    item, img, type: "qa",
+    prompts: [{ key: `q_${item}`, label, followupTriggers }],
+    scoring: Object.assign({ two: [], one: [], minTwo: 1, minOne: 1, countMode: "any", gate: false }, scoring),
+    discontinueEligible: extra.discontinueEligible !== false
+  };
+}
+function readaloud(item, img, label = "Read this aloud.") {
+  return {
+    item, img, type: "readaloud",
+    prompts: [{ key: `read_${item}`, label }],
+    scoring: null,
+    discontinueEligible: false
+  };
+}
+
+/* ===========================
+   Build trials with your 1.jpeg - 17.jpeg
+   Mapping by passages:
+   1.jpeg: 75-80
+   2.jpeg: 82-85
+   3.jpeg: 87-88
+   4.jpeg: 89-93 (Yukon Gold)
+   5.jpeg: 94-98 (Words of Wisdom)
+   6.jpeg: 99
+   7.jpeg: 100,102
+   8.jpeg: 103-107 (Jewel on Ice)
+   9.jpeg: 108-113 (Humpback Whales)
+   (Images 10-17 are available for later blocks)
+   =========================== */
+const TRIALS = [
+  // 75-80 (1.jpeg)
+  qa(75, IMG(1), "Who is Kwawar?",
+     { two:["great spirit","a great spirit","god"], one:[], countMode:"any" }),
+  qa(76, IMG(1), "In all, how many Turtle Brothers were needed to fulfill Kwawar's request?",
+     { two:["7","seven"], one:[], countMode:"any" }),
+  qa(77, IMG(1), "What caused the mountains to arise?",
+     { two:["soil on the turtle","soil on the turtles","soil on their backs"], one:["earth","brushes","bushes"], countMode:"any" },
+     ["earth","brushes","bushes","?"]),
+  qa(78, IMG(1), "What natural event does the Turtle Brothers' quarreling explain?",
+     { two:["earthquake"], one:["land quakes","ground quivers"], countMode:"any" }),
+  qa(79, IMG(1), "What great gift did Kwawar give the Turtle Brothers?",
+     { two:["california on their backs","california was made"], one:["made them part of land"], countMode:"any" },
+     ["made them part of land","?"]),
+  qa(80, IMG(1), "What is the meaning of contemplated in the story?",
+     { two:["to think about","form a new plan","ponder"], one:["had to think hard","to think"], countMode:"any" },
+     ["had to think hard","?"]),
+
+  // 81 read aloud (no score)
+  readaloud(81, IMG(2)),
+  // 82-85 (2.jpeg)
+  qa(82, IMG(2), "Tell me in your own words, what has happened as a result of the avalanche?",
+     { two:["road was covered with debris so traffic stopped"], one:["snow covered the road","avalanche covered the road"], countMode:"any" }),
+  qa(83, IMG(2), "What does the word debris mean in this sentence?",
+     { two:["tree branches","branches","dirt","rocks","mud","dirt and junk"], one:["snow","rubbish"], countMode:"any" }),
+  readaloud(84, IMG(2)),
+  qa(85, IMG(2), "What does the word fancy mean in this sentence?",
+     { two:["like the food better","prefer","like"], one:["adore","enjoy"], countMode:"any" }),
+
+  // 86 read aloud
+  readaloud(86, IMG(3)),
+  // 87-88 (3.jpeg)
+  qa(87, IMG(3), "Why did the track meet end earlier than expected?",
+     { two:["bad weather and cancellation of long distance"], one:["bad weather","cancellation of long distance"], countMode:"any" }),
+  qa(88, IMG(3), "What does the word inclement mean in this sentence?",
+     { two:["bad weather","big storm","unpleasant weather"], one:[], countMode:"any" }),
+
+  // Yukon Gold 89-93 (4.jpeg)
+  qa(89, IMG(4), "What were two dangers encountered by the family on their journey?",
+     { two:["danger:rocks","danger:river","danger:wildlife","danger:weather","danger:starvation"], one:["danger:"], countMode:"count", minTwo:2, minOne:1 },
+     [], { }),
+  qa(90, IMG(4), "According to Diana, why does Charlie not want to go to Yukon?",
+     { two:["does not want to chase his father's dreams","his goals differ from his father's"], one:["it was not his idea"], countMode:"any" }),
+  qa(91, IMG(4), "According to the reviewers, what are two main themes or ideas in Yukon Gold?",
+     { two:["wilderness adventure and family conflict"], one:["wilderness adventure","family conflict"], countMode:"count", minTwo:2, minOne:1 }),
+  qa(92, IMG(4), "What did Gary dislike about the movie?",
+     { two:["too predictable","predictable","hackneyed","boring ending"], one:["the ending"], countMode:"any" }),
+  qa(93, IMG(4), "What is the meaning of the word hackneyed in Gary's review?",
+     { two:["banal","trite","overused","same story ending"], one:["too predictable"], countMode:"any" }),
+
+  // Words of Wisdom 94-98 (5.jpeg)
+  qa(94, IMG(5), "What is the meaning of the word records in the first paragraph?",
+     { two:["preserved information","records of the past"], one:["information"], countMode:"any", gate:true },
+     ["information","?"]),
+  qa(95, IMG(5), "Where do you think Ben Franklin found the proverbs he included in Poor Richard's Almanack?",
+     { two:["from old records","older people","people before him"], one:["everyday life","life experiences"], countMode:"any" }),
+  qa(96, IMG(5), "What do you think Haste makes waste might mean?",
+     { two:["refer to haste and waste"], one:["if you hurry you could mess it up"], countMode:"any" }),
+  qa(97, IMG(5), "Why do you think most people like proverbs?",
+     { two:["short easy to remember and contain wisdom","teaches you a lesson","words to live by"], one:["short","easily remembered","true"], countMode:"any" }),
+  qa(98, IMG(5), "Which of the proverbs mentioned in the passage is a comment on modern technology?",
+     { two:["garbage in, garbage out"], one:[], countMode:"any" }),
+
+  // 99 read aloud (6.jpeg)
+  readaloud(99, IMG(6)),
+
+  // 100 and 102 on 7.jpeg
+  qa(100, IMG(7), "How are mammals and saurian different?",
+     { two:["mammals have constant body temperature and saurians change with environment"], one:["mammals constant warm temperature and saurians change"], countMode:"any" }),
+  readaloud(101, IMG(7)),
+  qa(102, IMG(7), "What does the sentence tell you that the great Dust Bowl was?",
+     { two:["a drought","time without rain"], one:["dust storms","sand storms"], countMode:"any" }),
+
+  // Jewel on Ice 103-107 (8.jpeg)
+  qa(103, IMG(8), "For what primary reason did Kristi's mother want her daughter to skate?",
+     { two:["to strengthen her frail legs"], one:["to make her stronger"], countMode:"any" }),
+  qa(104, IMG(8), "How does the definition of routine differ between the first and next paragraph?",
+     { two:["first planning of her day second order of stunts","first daily schedule second dance order"], one:["skated over and over","dance moves in order"], countMode:"any" }),
+  qa(105, IMG(8), "Why was Kristi's workload double that of other skaters?",
+     { two:["she skated solo and duo"], one:[], countMode:"any" }),
+  qa(106, IMG(8), "Who won the pairs gold medal at the 1990 Nationals?",
+     { two:["kristi and rudy"], one:["kristi and her partner"], countMode:"any" }),
+  qa(107, IMG(8), "How was Kristi able to compensate for her athletic limitations?",
+     { two:["by her grace and consistency"], one:["grace","consistency"], countMode:"any" }),
+
+  // Humpback Whales 108-113 (9.jpeg)
+  qa(108, IMG(9), "What is the meaning of the word demise in this story?",
+     { two:["disappearance","killed off","to die out"], one:["downfall","perish","gone","killing","to die"], countMode:"any", gate:true },
+     ["downfall","perish","gone","killing","to die","?"]),
+  qa(109, IMG(9), "In what two ways have people been the primary reason for the whales' demise?",
+     { two:["hunted for commercial gain and caught in nets starving"], one:["hunted","caught in nets","starving"], countMode:"count", minTwo:2, minOne:1 }),
+  qa(110, IMG(9), "Why is it important for us to know about the struggles of the humpback whales?",
+     { two:["once we know we can work toward a solution"], one:["if one species dies it alters others","we have been the cause"], countMode:"any" },
+     ["alters others","?"]),
+  qa(111, IMG(9), "What two things might happen if a whale is caught in a fishing net?",
+     { two:["drowning and starving"], one:["starve","flippers caught need to cut off net"], countMode:"count", minTwo:2, minOne:1 }),
+  qa(112, IMG(9), "According to current studies, what is likely to happen to the humpback whale in the future?",
+     { two:["their numbers will grow"], one:["they will be protected better"], countMode:"any" }),
+  readaloud(113, IMG(9))
+];
+
+/* ===========================
+   Runtime state
+   =========================== */
+const trialByItem = new Map(TRIALS.map(t => [t.item, t]));
+let pid = "";
+let edu = "";
+let seq = [];       // planned sequence of item numbers
+let ptr = 0;        // pointer into seq
+let readStart = 0;  // perf time
+let zeroStreak = 0; // consecutive zero-point items
+let totalPoints = 0;
+const results = []; // per item rows
+
+/* ===========================
+   DOM
+   =========================== */
+const $ = sel => document.querySelector(sel);
+$("#begin").addEventListener("click", begin);
+$("#preview").addEventListener("click", showPreview);
+$("#closePreview").addEventListener("click", () => showScreen("welcome"));
+$("#doneReading").addEventListener("click", onDoneReading);
+$("#qaForm").addEventListener("submit", onSubmit);
+$("#skip").addEventListener("click", onSkip);
+$("#download").addEventListener("click", downloadCSV);
+$("#restart").addEventListener("click", () => location.reload());
+
+function showScreen(name) {
+  $("#screen-welcome").classList.add("hidden");
+  $("#screen-item").classList.add("hidden");
+  $("#screen-finish").classList.add("hidden");
+  $("#screen-preview").classList.add("hidden");
+  if (name === "welcome") $("#screen-welcome").classList.remove("hidden");
+  if (name === "item") $("#screen-item").classList.remove("hidden");
+  if (name === "finish") $("#screen-finish").classList.remove("hidden");
+  if (name === "preview") $("#screen-preview").classList.remove("hidden");
+}
+
+/* ===========================
+   Flow
+   =========================== */
+function begin() {
+  pid = $("#pid").value.trim();
+  edu = $("#edu").value;
+  if (!pid || !edu) { alert("Enter Participant ID and select last grade completed."); return; }
+  buildInitialSequence();
+  ptr = 0;
+  showCurrent();
+}
+
+function buildInitialSequence() {
+  const rule = START_RULES[edu];
+  const itemsSorted = [...TRIALS].sort((a,b) => a.item - b.item).map(t => t.item);
+  const startIdx = itemsSorted.findIndex(n => n >= rule.startAt);
+  seq = startIdx >= 0 ? itemsSorted.slice(startIdx) : itemsSorted.slice();
+}
+
+function showCurrent() {
+  if (ptr >= seq.length) { finish("Complete", "You reached the end of available items."); return; }
+  const item = seq[ptr];
+  const t = trialByItem.get(item);
+  if (!t) { ptr++; showCurrent(); return; }
+  mountTrial(t);
+}
+
+function mountTrial(t) {
+  showScreen("item");
+  $("#crumb").textContent = `Item ${t.item}`;
+  $("#streak").textContent = `Consec 0s: ${zeroStreak}`;
+  $("#points").textContent = `Total pts: ${totalPoints}`;
+  $("#stim").src = t.img;
+  $("#stim").alt = `Stimulus for item ${t.item}`;
+  $("#qaFields").innerHTML = "";
+  $("#qaForm").classList.add("hidden");
+  $("#readnote").classList.remove("hidden");
+  $("#doneReading").disabled = false;
+
+  // Build question UI
+  t.prompts.forEach(p => {
+    const div = document.createElement("div");
+    div.className = "q-block";
+    const lab = document.createElement("label");
+    lab.setAttribute("for", p.key);
+    lab.textContent = p.label || "Answer";
+    const inp = document.createElement("textarea");
+    inp.id = p.key; inp.name = p.key; inp.placeholder = "Answer...";
+    inp.addEventListener("input", () => maybeAttachExplain(p, inp));
+    div.appendChild(lab);
+    div.appendChild(inp);
+    $("#qaFields").appendChild(div);
+  });
+
+  readStart = performance.now();
+}
+
+function onDoneReading() {
+  $("#qaForm").classList.remove("hidden");
+  $("#readnote").classList.add("hidden");
+  $("#doneReading").disabled = true;
+}
+
+/* Attach explain field if triggers hit or a question mark appears */
+function maybeAttachExplain(promptSpec, inputEl) {
+  const val = (inputEl.value || "").toLowerCase();
+  const triggers = (promptSpec.followupTriggers || []).map(s => String(s).toLowerCase());
+  const needs = val.includes("?") || triggers.some(tr => val.includes(tr));
+  const existing = inputEl.parentElement.querySelector(`#${promptSpec.key}_explain`);
+  if (needs && !existing) {
+    const ex = document.createElement("textarea");
+    ex.id = `${promptSpec.key}_explain`;
+    ex.className = "explain";
+    ex.placeholder = "Please explain your answer...";
+    inputEl.parentElement.appendChild(ex);
+  } else if (!needs && existing) {
+    existing.remove();
+  }
+}
+
+function onSubmit(ev) {
+  ev.preventDefault();
+  const item = seq[ptr];
+  const t = trialByItem.get(item);
+  const readMs = Math.round(performance.now() - readStart);
+
+  // Collect response text
+  const resp = {};
+  t.prompts.forEach(p => {
+    resp[p.key] = ($("#" + p.key).value || "").trim();
+    const ex = $("#" + p.key + "_explain");
+    if (ex) resp[p.key + "_explain"] = ex.value.trim();
+  });
+
+  // Score 2, 1, or 0
+  const { points, maxPoints, detail } = scoreItem(t, resp);
+
+  // Update streak and totals
+  totalPoints += points;
+  if (t.discontinueEligible && points === 0) zeroStreak += 1; else if (points > 0) zeroStreak = 0;
+
+  // Save row
+  results.push({
+    pid, edu, item, read_ms: readMs,
+    points_item: points, points_item_max: maxPoints,
+    points_total_after: totalPoints,
+    zero_streak_after: zeroStreak,
+    responses: JSON.stringify(resp),
+    score_detail: detail,
+    timestamp_iso: new Date().toISOString()
+  });
+
+  // Branching if gate failed
+  const rule = START_RULES[edu];
+  if (t.scoring && t.scoring.gate && points === 0) {
+    // Insert remedial 75-93 then jump to 99, or 94-107 then jump to 113
+    const [lo, hi] = rule.remedialRange;
+    const remedials = range(lo, hi).filter(n => trialByItem.has(n));
+    spliceAfter(ptr, remedials);
+    scheduleJumpAfterRemedial(rule.jumpTo, remedials);
+  }
+
+  // Discontinue
+  if (zeroStreak >= DISCONTINUE_STREAK) {
+    finish("Discontinued", "Stopped due to consecutive zero scores.");
+    return;
+  }
+
+  // Next
+  ptr++;
+  showCurrent();
+}
+
+function onSkip() {
+  const item = seq[ptr];
+  const t = trialByItem.get(item);
+  const readMs = Math.round(performance.now() - readStart);
+
+  // Skips count as zero on eligible items
+  if (t.discontinueEligible) zeroStreak += 1;
+  results.push({
+    pid, edu, item, read_ms: readMs,
+    points_item: 0, points_item_max: 2,
+    points_total_after: totalPoints,
+    zero_streak_after: zeroStreak,
+    responses: JSON.stringify({ skipped: true }),
+    score_detail: "skipped",
+    timestamp_iso: new Date().toISOString()
+  });
+
+  if (zeroStreak >= DISCONTINUE_STREAK) {
+    finish("Discontinued", "Stopped due to consecutive zero scores.");
+    return;
+  }
+  ptr++;
+  showCurrent();
+}
+
+/* ===========================
+   Scoring
+   =========================== */
+function scoreItem(t, resp) {
+  if (!t.scoring) return { points: 0, maxPoints: 0, detail: "readaloud" };
+  const txt = Object.values(resp).filter((_,i)=>i%2===0).join(" ").toLowerCase(); // join answers, ignore explanations
+  const S = t.scoring;
+  let points = 0, detail = "";
+
+  if (S.countMode === "count") {
+    const hits = countHits(txt, S.two.concat(S.one));
+    if (hits >= (S.minTwo || 1) && anyHit(txt, S.two)) { points = 2; detail = `count hits:${hits} two-hit`; }
+    else if (hits >= (S.minOne || 1) && (anyHit(txt, S.one) || hits > 0)) { points = 1; detail = `count hits:${hits} one-hit`; }
+    else { points = 0; detail = `count hits:${hits} none`; }
+  } else {
+    const hit2 = anyHit(txt, S.two);
+    const hit1 = anyHit(txt, S.one);
+    if (hit2) { points = 2; detail = "keyword 2pt"; }
+    else if (hit1) { points = 1; detail = "keyword 1pt"; }
+    else { points = 0; detail = "no keyword"; }
+  }
+
+  return { points, maxPoints: 2, detail };
+}
+
+function norm(s) { return String(s).toLowerCase().trim(); }
+function anyHit(text, list) {
+  if (!list || !list.length) return false;
+  return list.some(k => {
+    const key = norm(k);
+    if (key.startsWith("danger:")) {
+      // Example pattern tag, treat the part after colon as keyword
+      return text.includes(key.split("danger:")[1]);
     }
-
-    // ---------- State ----------
-    const state = {
-      pid:"", edu:"", consent:false,
-      trials:[], // mapped from TRIALS but with runtime fields
-      currentIndex:0, // index in state.sequence
-      sequence:[], // array of item numbers in order to present
-      readingStart:0,
-      framesStart:0,
-      video:{ stream:null, recorder:null, chunks:[], enabled:false }
-    };
-
-    const $ = (s)=>document.querySelector(s);
-
-    // Accessibility
-    $('#toggle-text').addEventListener('click', ()=> document.documentElement.classList.toggle('bigtext'));
-
-    // Video controls
-    $('#enable-video').addEventListener('click', async()=>{
-      try{
-        const stream = await navigator.mediaDevices.getUserMedia({video:true, audio:true});
-        state.video.stream = stream; state.video.enabled = true;
-        const rec = new MediaRecorder(stream); state.video.recorder = rec; state.video.chunks = [];
-        rec.ondataavailable = ev => { if (ev.data.size>0) state.video.chunks.push(ev.data); };
-        $('#preview').srcObject = stream; $('#preview').classList.remove('hidden');
-        $('#stop-video').classList.remove('hidden'); $('#enable-video').classList.add('hidden');
-        $('#video-status').textContent = 'Camera is on. Recording starts when you begin the task and stops when you finish.';
-      }catch(e){ $('#video-status').textContent = 'Could not access camera or mic. Check permissions.'; }
-    });
-    $('#stop-video').addEventListener('click', ()=>{
-      if(state.video.stream) state.video.stream.getTracks().forEach(t=>t.stop());
-      state.video.enabled=false; $('#preview').classList.add('hidden'); $('#stop-video').classList.add('hidden'); $('#enable-video').classList.remove('hidden');
-      $('#video-status').textContent = 'Camera stopped.';
-    });
-
-    // Begin
-    $('#begin').addEventListener('click', ()=>{
-      const pid = $('#pid').value.trim(); const edu = $('#edu').value; const consent = $('#consent').checked;
-      if(!pid){ alert('Enter a Participant ID.'); return; }
-      if(!consent){ alert('You must consent to continue.'); return; }
-      state.pid = pid; state.edu = edu; state.consent = consent;
-
-      // Runtime copy of trials
-      state.trials = TRIALS.map(t=>({ ...t, timestamps:{ show_ms:0, reading_start_ms:0, reading_end_ms:0 }, responses:{}, gateHit:null }));
-
-      // Build starting sequence per education rule
-      const startItem = edu === '9-12' ? 94 : (edu === '13-16' ? 108 : TRIALS[0].item);
-      state.sequence = buildDefaultSequence(startItem);
-      state.currentIndex = 0;
-
-      // start video recording
-      if(state.video.enabled && state.video.recorder && state.video.recorder.state!=='recording'){
-        try{ state.video.recorder.start(); }catch(_){}}
-
-      $('#intro').classList.add('hidden');
-      startCurrentTrial();
-    });
-
-    function buildDefaultSequence(startItem){
-      // Default is ascending from startItem through whatever exists in TRIALS order starting at that item
-      const existing = TRIALS.map(t=>t.item);
-      const startIdx = existing.indexOf(startItem);
-      if(startIdx === -1) return existing.slice();
-      return existing.slice(startIdx);
+    return text.includes(key);
+  });
+}
+function countHits(text, list) {
+  let c = 0;
+  const seen = new Set();
+  (list||[]).forEach(k => {
+    const key = norm(k);
+    if (key.startsWith("danger:")) {
+      const kw = key.split("danger:")[1];
+      if (!seen.has(kw) && text.includes(kw)) { c++; seen.add(kw); }
+    } else {
+      if (!seen.has(key) && text.includes(key)) { c++; seen.add(key); }
     }
+  });
+  return c;
+}
 
-    function startCurrentTrial(){
-      const itemNum = state.sequence[state.currentIndex];
-      const t = byItem(itemNum);
-      if(!t){ // if missing, skip forward
-        goNext(); return;
-      }
-      // Render stimulus
-      const container = $('#stimulus-container'); container.innerHTML = '';
-      const tip = document.createElement('p'); tip.className='hint'; tip.textContent = t.readingInstructions || '';
-      const img = document.createElement('img'); img.className='stimulus'; img.alt='Reading passage'; img.src = t.img;
-      container.appendChild(img); container.appendChild(tip);
-
-      $('#trial-indicator').textContent = `Item ${t.item} (${state.currentIndex+1}/${state.sequence.length})`;
-      $('#status-pill').textContent = 'Reading';
-      $('#stimulus-card').classList.remove('hidden');
-      $('#questions-card').classList.add('hidden');
-
-      // Timing
-      state.readingStart = performance.now(); state.framesStart = Date.now();
-      t.timestamps.show_ms = state.readingStart; t.timestamps.reading_start_ms = state.readingStart;
-      tickTimer();
+/* ===========================
+   Remedial insertion and jump
+   =========================== */
+function spliceAfter(index, nums) {
+  const head = seq.slice(0, index + 1);
+  const tail = seq.slice(index + 1);
+  // Avoid duplicates that already appear later
+  const filtered = nums.filter(n => !tail.includes(n));
+  seq = head.concat(filtered, tail);
+}
+function scheduleJumpAfterRemedial(jumpTo, remedials) {
+  const last = remedials[remedials.length - 1];
+  const prevShow = showCurrent.bind(this);
+  showCurrent = function wrappedShowCurrent() {
+    const itemNext = seq[ptr];
+    if (itemNext > last) {
+      // Rebuild tail starting at jumpTo
+      const all = [...TRIALS].sort((a,b)=>a.item-b.item).map(t=>t.item);
+      const j = all.findIndex(n => n >= jumpTo);
+      const newTail = j >= 0 ? all.slice(j) : [];
+      seq = seq.slice(0, ptr).concat(newTail);
+      // restore original function after jump scheduled
+      showCurrent = prevShow;
     }
+    return prevShow();
+  }.bind(this);
+}
 
-    function tickTimer(){
-      if($('#stimulus-card').classList.contains('hidden')) return;
-      const elapsed = performance.now() - state.readingStart;
-      $('#timer-pill').textContent = formatMS(elapsed);
-      requestAnimationFrame(tickTimer);
-    }
+/* ===========================
+   Finish and export
+   =========================== */
+function finish(title, msg) {
+  showScreen("finish");
+  $("#finishTitle").textContent = title;
+  $("#finishMsg").textContent = msg;
+}
 
-    $('#done-reading').addEventListener('click', ()=>{
-      const t = byItem(state.sequence[state.currentIndex]);
-      t.timestamps.reading_end_ms = performance.now();
-      $('#status-pill').textContent = 'Answering';
-      $('#stimulus-card').classList.add('hidden');
-      renderQuestions(t);
-      $('#questions-card').classList.remove('hidden');
-    });
+function downloadCSV() {
+  const cols = ["pid","edu","item","read_ms","points_item","points_item_max","points_total_after","zero_streak_after","responses","score_detail","timestamp_iso"];
+  const header = cols.join(",");
+  const body = results.map(r => cols.map(k => csvSafe(r[k])).join(",")).join("\n");
+  const csv = header + "\n" + body;
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${pid || "participant"}_reading_task.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+function csvSafe(v) {
+  const s = v == null ? "" : String(v);
+  if (s.includes(",") || s.includes("\"") || s.includes("\n")) return `"${s.replace(/"/g,'""')}"`;
+  return s;
+}
 
-    function renderQuestions(t){
-      const host = $('#questions'); host.innerHTML = '';
-      let requiredCount = 0;
-      t.questions.forEach((q,i)=>{
-        const div = document.createElement('div'); div.className='question';
-        const label = document.createElement('div'); label.className='q-label';
-        label.innerHTML = `${i+1}. ${q.label} ${q.required ? '<span class="required">(required)</span>' : ''}`;
-        div.appendChild(label);
-        let inputEl;
-        if(q.type==='textarea'){ inputEl = document.createElement('textarea'); }
-        else { inputEl = document.createElement('input'); inputEl.type='text'; }
-        inputEl.dataset.key = q.key; div.appendChild(inputEl); host.appendChild(div);
-        if(q.required) requiredCount += 1;
-      });
-      $('#qc').textContent = requiredCount ? `${requiredCount} required` : '';
-    }
+/* ===========================
+   Preview
+   =========================== */
+function showPreview() {
+  const ul = $("#previewList");
+  ul.innerHTML = "";
+  [...TRIALS].sort((a,b)=>a.item-b.item).forEach(t => {
+    const li = document.createElement("li");
+    li.textContent = `Item ${t.item} - ${t.type} - ${t.img}`;
+    ul.appendChild(li);
+  });
+  showScreen("preview");
+}
 
-    $('#next-trial').addEventListener('click', ()=>{
-      const t = byItem(state.sequence[state.currentIndex]);
-      // Collect answers
-      const answers = {}; t.questions.forEach(q=>{ const el = document.querySelector(`[data-key="${q.key}"]`); answers[q.key] = el ? el.value.trim() : ''; });
-      // Required check
-      for(const q of t.questions){ if(q.required && !(answers[q.key])){ alert('Please answer all required questions.'); return; } }
-      t.responses = answers;
+/* ===========================
+   Utils
+   =========================== */
+function range(a,b){ const out=[]; for(let i=a;i<=b;i++) out.push(i); return out; }
 
-      // Gate evaluation if applicable
-      if(t.gateQuestionKey){
-        const resp = (answers[t.gateQuestionKey]||'').toLowerCase();
-        const ok = (t.gateAnswers||[]).some(a => resp.includes(String(a).toLowerCase()));
-        t.gateHit = ok;
-        if(!ok){
-          // Insert remedial path depending on gate item
-          if(t.item === 94){
-            insertRemedialRangeThenJump(75, 93, 99);
-          } else if(t.item === 108){
-            insertRemedialRangeThenJump(94, 107, 113);
-          }
-        }
-      }
-
-      goNext();
-    });
-
-    function insertRemedialRangeThenJump(start, end, jumpTo){
-      const needed = range(start, end).filter(n => hasItem(n));
-      // Build new tail: remedial block (excluding any that are already scheduled later to avoid duplicates), followed by jump target, then any remaining items that come after jump target naturally.
-      const tail = [];
-      needed.forEach(n => { if(!isAlreadyScheduledAhead(n)) tail.push(n); });
-      if(hasItem(jumpTo) && !isAlreadyScheduledAhead(jumpTo)) tail.push(jumpTo);
-      // Splice tail right after the current index
-      state.sequence.splice(state.currentIndex+1, 0, ...tail);
-    }
-
-    function isAlreadyScheduledAhead(item){
-      const pos = state.sequence.indexOf(item);
-      return pos !== -1 && pos > state.currentIndex;
-    }
-
-    function goNext(){
-      state.currentIndex += 1;
-      if(state.currentIndex >= state.sequence.length){
-        finish();
-      } else {
-        startCurrentTrial();
-      }
-    }
-
-    function byItem(item){ return state.trials.find(t => t.item === item); }
-    function hasItem(item){ return TRIALS.some(t => t.item === item); }
-    function range(a,b){ const out=[]; for(let i=a;i<=b;i++) out.push(i); return out; }
-
-    function finish(){
-      if(state.video.enabled && state.video.recorder && state.video.recorder.state==='recording'){
-        try{ state.video.recorder.stop(); }catch(_){}
-      }
-      $('#stimulus-card').classList.add('hidden');
-      $('#questions-card').classList.add('hidden');
-      $('#finish').classList.remove('hidden');
-      updateDebug();
-    }
-
-    function formatMS(ms){
-      const total = Math.max(0, Math.floor(ms));
-      const m = Math.floor(total/60000); const s = Math.floor((total%60000)/1000); const x = total%1000;
-      return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(x).padStart(3,'0')}`;
-    }
-
-    function toCSV(rows){
-      const esc = v => '"'+String(v??'').replace(/"/g,'""')+'"';
-      const header = Object.keys(rows[0]||{}).map(esc).join(',');
-      const lines = rows.map(r => Object.values(r).map(esc).join(','));
-      return [header, ...lines].join('
-');
-    }
-
-    function compileRows(){
-      const device = { ua:navigator.userAgent, tz:Intl.DateTimeFormat().resolvedOptions().timeZone, lang:navigator.language };
-      const rows = [];
-      state.sequence.forEach((itemNum, idx)=>{
-        const t = byItem(itemNum); if(!t) return;
-        const read_ms = t.timestamps.reading_end_ms - t.timestamps.reading_start_ms;
-        const base = { pid:state.pid, edu:state.edu, ordinal:idx+1, item:itemNum, read_time_ms:Math.round(read_ms), gate:t.gateQuestionKey? (t.gateHit? 'pass':'fail') : '' , started_at_iso:new Date(state.framesStart).toISOString(), finished_at_iso:new Date().toISOString(), ua:device.ua, tz:device.tz, lang:device.lang };
-        const resp = t.responses || {};
-        rows.push(Object.assign({}, base, resp));
-      });
-      return rows;
-    }
-
-    function updateDebug(){ $('#debug').textContent = JSON.stringify(compileRows(), null, 2); }
-
-    // Download / Submit
-    $('#download').addEventListener('click', ()=>{
-      const rows = compileRows(); if(!rows.length) return;
-      const csv = toCSV(rows); const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob); const a = document.createElement('a');
-      a.href = url; a.download = `${state.pid}_reading_task.csv`; a.click(); setTimeout(()=>URL.revokeObjectURL(url), 10000);
-      if(state.video.chunks.length){ const vidBlob = new Blob(state.video.chunks,{type:'video/webm'}); const vurl = URL.createObjectURL(vidBlob); const vlink = document.createElement('a'); vlink.href=vurl; vlink.download=`${state.pid}_session.webm`; vlink.click(); setTimeout(()=>URL.revokeObjectURL(vurl), 10000); }
-    });
-
-    $('#submit').addEventListener('click', async()=>{
-      if(!SUBMIT_ENDPOINT){ $('#submit-status').innerHTML = '<span class="danger-txt">No endpoint configured. Set SUBMIT_ENDPOINT.</span>'; return; }
-      const payload = { meta:{ pid:state.pid, edu:state.edu }, data:compileRows() };
-      try{
-        const res = await fetch(SUBMIT_ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
-        if(!res.ok) throw new Error('Network error');
-        $('#submit-status').innerHTML = '<span class="ok">Submitted successfully.</span>';
-      }catch(e){ $('#submit-status').innerHTML = '<span class="danger-txt">Submit failed. Check endpoint.</span>'; }
-    });
-
-    // Preload images
-    window.addEventListener('load', ()=>{ TRIALS.forEach(t=>{ const i = new Image(); i.src = t.img; }); });
-  </script>
+</script>
 </body>
 </html>
