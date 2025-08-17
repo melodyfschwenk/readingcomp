@@ -93,6 +93,32 @@
     display: none;
   }
   .admin-mode .admin-panel { display: block; }
+  
+  /* Upload status */
+  #upload-status {
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border-left: 3px solid #0d6efd;
+  }
+  #upload-progress {
+    font-size: 14px;
+    color: #495057;
+  }
+  .success {
+    border-left-color: #28a745 !important;
+    background: #d4edda !important;
+  }
+  .success #upload-progress {
+    color: #155724;
+  }
+  .error {
+    border-left-color: #dc3545 !important;
+    background: #f8d7da !important;
+  }
+  .error #upload-progress {
+    color: #721c24;
+  }
 </style>
 </head>
 <body>
@@ -117,6 +143,9 @@
           <option value="13+">College or higher</option>
         </select>
       </div>
+    </div>
+    <div id="config-warning" class="error hidden" style="margin:12px 0; padding:8px; border-radius:4px;">
+      <strong>Setup Required:</strong> Google Drive integration not configured. See setup instructions.
     </div>
     <div style="margin-top:20px;">
       <button id="begin" class="primary">Begin</button>
@@ -180,9 +209,12 @@
   <div id="screen-finish" class="card hidden">
     <h2>Study Complete</h2>
     <p id="finish-msg" class="muted">Thank you for participating.</p>
+    <div id="upload-status" style="margin:12px 0;">
+      <div id="upload-progress">Saving your data...</div>
+    </div>
     <div style="margin-top:20px;">
-      <button id="download" class="primary">Download Data</button>
-      <button id="stop-recording">Stop Recording</button>
+      <button id="retry-upload" class="primary hidden">Retry Upload</button>
+      <button id="download-backup" class="hidden">Download Backup</button>
     </div>
   </div>
 
@@ -349,11 +381,560 @@ const SCORING_REFERENCE = {
       patterns: [/predictable/i, /boring/i, /common/i]
     },
     notes: "2pt indicates overuse, 1pt indicates predictability"
+  },
+  
+  // Additional scoring references for items 82-112
+  q82: {
+    twoPoint: {
+      concepts: ["road covered with debris and traffic stopped"],
+      patterns: [/road.*debris.*traffic/i, /traffic.*stop/i, /road.*block/i]
+    },
+    onePoint: {
+      concepts: ["snow covered road", "avalanche covered road"],
+      patterns: [/snow.*road/i, /avalanche.*road/i]
+    }
+  },
+  
+  q83: {
+    twoPoint: {
+      concepts: ["tree branches", "dirt", "rocks", "mud"],
+      patterns: [/branch/i, /dirt/i, /rock/i, /mud/i, /rubble/i]
+    },
+    onePoint: {
+      concepts: ["snow", "rubbish"],
+      patterns: [/snow/i, /rubbish/i, /trash/i]
+    }
+  },
+  
+  q85: {
+    twoPoint: {
+      concepts: ["like better", "prefer"],
+      patterns: [/like.*better/i, /prefer/i]
+    },
+    onePoint: {
+      concepts: ["adore", "enjoy", "love"],
+      patterns: [/adore/i, /enjoy/i, /love/i]
+    }
+  },
+  
+  q88: {
+    twoPoint: {
+      concepts: ["bad weather", "storm"],
+      patterns: [/bad.*weather/i, /storm/i, /severe.*weather/i, /harsh.*weather/i]
+    },
+    onePoint: {
+      concepts: [],
+      patterns: []
+    }
+  },
+  
+  q90: {
+    twoPoint: {
+      concepts: ["not his father's dreams", "his goals differ"],
+      patterns: [/father.*dream/i, /goals.*differ/i, /own.*dream/i]
+    },
+    onePoint: {
+      concepts: ["wasn't his idea"],
+      patterns: [/not.*his.*idea/i, /wasn.*his.*idea/i]
+    }
+  },
+  
+  q91: {
+    twoPoint: {
+      requiresBoth: ["wilderness", "family"],
+      patterns: [/wilderness.*family/i, /family.*wilderness/i, /adventure.*conflict/i]
+    },
+    onePoint: {
+      concepts: ["wilderness", "family conflict"],
+      patterns: [/wilderness/i, /family/i, /adventure/i, /conflict/i]
+    }
+  },
+  
+  q92: {
+    twoPoint: {
+      concepts: ["predictable", "hackneyed", "boring ending"],
+      patterns: [/predictable/i, /hackneyed/i, /boring.*ending/i]
+    },
+    onePoint: {
+      concepts: ["ending"],
+      patterns: [/ending/i]
+    }
+  },
+  
+  q94: {
+    twoPoint: {
+      concepts: ["preserved information", "information from past"],
+      patterns: [/preserv.*information/i, /information.*past/i, /historical.*record/i]
+    },
+    onePoint: {
+      concepts: ["information"],
+      patterns: [/information/i],
+      requiresExplain: ["information"]
+    }
+  },
+  
+  q95: {
+    twoPoint: {
+      concepts: ["old records", "older people", "people before him"],
+      patterns: [/old.*record/i, /older.*people/i, /people.*before/i, /ancestor/i]
+    },
+    onePoint: {
+      concepts: ["everyday life", "life experiences"],
+      patterns: [/everyday.*life/i, /life.*experience/i]
+    }
+  },
+  
+  q96: {
+    twoPoint: {
+      requiresBoth: ["haste", "waste"],
+      patterns: [/haste.*waste/i, /hurry.*mess/i, /rush.*mistake/i]
+    },
+    onePoint: {
+      concepts: ["hurrying causes mistakes"],
+      patterns: [/hurry.*mistake/i, /rush.*error/i]
+    }
+  },
+  
+  q97: {
+    twoPoint: {
+      concepts: ["short, easy to remember, contain wisdom"],
+      patterns: [/short.*easy.*wisdom/i, /wisdom/i, /life.*lesson/i]
+    },
+    onePoint: {
+      concepts: ["short and easy"],
+      patterns: [/short.*easy/i, /easy.*remember/i]
+    }
+  },
+  
+  q98: {
+    twoPoint: {
+      concepts: ["garbage in, garbage out"],
+      patterns: [/garbage.*in.*garbage.*out/i, /gigo/i]
+    },
+    onePoint: {
+      concepts: [],
+      patterns: []
+    }
+  },
+  
+  q100: {
+    twoPoint: {
+      concepts: ["constant temperature vs changing temperature"],
+      patterns: [/constant.*temperature.*chang/i, /warm.*blood.*cold.*blood/i]
+    },
+    onePoint: {
+      concepts: ["temperature"],
+      patterns: [/temperature/i, /warm.*blood/i, /cold.*blood/i]
+    }
+  },
+  
+  q102: {
+    twoPoint: {
+      concepts: ["drought", "time without rain"],
+      patterns: [/drought/i, /no.*rain/i, /without.*rain/i]
+    },
+    onePoint: {
+      concepts: ["dust storms"],
+      patterns: [/dust.*storm/i, /sand.*storm/i]
+    }
+  },
+  
+  q103: {
+    twoPoint: {
+      concepts: ["strengthen frail legs"],
+      patterns: [/strengthen.*frail.*leg/i, /strengthen.*leg/i, /weak.*leg/i]
+    },
+    onePoint: {
+      concepts: ["make stronger"],
+      patterns: [/make.*strong/i, /strength/i]
+    }
+  },
+  
+  q104: {
+    twoPoint: {
+      requiresBoth: ["daily planning", "skating order"],
+      patterns: [/daily.*skat/i, /routine.*differ/i]
+    },
+    onePoint: {
+      concepts: ["routine", "order"],
+      patterns: [/routine/i, /order/i, /sequence/i]
+    }
+  },
+  
+  q105: {
+    twoPoint: {
+      concepts: ["solo and duo", "singles and pairs"],
+      patterns: [/solo.*duo/i, /single.*pair/i, /both.*program/i]
+    },
+    onePoint: {
+      concepts: [],
+      patterns: []
+    }
+  },
+  
+  q106: {
+    twoPoint: {
+      concepts: ["kristi and rudy"],
+      patterns: [/kristi.*rudy/i, /rudy.*galindo/i]
+    },
+    onePoint: {
+      concepts: ["kristi"],
+      patterns: [/kristi/i]
+    }
+  },
+  
+  q107: {
+    twoPoint: {
+      concepts: ["grace and consistency"],
+      patterns: [/grace.*consistency/i, /consistency.*grace/i]
+    },
+    onePoint: {
+      concepts: ["grace", "consistency"],
+      patterns: [/grace/i, /consistency/i, /artistic/i]
+    }
+  },
+  
+  q108: {
+    twoPoint: {
+      concepts: ["disappearance", "die out", "extinction"],
+      patterns: [/disappear/i, /die.*out/i, /extinct/i, /death/i]
+    },
+    onePoint: {
+      concepts: ["downfall", "decline"],
+      patterns: [/downfall/i, /decline/i, /end/i],
+      requiresExplain: ["downfall"]
+    }
+  },
+  
+  q109: {
+    countBased: true,
+    validConcepts: [
+      "hunting", "whaling", "commercial gain", "killed",
+      "nets", "fishing nets", "entanglement", "caught", "starving"
+    ],
+    twoPoint: { minCount: 2 },
+    onePoint: { minCount: 1 }
+  },
+  
+  q110: {
+    twoPoint: {
+      concepts: ["know problem to find solution"],
+      patterns: [/know.*problem.*solution/i, /awareness.*help/i, /understand.*solve/i]
+    },
+    onePoint: {
+      concepts: ["one species affects others"],
+      patterns: [/species.*affect/i, /ecosystem/i, /chain/i],
+      requiresExplain: ["species"]
+    }
+  },
+  
+  q111: {
+    twoPoint: {
+      requiresBoth: ["drown", "starve"],
+      patterns: [/drown.*starv/i, /starv.*drown/i]
+    },
+    onePoint: {
+      concepts: ["drown", "starve", "die"],
+      patterns: [/drown/i, /starv/i, /die/i]
+    }
+  },
+  
+  q112: {
+    twoPoint: {
+      concepts: ["numbers will grow", "population increase"],
+      patterns: [/number.*grow/i, /population.*increase/i, /recover/i]
+    },
+    onePoint: {
+      concepts: ["protected better"],
+      patterns: [/protect/i, /conservation/i]
+    }
+  },
+  
+  // Items 114-140
+  q114: {
+    twoPoint: {
+      requiresBoth: ["supply", "demand"],
+      patterns: [/supply.*demand/i, /demand.*supply/i]
+    },
+    onePoint: {
+      concepts: ["supply", "demand"],
+      patterns: [/supply/i, /demand/i]
+    }
+  },
+  
+  q115: {
+    twoPoint: {
+      concepts: ["$3", "three dollars", "dollar less"],
+      patterns: [/\$3/i, /three.*dollar/i, /dollar.*less/i]
+    },
+    onePoint: {
+      concepts: [],
+      patterns: []
+    }
+  },
+  
+  q116: {
+    twoPoint: {
+      concepts: ["price increase caused attendance decline"],
+      patterns: [/price.*increase.*attendance/i, /attendance.*drop.*price/i]
+    },
+    onePoint: {
+      concepts: ["attendance dropped"],
+      patterns: [/attendance.*drop/i, /fewer.*visitor/i]
+    }
+  },
+  
+  q117: {
+    twoPoint: {
+      concepts: ["make up for money lost"],
+      patterns: [/make.*up.*money/i, /compensate.*loss/i]
+    },
+    onePoint: {
+      concepts: ["make up difference"],
+      patterns: [/make.*up.*difference/i]
+    }
+  },
+  
+  q118: {
+    twoPoint: {
+      concepts: ["buy new animals", "get new animals"],
+      patterns: [/buy.*animal/i, /get.*animal/i, /new.*animal/i]
+    },
+    onePoint: {
+      concepts: ["new additions"],
+      patterns: [/addition/i, /things.*bought/i],
+      requiresExplain: ["additions", "things bought"]
+    }
+  },
+  
+  q119: {
+    countBased: true,
+    validConcepts: [
+      "fewer acquisitions", "budget shortfall", "reduced staffing",
+      "cut programs", "animals suffer", "maintenance issues",
+      "layoffs", "program cuts", "less animals"
+    ],
+    twoPoint: { minCount: 3 },
+    onePoint: { minCount: 1 }
+  },
+  
+  q121: {
+    twoPoint: {
+      concepts: ["died", "dead", "passed away"],
+      patterns: [/died/i, /dead/i, /passed.*away/i, /death/i]
+    },
+    onePoint: {
+      concepts: ["gone", "no longer king"],
+      patterns: [/gone/i, /no.*longer.*king/i],
+      requiresExplain: ["gone"]
+    }
+  },
+  
+  q122: {
+    twoPoint: {
+      concepts: ["new king crowned", "son becomes king", "succession"],
+      patterns: [/new.*king/i, /son.*king/i, /crown/i, /succession/i, /heir/i]
+    },
+    onePoint: {
+      concepts: ["change in government"],
+      patterns: [/change.*government/i, /political.*change/i]
+    }
+  },
+  
+  q123: {
+    twoPoint: {
+      concepts: ["dinosaur skulls", "flaming cliffs skulls"],
+      patterns: [/dinosaur.*skull/i, /flaming.*cliff/i]
+    },
+    onePoint: {
+      concepts: ["fossils", "bones"],
+      patterns: [/fossil/i, /bone/i, /skeleton/i]
+    }
+  },
+  
+  q124: {
+    countBased: true,
+    validConcepts: [
+      "whale hunts", "whaling", "desert trek", "ship voyage",
+      "mountain climb", "jungle expedition", "exploration",
+      "arctic", "sea voyage", "expedition"
+    ],
+    twoPoint: { minCount: 3 },
+    onePoint: { minCount: 2 }
+  },
+  
+  q125: {
+    twoPoint: {
+      concepts: ["flaming cliffs"],
+      patterns: [/flaming.*cliff/i]
+    },
+    onePoint: {
+      concepts: ["gobi desert", "mongolia", "dunes"],
+      patterns: [/gobi/i, /mongolia/i, /dune/i, /desert/i]
+    }
+  },
+  
+  q126: {
+    twoPoint: {
+      concepts: ["proved dinosaurs laid eggs"],
+      patterns: [/prov.*dinosaur.*egg/i, /dinosaur.*laid.*egg/i]
+    },
+    onePoint: {
+      concepts: ["dinosaur reproduction", "first eggs"],
+      patterns: [/reproduction/i, /first.*egg/i]
+    }
+  },
+  
+  q127: {
+    twoPoint: {
+      concepts: ["outlaws", "bandits", "thieves", "pirates"],
+      patterns: [/outlaw/i, /bandit/i, /thieve/i, /pirate/i, /highwaymen/i]
+    },
+    onePoint: {
+      concepts: ["bad guys", "criminals"],
+      patterns: [/bad.*guy/i, /criminal/i, /warrior/i]
+    }
+  },
+  
+  q129: {
+    twoPoint: {
+      concepts: ["long life", "length of life", "living long"],
+      patterns: [/long.*life/i, /length.*life/i, /living.*long/i]
+    },
+    onePoint: {
+      concepts: ["ages past 65"],
+      patterns: [/age.*past.*65/i],
+      requiresExplain: ["ages past 65"]
+    }
+  },
+  
+  q130: {
+    twoPoint: {
+      concepts: ["people living longer", "more people reaching 65"],
+      patterns: [/people.*living.*longer/i, /more.*people.*65/i, /life.*expectancy.*increas/i]
+    },
+    onePoint: {
+      concepts: ["living longer"],
+      patterns: [/living.*longer/i]
+    }
+  },
+  
+  q131: {
+    twoPoint: {
+      concepts: ["building the nest", "20s building nest"],
+      patterns: [/building.*nest/i, /20.*building/i, /twenties.*building/i]
+    },
+    onePoint: {
+      concepts: ["20s", "twenties"],
+      patterns: [/20s/i, /twenties/i]
+    }
+  },
+  
+  q132: {
+    twoPoint: {
+      requiresBoth: ["change", "action"],
+      patterns: [/change.*action/i, /reevaluat.*action/i]
+    },
+    onePoint: {
+      concepts: ["change", "action", "reevaluation"],
+      patterns: [/change/i, /action/i, /reevaluat/i]
+    }
+  },
+  
+  q133: {
+    twoPoint: {
+      concepts: ["looking around", "30s looking around"],
+      patterns: [/looking.*around/i, /30.*looking/i, /thirties.*looking/i]
+    },
+    onePoint: {
+      concepts: ["30s", "thirties"],
+      patterns: [/30s/i, /thirties/i]
+    }
+  },
+  
+  q134: {
+    twoPoint: {
+      concepts: ["never become independent", "no stable career", "no own morals"],
+      patterns: [/never.*independent/i, /no.*stable.*career/i, /no.*own.*moral/i]
+    },
+    onePoint: {
+      concepts: ["no direction", "live at home"],
+      patterns: [/no.*direction/i, /live.*home/i, /dependent/i]
+    }
+  },
+  
+  q135: {
+    countBased: true,
+    validConcepts: [
+      "enjoyment of life", "seeking knowledge", "mentoring",
+      "reflection", "community service", "legacy",
+      "wisdom sharing", "spiritual growth", "teaching",
+      "volunteering", "memories", "family time"
+    ],
+    twoPoint: { minCount: 2 },
+    onePoint: { minCount: 1 }
+  },
+  
+  q136: {
+    twoPoint: {
+      concepts: ["cleft in rock", "crevice", "crack"],
+      patterns: [/cleft.*rock/i, /crevice/i, /crack.*stone/i]
+    },
+    onePoint: {
+      concepts: ["opening", "indentation"],
+      patterns: [/opening/i, /indentation/i],
+      requiresExplain: ["opening"]
+    }
+  },
+  
+  q137: {
+    twoPoint: {
+      concepts: ["high and steep", "20 ft escarpment", "terrain change"],
+      patterns: [/high.*steep/i, /20.*ft/i, /escarpment/i, /terrain/i]
+    },
+    onePoint: {
+      concepts: ["tired", "fatigue", "wind"],
+      patterns: [/tired/i, /fatigue/i, /wind/i]
+    }
+  },
+  
+  q138: {
+    twoPoint: {
+      concepts: ["fatigue", "last cliff face"],
+      patterns: [/fatigue/i, /cliff.*face/i]
+    },
+    onePoint: {
+      concepts: ["hand holds", "mental defeat", "frustration"],
+      patterns: [/hand.*hold/i, /mental.*defeat/i, /frustration/i]
+    }
+  },
+  
+  q139: {
+    twoPoint: {
+      concepts: ["determined and gone far", "come so far"],
+      patterns: [/determin.*far/i, /come.*so.*far/i, /already.*gone.*distance/i]
+    },
+    onePoint: {
+      concepts: ["close to top", "hiked 5 miles"],
+      patterns: [/close.*top/i, /5.*mile/i, /6000.*feet/i]
+    }
+  },
+  
+  q140: {
+    twoPoint: {
+      concepts: ["focused on herself", "needed to get to top"],
+      patterns: [/focus.*herself/i, /need.*herself.*top/i]
+    },
+    onePoint: {
+      concepts: ["looking down", "discouraged", "fear"],
+      patterns: [/look.*down/i, /discourag/i, /fear/i, /afraid/i],
+      requiresExplain: ["discouraged"]
+    }
   }
 };
 
 /* ===========================
-   Trial Configuration
+   Trial Configuration - Items 75-140 in order
    =========================== */
 const TRIALS = [
   // 1.jpeg - Items 75-80
@@ -435,48 +1016,725 @@ const TRIALS = [
       }
     ]
   },
-  // Continue with more items...
+  // 2.jpeg - Items 82-83
   {
-    item: 87,
+    item: 82,
+    image: "2.jpeg",
+    type: "passage",
+    instruction: "Read this aloud.",
+    readAloud: true,
+    questions: [
+      {
+        id: "q82",
+        text: "Tell me in your own words, what has happened as a result of the avalanche?",
+        scoringKey: "q82"
+      }
+    ]
+  },
+  {
+    item: 83,
+    image: "2.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q83",
+        text: "What does the word debris mean in this sentence?",
+        scoringKey: "q83"
+      }
+    ]
+  },
+  // 3.jpeg - Items 84-85
+  {
+    item: 84,
+    image: "3.jpeg",
+    type: "read-aloud-only",
+    instruction: "Read this aloud.",
+    readAloud: true,
+    skipScoring: true
+  },
+  {
+    item: 85,
+    image: "3.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q85",
+        text: "What does the word fancy mean in this sentence?",
+        scoringKey: "q85"
+      }
+    ]
+  },
+  // 4.jpeg - Items 86-88
+  {
+    item: 86,
+    image: "4.jpeg",
+    type: "read-aloud-only",
+    instruction: "Read this aloud.",
+    readAloud: true,
+    skipScoring: true
+  },
+  {
+    item: 88,
     image: "4.jpeg",
     type: "question",
     skipReading: true,
     questions: [
       {
-        id: "q87",
-        text: "Why did the track meet end earlier than expected?",
-        scoringKey: "q87"
+        id: "q88",
+        text: "What does the word inclement mean in this sentence?",
+        scoringKey: "q88"
       }
     ]
   },
+  // 5.jpeg - More Yukon Gold items
   {
-    item: 89,
-    image: "5.jpeg",
-    type: "passage",
-    instruction: "Read the passage. Click 'Start Reading' when ready.",
-    questions: [
-      {
-        id: "q89",
-        text: "What were two dangers encountered by the family on their journey?",
-        scoringKey: "q89"
-      }
-    ]
-  },
-  {
-    item: 93,
+    item: 90,
     image: "5.jpeg",
     type: "question",
     skipReading: true,
     questions: [
       {
-        id: "q93",
-        text: "What is the meaning of the word hackneyed in Gary's review?",
-        scoringKey: "q93"
+        id: "q90",
+        text: "According to Diana, why doesn't Charlie want to go to Yukon?",
+        scoringKey: "q90"
+      }
+    ]
+  },
+  {
+    item: 91,
+    image: "5.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q91",
+        text: "According to the reviewers, what are two main themes or ideas in Yukon Gold?",
+        scoringKey: "q91"
+      }
+    ]
+  },
+  {
+    item: 92,
+    image: "5.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q92",
+        text: "Diana gave Yukon Gold four stars although Gary gave it two. What did Gary dislike about the movie?",
+        scoringKey: "q92"
+      }
+    ]
+  },
+  // 6.jpeg - Words of Wisdom (Grade 9-12 start)
+  {
+    item: 94,
+    image: "6.jpeg",
+    type: "passage",
+    instruction: "Read the passage. Click 'Start Reading' when ready.",
+    isGateItem: true,
+    questions: [
+      {
+        id: "q94",
+        text: "What is the meaning of the word records in the first paragraph?",
+        scoringKey: "q94"
+      }
+    ]
+  },
+  {
+    item: 95,
+    image: "6.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q95",
+        text: "Where do you think Ben Franklin found the proverbs he included in the Poor Richard's Almanack?",
+        scoringKey: "q95"
+      }
+    ]
+  },
+  {
+    item: 96,
+    image: "6.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q96",
+        text: "What do you think Haste makes waste might mean?",
+        scoringKey: "q96"
+      }
+    ]
+  },
+  {
+    item: 97,
+    image: "6.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q97",
+        text: "Why do you think most people like proverbs?",
+        scoringKey: "q97"
+      }
+    ]
+  },
+  {
+    item: 98,
+    image: "6.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q98",
+        text: "Which of the proverbs mentioned in the passage is a comment on modern technology?",
+        scoringKey: "q98"
+      }
+    ]
+  },
+  // 7.jpeg - Items 99-100
+  {
+    item: 99,
+    image: "7.jpeg",
+    type: "read-aloud-only",
+    instruction: "Read this aloud.",
+    readAloud: true,
+    skipScoring: true
+  },
+  {
+    item: 100,
+    image: "7.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q100",
+        text: "How are mammals and saurian different?",
+        scoringKey: "q100"
+      }
+    ]
+  },
+  // 8.jpeg - Items 101-102
+  {
+    item: 101,
+    image: "8.jpeg",
+    type: "read-aloud-only",
+    instruction: "Read this aloud.",
+    readAloud: true,
+    skipScoring: true
+  },
+  {
+    item: 102,
+    image: "8.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q102",
+        text: "What does the sentence tell you that the great Dust Bowl was?",
+        scoringKey: "q102"
+      }
+    ]
+  },
+  // 9.jpeg - Items 103-107
+  {
+    item: 103,
+    image: "9.jpeg",
+    type: "passage",
+    instruction: "Read the passage. Click 'Start Reading' when ready.",
+    questions: [
+      {
+        id: "q103",
+        text: "For what primary reason did Kristi's mother want her daughter to skate?",
+        scoringKey: "q103"
+      }
+    ]
+  },
+  {
+    item: 104,
+    image: "9.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q104",
+        text: "How does the definition of routine in the first paragraph differ from that in the next paragraph?",
+        scoringKey: "q104"
+      }
+    ]
+  },
+  {
+    item: 105,
+    image: "9.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q105",
+        text: "Why was Kristi's workload double that of other skaters?",
+        scoringKey: "q105"
+      }
+    ]
+  },
+  {
+    item: 106,
+    image: "9.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q106",
+        text: "Who won the pairs gold medal at the 1990 Nationals?",
+        scoringKey: "q106"
+      }
+    ]
+  },
+  {
+    item: 107,
+    image: "9.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q107",
+        text: "How was Kristi able to compensate for her athletic limitations?",
+        scoringKey: "q107"
+      }
+    ]
+  },
+  // 10.jpeg - Items 108-112
+  {
+    item: 108,
+    image: "10.jpeg",
+    type: "passage",
+    instruction: "Read the passage. Click 'Start Reading' when ready.",
+    isGateItem: true,
+    questions: [
+      {
+        id: "q108",
+        text: "What is the meaning of the word demise in this story?",
+        scoringKey: "q108"
+      }
+    ]
+  },
+  {
+    item: 109,
+    image: "10.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q109",
+        text: "In what two ways have people been the primary reason for the whales' demise?",
+        scoringKey: "q109"
+      }
+    ]
+  },
+  {
+    item: 110,
+    image: "10.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q110",
+        text: "Why is it important for us to know about the struggles of the humpback whales?",
+        scoringKey: "q110"
+      }
+    ]
+  },
+  {
+    item: 111,
+    image: "10.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q111",
+        text: "What two things might happen if a whale is caught in a fishing net?",
+        scoringKey: "q111"
+      }
+    ]
+  },
+  {
+    item: 112,
+    image: "10.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q112",
+        text: "According to current studies, what is likely to happen to the humpback whale in the future?",
+        scoringKey: "q112"
+      }
+    ]
+  },
+  // 11.jpeg - Items 113-114
+  {
+    item: 113,
+    image: "11.jpeg",
+    type: "read-aloud-only",
+    instruction: "Read this aloud.",
+    readAloud: true,
+    skipScoring: true
+  },
+  {
+    item: 114,
+    image: "11.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q114",
+        text: "What is the most likely reason for the changes in the peach prices during the year?",
+        scoringKey: "q114"
+      }
+    ]
+  },
+  // 12.jpeg - Items 115-119
+  {
+    item: 115,
+    image: "12.jpeg",
+    type: "passage",
+    instruction: "Read the passage. Click 'Start Reading' when ready.",
+    questions: [
+      {
+        id: "q115",
+        text: "If today's zoo admission is $4.00, what was zoo admission in January 1993?",
+        scoringKey: "q115"
+      }
+    ]
+  },
+  {
+    item: 116,
+    image: "12.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q116",
+        text: "What is the main reason Tom gives to support his position?",
+        scoringKey: "q116"
+      }
+    ]
+  },
+  {
+    item: 117,
+    image: "12.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q117",
+        text: "When he says take up the slack in his sentence, what does Tom mean?",
+        scoringKey: "q117"
+      }
+    ]
+  },
+  {
+    item: 118,
+    image: "12.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q118",
+        text: "Tanisha uses the word acquisitions in her letter. What does it mean?",
+        scoringKey: "q118"
+      }
+    ]
+  },
+  {
+    item: 119,
+    image: "12.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q119",
+        text: "According to Tanisha, what three things might happen if zoo prices are not raised?",
+        scoringKey: "q119"
+      }
+    ]
+  },
+  // 13.jpeg - Items 120-122
+  {
+    item: 120,
+    image: "13.jpeg",
+    type: "read-aloud-only",
+    instruction: "Read this aloud.",
+    readAloud: true,
+    skipScoring: true
+  },
+  {
+    item: 121,
+    image: "13.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q121",
+        text: "What has happened to the king?",
+        scoringKey: "q121"
+      }
+    ]
+  },
+  {
+    item: 122,
+    image: "13.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q122",
+        text: "What would you predict might happen as a result of the event described?",
+        scoringKey: "q122"
+      }
+    ]
+  },
+  // 14.jpeg - Items 123-127
+  {
+    item: 123,
+    image: "14.jpeg",
+    type: "passage",
+    instruction: "Read the passage. Click 'Start Reading' when ready.",
+    questions: [
+      {
+        id: "q123",
+        text: "What was the first discovery of the Central Asiatic Expedition?",
+        scoringKey: "q123"
+      }
+    ]
+  },
+  {
+    item: 124,
+    image: "14.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q124",
+        text: "Tell three adventures Andrews had experienced before going to the Gobi desert.",
+        scoringKey: "q124"
+      }
+    ]
+  },
+  {
+    item: 125,
+    image: "14.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q125",
+        text: "Where did the scientists discover the dinosaur eggs?",
+        scoringKey: "q125"
+      }
+    ]
+  },
+  {
+    item: 126,
+    image: "14.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q126",
+        text: "How did Andrew's expedition alter scientific knowledge?",
+        scoringKey: "q126"
+      }
+    ]
+  },
+  {
+    item: 127,
+    image: "14.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q127",
+        text: "What is the meaning of the word brigands as used in the passage?",
+        scoringKey: "q127"
+      }
+    ]
+  },
+  // 15.jpeg - Items 128-130
+  {
+    item: 128,
+    image: "15.jpeg",
+    type: "read-aloud-only",
+    instruction: "Read this aloud.",
+    readAloud: true,
+    skipScoring: true
+  },
+  {
+    item: 129,
+    image: "15.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q129",
+        text: "What is the meaning of the word longevity in this sentence?",
+        scoringKey: "q129"
+      }
+    ]
+  },
+  {
+    item: 130,
+    image: "15.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q130",
+        text: "Describe the trend reported in this sentence.",
+        scoringKey: "q130"
+      }
+    ]
+  },
+  // 16.jpeg - Items 131-135
+  {
+    item: 131,
+    image: "16.jpeg",
+    type: "passage",
+    instruction: "Read the passage. Click 'Start Reading' when ready.",
+    questions: [
+      {
+        id: "q131",
+        text: "At what life stage is a person likely to begin a career?",
+        scoringKey: "q131"
+      }
+    ]
+  },
+  {
+    item: 132,
+    image: "16.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q132",
+        text: "What is the main theme of the 'Mid-life Rebirth' developmental tasks?",
+        scoringKey: "q132"
+      }
+    ]
+  },
+  {
+    item: 133,
+    image: "16.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q133",
+        text: "Although Rachel was recently promoted to manager of her office, she is questioning her choice of careers and regrets that she never pursued her dream of composing music. At the same time, she is reluctant to quit her job because she recently bought a new home. What developmental stage is Rachel probably in?",
+        scoringKey: "q133"
+      }
+    ]
+  },
+  {
+    item: 134,
+    image: "16.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q134",
+        text: "What might happen if a person did not accomplish the developmental tasks of the 'Breaking Loose' stage?",
+        scoringKey: "q134"
+      }
+    ]
+  },
+  {
+    item: 135,
+    image: "16.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q135",
+        text: "If the last life stage called 'Deepening Wisdom' were added to the chart, what would you predict two of the developmental tasks would be?",
+        scoringKey: "q135"
+      }
+    ]
+  },
+  // 17.jpeg - Items 136-140
+  {
+    item: 136,
+    image: "17.jpeg",
+    type: "passage",
+    instruction: "Read the passage. Click 'Start Reading' when ready.",
+    questions: [
+      {
+        id: "q136",
+        text: "What is the fissure as described in the passage?",
+        scoringKey: "q136"
+      }
+    ]
+  },
+  {
+    item: 137,
+    image: "17.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q137",
+        text: "What suddenly made this rock climb so difficult?",
+        scoringKey: "q137"
+      }
+    ]
+  },
+  {
+    item: 138,
+    image: "17.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q138",
+        text: "What was the most important thing the women had to overcome in order to scale the rock?",
+        scoringKey: "q138"
+      }
+    ]
+  },
+  {
+    item: 139,
+    image: "17.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q139",
+        text: "What kept the women from turning back when they saw the sheer surface of the rock?",
+        scoringKey: "q139"
+      }
+    ]
+  },
+  {
+    item: 140,
+    image: "17.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [
+      {
+        id: "q140",
+        text: "Why did Angela refuse to look at Sherry as she approached the summit?",
+        scoringKey: "q140"
       }
     ]
   }
-  // Add all remaining items here...
 ];
+
+/* ===========================
+   CONFIGURATION
+   =========================== */
+// IMPORTANT: Replace this with your Google Apps Script Web App URL
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyX6yfgjIVSzmL2nL73IxIWPCV4RPbxfjPTDOxB-_Ax6siB2vmKJXnCpwLP4-PUA4MCpQ/exec';
 
 /* ===========================
    State Management
@@ -495,7 +1753,9 @@ let state = {
   mediaRecorder: null,
   recordedChunks: [],
   stream: null,
-  adminMode: false // Set true to see scoring during testing
+  adminMode: false, // Set true to see scoring during testing
+  uploadAttempts: 0,
+  savedData: null // Store data for retry
 };
 
 /* ===========================
@@ -684,16 +1944,11 @@ async function setupRecording() {
       }
     };
     
-    state.mediaRecorder.onstop = () => {
+    state.mediaRecorder.onstop = async () => {
       const blob = new Blob(state.recordedChunks, { type: 'video/webm' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${state.pid}_recording_${Date.now()}.webm`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      
+      // Upload to Google Drive
+      uploadVideoToGoogle(blob);
     };
     
     document.getElementById('setup-status').textContent = 'Camera and microphone ready.';
@@ -714,11 +1969,14 @@ function startRecording() {
 
 function stopRecording() {
   if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
-    state.mediaRecorder.stop();
+    state.mediaRecorder.stop(); // This triggers the onstop handler which uploads
     document.getElementById('rec-indicator').classList.add('hidden');
   }
   if (state.stream) {
-    state.stream.getTracks().forEach(track => track.stop());
+    // Don't stop tracks immediately - wait for upload to complete
+    setTimeout(() => {
+      state.stream.getTracks().forEach(track => track.stop());
+    }, 2000);
   }
 }
 
@@ -775,6 +2033,12 @@ document.getElementById('begin').addEventListener('click', async () => {
     document.body.classList.add('admin-mode');
   }
   
+  // Test Google Apps Script connection
+  if (GOOGLE_SCRIPT_URL.includes('YOUR_SCRIPT_ID_HERE')) {
+    alert('Please configure the Google Apps Script URL in the code first!');
+    return;
+  }
+  
   showScreen('setup');
   await setupRecording();
 });
@@ -812,8 +2076,8 @@ document.getElementById('qa-form').addEventListener('submit', (e) => {
   }
 });
 document.getElementById('skip').addEventListener('click', skipItem);
-document.getElementById('download').addEventListener('click', downloadResults);
-document.getElementById('stop-recording').addEventListener('click', stopRecording);
+document.getElementById('retry-upload').addEventListener('click', retryUpload);
+document.getElementById('download-backup').addEventListener('click', downloadBackup);
 
 /* ===========================
    Core Functions
@@ -821,9 +2085,23 @@ document.getElementById('stop-recording').addEventListener('click', stopRecordin
 function buildSequence() {
   const gradeNum = state.edu === "13+" ? 13 : parseInt(state.edu);
   
-  // For demo, just use available trials
-  // In production, would filter based on grade
-  state.sequence = TRIALS.slice();
+  // Sort trials by item number
+  const sortedTrials = TRIALS.slice().sort((a, b) => a.item - b.item);
+  
+  if (gradeNum >= 9) {
+    // Grades 9+ start at item 94
+    const startIdx = sortedTrials.findIndex(t => t.item === 94);
+    if (startIdx >= 0) {
+      state.sequence = sortedTrials.slice(startIdx);
+    } else {
+      state.sequence = sortedTrials;
+    }
+  } else {
+    // Lower grades start at item 75
+    state.sequence = sortedTrials;
+  }
+  
+  console.log(`Built sequence with ${state.sequence.length} items for grade ${state.edu}`);
 }
 
 function showItem() {
@@ -832,7 +2110,8 @@ function showItem() {
     return;
   }
   
-  if (state.consecutiveZeros >= 5) {
+  // WIAT-2 discontinue rule: 6 consecutive zeros for older students
+  if (state.consecutiveZeros >= 6) {
     finishAssessment();
     return;
   }
@@ -1016,6 +2295,7 @@ function submitAnswers(e) {
 function skipItem() {
   const trial = state.sequence[state.currentIndex];
   
+  // Only count toward discontinue if it's a scored item
   if (!trial.skipScoring) {
     state.consecutiveZeros++;
   }
@@ -1032,6 +2312,8 @@ function skipItem() {
     totalTime: Date.now() - state.itemStartTime,
     timestamp: new Date().toISOString()
   });
+  
+  console.log(`Item ${trial.item} skipped. Consecutive zeros: ${state.consecutiveZeros}`);
   
   state.currentIndex++;
   showItem();
@@ -1051,14 +2333,135 @@ function updateAdminPanel() {
 
 function finishAssessment() {
   showScreen('finish');
-  const msg = state.consecutiveZeros >= 5 ? 
-    'Study discontinued due to response pattern.' : 
-    'Thank you for participating.';
+  let msg = 'Thank you for participating.';
+  
+  if (state.consecutiveZeros >= 6) {
+    msg = `Study discontinued after ${state.consecutiveZeros} consecutive zero-point responses.`;
+  } else if (state.currentIndex >= state.sequence.length) {
+    msg = `Completed all ${state.sequence.length} items. Thank you for participating.`;
+  }
+  
+  console.log('Assessment finished:', {
+    reason: msg,
+    totalItems: state.sequence.length,
+    completedItems: state.results.length,
+    consecutiveZeros: state.consecutiveZeros,
+    totalScore: state.totalPoints
+  });
+  
   document.getElementById('finish-msg').textContent = msg;
+  
+  // Stop recording and upload data
+  stopRecording();
+  uploadDataToGoogle();
 }
 
-function downloadResults() {
-  // Create detailed CSV with all response data
+async function uploadDataToGoogle() {
+  // Prepare data for upload
+  const summaryData = {
+    participant: state.pid,
+    education: state.edu,
+    totalAutoScore: state.totalPoints,
+    itemsNeedingReview: state.results.filter(r => r.needsReview).length,
+    allResponses: state.results
+  };
+  
+  state.savedData = summaryData; // Save for retry
+  
+  updateUploadStatus('Uploading assessment data...');
+  
+  try {
+    // Send data to Google Apps Script
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors', // Required for Google Apps Script
+      body: new URLSearchParams({
+        type: 'data',
+        data: JSON.stringify(summaryData)
+      })
+    });
+    
+    // Note: With no-cors, we can't read the response
+    // Assume success if no error thrown
+    updateUploadStatus('✓ Assessment data saved successfully');
+    
+    // Show backup download option just in case
+    document.getElementById('download-backup').classList.remove('hidden');
+    
+  } catch (error) {
+    console.error('Upload error:', error);
+    updateUploadStatus('✗ Upload failed. Please use retry or download backup.');
+    document.getElementById('retry-upload').classList.remove('hidden');
+    document.getElementById('download-backup').classList.remove('hidden');
+  }
+}
+
+async function uploadVideoToGoogle(blob) {
+  updateUploadStatus('Uploading video recording...');
+  
+  try {
+    // Convert blob to base64
+    const reader = new FileReader();
+    reader.onloadend = async function() {
+      const base64data = reader.result.split(',')[1];
+      
+      // Send to Google Apps Script
+      const response = await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        body: new URLSearchParams({
+          type: 'video',
+          pid: state.pid,
+          timestamp: Date.now(),
+          video: base64data
+        })
+      });
+      
+      updateUploadStatus('✓ Video uploaded successfully');
+    };
+    reader.readAsDataURL(blob);
+    
+  } catch (error) {
+    console.error('Video upload error:', error);
+    updateUploadStatus('✗ Video upload failed. Contact administrator.');
+  }
+}
+
+function updateUploadStatus(message) {
+  const statusDiv = document.getElementById('upload-status');
+  const progressDiv = document.getElementById('upload-progress');
+  
+  progressDiv.textContent = message;
+  
+  // Add appropriate styling based on message
+  if (message.includes('✓')) {
+    statusDiv.className = 'success';
+  } else if (message.includes('✗')) {
+    statusDiv.className = 'error';
+  } else {
+    statusDiv.className = '';
+  }
+}
+
+function retryUpload() {
+  state.uploadAttempts++;
+  updateUploadStatus(`Retrying upload (attempt ${state.uploadAttempts + 1})...`);
+  uploadDataToGoogle();
+}
+
+function downloadBackup() {
+  // Create local backup as fallback
+  if (!state.savedData) {
+    state.savedData = {
+      participant: state.pid,
+      education: state.edu,
+      totalAutoScore: state.totalPoints,
+      itemsNeedingReview: state.results.filter(r => r.needsReview).length,
+      allResponses: state.results
+    };
+  }
+  
+  // CSV backup
   const rows = [
     ['PID', 'Education', 'Item', 'Image', 'Question', 'Response', 'Explanation', 
      'AutoScore', 'Confidence', 'NeedsReview', 'ScoringNotes', 
@@ -1078,9 +2481,9 @@ function downloadResults() {
           q.response.replace(/[,\n]/g, '; '),
           (q.explanation || '').replace(/[,\n]/g, '; '),
           q.autoScore !== null ? q.autoScore : 'REVIEW',
-          q.scoringDetails.confidence || '',
+          q.scoringDetails ? q.scoringDetails.confidence : '',
           q.needsReview ? 'YES' : 'NO',
-          q.scoringDetails.notes || '',
+          q.scoringDetails ? q.scoringDetails.notes : '',
           r.readingTime || '',
           r.totalTime || '',
           r.timestamp
@@ -1111,30 +2514,24 @@ function downloadResults() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${state.pid}_responses_${Date.now()}.csv`;
+  a.download = `${state.pid}_backup_${Date.now()}.csv`;
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
   
-  // Also create summary JSON for easier analysis
-  const summaryData = {
-    participant: state.pid,
-    education: state.edu,
-    totalAutoScore: state.totalPoints,
-    itemsNeedingReview: state.results.filter(r => r.needsReview).length,
-    allResponses: state.results
-  };
-  
-  const jsonBlob = new Blob([JSON.stringify(summaryData, null, 2)], { type: 'application/json' });
+  // Also download JSON
+  const jsonBlob = new Blob([JSON.stringify(state.savedData, null, 2)], { type: 'application/json' });
   const jsonUrl = URL.createObjectURL(jsonBlob);
   const jsonLink = document.createElement('a');
   jsonLink.href = jsonUrl;
-  jsonLink.download = `${state.pid}_summary_${Date.now()}.json`;
+  jsonLink.download = `${state.pid}_backup_${Date.now()}.json`;
   document.body.appendChild(jsonLink);
   jsonLink.click();
   jsonLink.remove();
   URL.revokeObjectURL(jsonUrl);
+  
+  updateUploadStatus('Backup files downloaded. Please send to researcher.');
 }
 
 function showScreen(name) {
@@ -1145,6 +2542,11 @@ function showScreen(name) {
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
   showScreen('welcome');
+  
+  // Check if Google Script URL is configured
+  if (GOOGLE_SCRIPT_URL.includes('YOUR_SCRIPT_ID_HERE')) {
+    document.getElementById('config-warning').classList.remove('hidden');
+  }
 });
 </script>
 </body>
