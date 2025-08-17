@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reading Comprehension - Research Version</title>
+  <meta name="description" content="Browser-based reading comprehension task with timing, video proctor option, and CSV export. Not a standardized WIAT administration." />
+  <style>
+    :root {
+      --bg: #0b0e11;
+      --card: #12161c;
+      --muted: #8c98a5;
+      --text: #e8eef6;
+      --accent: #5aa9ff;
+      --accent-2: #7cf7d6;
+      --danger: #ff6b6b;
+      --ok: #10b981;
+    }
+    html, body { height: 100%; }
+    body {
+      margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 20% 0%, #111827 0%, var(--bg) 60%);
+      color: var(--text);
+    }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 24px; }
+    .card { background: var(--card); border: 1px solid #1f2630; border-radius: 18px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
+    h1, h2, h3 { line-height: 1.2; margin: 0 0 10px; }
+    p { color: var(--muted); }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .stack { display: grid; gap: 14px; }
+    label { font-weight: 600; }
+    input[type="text"], input[type="number"], textarea, select {
+      width: 100%; background: #0d1117; border: 1px solid #233046; color: var(--text);
+      border-radius: 10px; padding: 10px 12px; font-size: 16px;
+    }
+    textarea { min-height: 100px; }
+    .btn {
+      appearance: none; border: 1px solid #27476a; background: linear-gradient(180deg, #1f3b57, #182a3f);
+      color: #d6e8ff; padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 700; font-size: 16px;
+    }
+    .btn:hover { filter: brightness(1.05); }
+    .btn.secondary { background: #101722; border-color: #2a3647; color: var(--text); }
+    .btn.danger { background: #2b0e13; border-color: #5c1b25; color: #ffd7dc; }
+    .hint { font-size: 13px; color: var(--muted); }
+    .pill { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #0f1723; border: 1px solid #223149; font-size: 12px; color: #b7c5d6; }
+    .center { text-align: center; }
+    .hidden { display: none !important; }
+    .img-frame { background: #0b0f16; border: 1px dashed #2a3a51; border-radius: 14px; padding: 12px; text-align: center; }
+    img.stimulus { max-width: 100%; height: auto; border-radius: 8px; }
+
+    /* Accessibility toggles */
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .toolbar .btn { padding: 6px 10px; font-size: 14px; }
+    .hc body, .hc .card { filter: contrast(1.1) saturate(1.05); }
+    .bigtext { font-size: 1.2em; }
+
+    /* Video area */
+    .video { width: 100%; background: #0d1117; border: 1px solid #223149; border-radius: 12px; padding: 10px; }
+    video { width: 100%; border-radius: 8px; background: #000; }
+
+    /* Question styles */
+    .question { border-top: 1px solid #1f2630; padding-top: 14px; margin-top: 14px; }
+    .q-label { font-weight: 700; }
+    .required { color: #ffd27a; font-weight: 600; }
+    .footer { margin-top: 24px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .muted { color: var(--muted); font-size: 14px; }
+    .ok { color: var(--ok); }
+    .danger-txt { color: var(--danger); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" id="intro">
+      <h1>Reading Comprehension - Research Version</h1>
+      <p>This browser task measures reading time and comprehension accuracy for research. It is not a standardized WIAT administration. Video can be recorded for fidelity if enabled and consented.</p>
+
+      <div class="toolbar" style="margin: 10px 0 14px;">
+        <span class="pill">Accessibility</span>
+        <button class="btn secondary" id="toggle-contrast" type="button">High contrast toggle</button>
+        <button class="btn secondary" id="toggle-text" type="button">Text size toggle</button>
+      </div>
+
+      <div class="stack">
+        <div class="row">
+          <div>
+            <label for="pid">Participant ID</label>
+            <input id="pid" type="text" placeholder="e.g., P1034" />
+            <p class="hint">Use your assigned code. Do not enter your name.</p>
+          </div>
+          <div>
+            <label for="edu">Highest level of education</label>
+            <select id="edu">
+              <option value="">Select</option>
+              <option>Grades 9-12</option>
+              <option>Grades 13-16</option>
+              <option>Graduate study</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label><input id="consent" type="checkbox" /> I consent to participate. I understand video may be recorded for scoring fidelity if I enable it below.</label>
+        </div>
+
+        <details>
+          <summary class="pill">Optional proctor video</summary>
+          <div class="video">
+            <p class="hint">If enabled and permitted by your IRB, the app will record your webcam and mic while you complete the task. Files are stored locally until you submit or download.</p>
+            <div class="stack">
+              <div class="row">
+                <button class="btn" id="enable-video" type="button">Enable camera and mic</button>
+                <button class="btn danger hidden" id="stop-video" type="button">Stop camera</button>
+              </div>
+              <video id="preview" playsinline autoplay muted class="hidden"></video>
+              <p id="video-status" class="muted"></p>
+            </div>
+          </div>
+        </details>
+
+        <div class="footer">
+          <button id="begin" class="btn" type="button">Begin task</button>
+          <span class="muted">All timing occurs in the browser at millisecond precision.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card hidden" id="stimulus-card">
+      <div class="toolbar">
+        <span class="pill" id="trial-indicator">Passage</span>
+        <span class="pill" id="timer-pill">00:00.000</span>
+        <span class="pill" id="status-pill">Reading</span>
+      </div>
+      <div class="stack" style="margin-top: 10px;">
+        <div id="stimulus-container" class="img-frame center"></div>
+        <div class="footer center">
+          <button id="done-reading" class="btn" type="button">I am done reading</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card hidden" id="questions-card">
+      <h2>Questions</h2>
+      <div id="questions"></div>
+      <div class="footer">
+        <button id="next-trial" class="btn" type="button">Next</button>
+        <span id="qc" class="muted"></span>
+      </div>
+    </div>
+
+    <div class="card hidden" id="finish">
+      <h2>Finished</h2>
+      <p>Thanks for completing the task. You can download your data as CSV. If you configured a submission endpoint, you can also send the data securely.</p>
+      <div class="footer">
+        <button id="download" class="btn" type="button">Download CSV</button>
+        <button id="submit" class="btn" type="button">Submit to endpoint</button>
+        <span id="submit-status" class="muted"></span>
+      </div>
+      <details style="margin-top: 14px;">
+        <summary class="pill">Debug payload</summary>
+        <pre id="debug" class="mono" style="white-space: pre-wrap;">{}</pre>
+      </details>
+    </div>
+  </div>
+
+  <script>
+    // ---------- Configuration ----------
+    // Place your stimuli images (JPG or PNG) in a folder named "stimuli" at the repo root.
+    // Each trial can display a single image, plus N questions.
+
+    // Optional HTTPS endpoint for submission (for example, a Google Apps Script web app).
+    const SUBMIT_ENDPOINT = ""; // leave blank to disable network submit
+
+    // Example trial set. Replace with your items. Each trial can have: id, img, readingInstructions, questions[]
+    // Question types: "text", "textarea", "radio", "checkbox", "select", "readaloud" (record note only)
+    const TRIALS = [
+      {
+        id: "kwawar",
+        img: "stimuli/kwawar.png", // provide your own image under /stimuli
+        readingInstructions: "You can read this story aloud or silently. When you have finished reading, click the button below because I am timing you. Then you will answer questions.",
+        questions: [
+          { key: "q75", label: "Who is Kwawar?", type: "textarea", required: true },
+          { key: "q76", label: "In all, how many Turtle Brothers were needed to fulfill Kwawar's request?", type: "text", required: true },
+          { key: "q78", label: "What natural event does the Turtle Brothers' quarreling explain?", type: "textarea" }
+        ]
+      },
+      {
+        id: "yukon",
+        img: "stimuli/yukon_gold.png",
+        readingInstructions: "Read carefully. When you finish, click the button to stop the timer.",
+        questions: [
+          { key: "q89", label: "What were two dangers encountered by the family on their journey?", type: "textarea", required: true },
+          { key: "q91", label: "According to the reviewers, what are two main themes or ideas in Yukon Gold?", type: "textarea" },
+          { key: "q93", label: "What is the meaning of the word hackneyed in Gary's review?", type: "text" }
+        ]
+      }
+    ];
+
+    // ---------- State ----------
+    const state = {
+      pid: "",
+      edu: "",
+      consent: false,
+      trials: [],
+      current: 0,
+      readingStart: 0,
+      readingStop: 0,
+      framesStart: 0,
+      video: { stream: null, recorder: null, chunks: [], enabled: false }
+    };
+
+    // ---------- DOM helpers ----------
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+    // ---------- Accessibility toggles ----------
+    $('#toggle-contrast').addEventListener('click', () => {
+      document.documentElement.classList.toggle('hc');
+    });
+    $('#toggle-text').addEventListener('click', () => {
+      document.documentElement.classList.toggle('bigtext');
+    });
+
+    // ---------- Video handling ----------
+    const enableVideo = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        state.video.stream = stream;
+        $('#preview').srcObject = stream;
+        $('#preview').classList.remove('hidden');
+        $('#stop-video').classList.remove('hidden');
+        $('#enable-video').classList.add('hidden');
+        $('#video-status').textContent = 'Camera is on. Recording starts when you begin the task and stops when you finish.';
+        // prepare recorder
+        const recorder = new MediaRecorder(stream);
+        state.video.recorder = recorder;
+        state.video.chunks = [];
+        recorder.ondataavailable = (ev) => { if (ev.data.size > 0) state.video.chunks.push(ev.data); };
+        recorder.onstop = () => { /* chunks ready for save or submit */ };
+        state.video.enabled = true;
+      } catch (e) {
+        $('#video-status').textContent = 'Could not access camera or mic. Check permissions.';
+      }
+    };
+    const stopVideo = () => {
+      if (state.video.stream) {
+        state.video.stream.getTracks().forEach(t => t.stop());
+      }
+      $('#preview').classList.add('hidden');
+      $('#stop-video').classList.add('hidden');
+      $('#enable-video').classList.remove('hidden');
+      $('#video-status').textContent = 'Camera stopped.';
+      state.video.enabled = false;
+    };
+
+    $('#enable-video').addEventListener('click', enableVideo);
+    $('#stop-video').addEventListener('click', stopVideo);
+
+    // ---------- Intro -> Begin ----------
+    $('#begin').addEventListener('click', async () => {
+      const pid = $('#pid').value.trim();
+      const edu = $('#edu').value.trim();
+      const consent = $('#consent').checked;
+      if (!pid) { alert('Enter a Participant ID.'); return; }
+      if (!consent) { alert('You must consent to continue.'); return; }
+
+      state.pid = pid; state.edu = edu; state.consent = consent;
+      state.trials = TRIALS.map(t => ({
+        id: t.id, img: t.img, readingInstructions: t.readingInstructions, questions: t.questions,
+        timestamps: { show_ms: 0, reading_start_ms: 0, reading_end_ms: 0 },
+        responses: {}
+      }));
+
+      // If video was enabled, start recording now
+      if (state.video.enabled && state.video.recorder && state.video.recorder.state !== 'recording') {
+        try { state.video.recorder.start(); } catch (_) {}
+      }
+
+      $('#intro').classList.add('hidden');
+      startTrial(0);
+    });
+
+    // ---------- Trial flow ----------
+    function startTrial(index) {
+      state.current = index;
+      const t = state.trials[index];
+
+      // show stimulus image and instructions
+      const container = $('#stimulus-container');
+      container.innerHTML = '';
+      const tip = document.createElement('p'); tip.className = 'hint'; tip.textContent = t.readingInstructions || '';
+      const img = document.createElement('img'); img.className = 'stimulus'; img.alt = 'Reading passage'; img.src = t.img;
+      container.appendChild(img); container.appendChild(tip);
+
+      $('#trial-indicator').textContent = `Passage ${index + 1} of ${state.trials.length}`;
+      $('#status-pill').textContent = 'Reading';
+      $('#stimulus-card').classList.remove('hidden');
+      $('#questions-card').classList.add('hidden');
+
+      // timekeeping
+      state.readingStart = performance.now();
+      state.framesStart = Date.now();
+      t.timestamps.show_ms = state.readingStart;
+      t.timestamps.reading_start_ms = state.readingStart;
+
+      // show ticking timer
+      tickTimer();
+    }
+
+    function tickTimer() {
+      if ($('#stimulus-card').classList.contains('hidden')) return;
+      const elapsed = performance.now() - state.readingStart;
+      $('#timer-pill').textContent = formatMS(elapsed);
+      requestAnimationFrame(tickTimer);
+    }
+
+    $('#done-reading').addEventListener('click', () => {
+      const t = state.trials[state.current];
+      t.timestamps.reading_end_ms = performance.now();
+      $('#status-pill').textContent = 'Answering';
+      $('#stimulus-card').classList.add('hidden');
+      renderQuestions(t);
+      $('#questions-card').classList.remove('hidden');
+    });
+
+    function renderQuestions(t) {
+      const host = $('#questions');
+      host.innerHTML = '';
+      let requiredCount = 0;
+      t.questions.forEach((q, i) => {
+        const div = document.createElement('div');
+        div.className = 'question';
+        const label = document.createElement('div');
+        label.className = 'q-label';
+        label.innerHTML = `${i + 1}. ${q.label} ${q.required ? '<span class="required">(required)</span>' : ''}`;
+        div.appendChild(label);
+
+        let inputEl = null;
+        if (q.type === 'textarea') {
+          inputEl = document.createElement('textarea');
+        } else if (q.type === 'text' || q.type === 'readaloud') {
+          inputEl = document.createElement('input'); inputEl.type = 'text';
+          if (q.type === 'readaloud') inputEl.placeholder = 'Scorer note for read aloud accuracy, leave blank if not applicable';
+        } else if (q.type === 'radio' && Array.isArray(q.options)) {
+          inputEl = document.createElement('div');
+          q.options.forEach(opt => {
+            const id = `${q.key}_${opt}`;
+            const r = document.createElement('input'); r.type = 'radio'; r.name = q.key; r.value = opt; r.id = id;
+            const l = document.createElement('label'); l.htmlFor = id; l.textContent = opt;
+            const row = document.createElement('div'); row.appendChild(r); row.appendChild(l);
+            inputEl.appendChild(row);
+          });
+        } else if (q.type === 'select' && Array.isArray(q.options)) {
+          inputEl = document.createElement('select');
+          inputEl.appendChild(new Option('Select', ''));
+          q.options.forEach(opt => inputEl.appendChild(new Option(opt, opt)));
+        } else if (q.type === 'checkbox' && Array.isArray(q.options)) {
+          inputEl = document.createElement('div');
+          q.options.forEach(opt => {
+            const id = `${q.key}_${opt}`;
+            const c = document.createElement('input'); c.type = 'checkbox'; c.value = opt; c.id = id;
+            const l = document.createElement('label'); l.htmlFor = id; l.textContent = opt;
+            const row = document.createElement('div'); row.appendChild(c); row.appendChild(l);
+            inputEl.appendChild(row);
+          });
+        } else {
+          inputEl = document.createElement('input'); inputEl.type = 'text';
+        }
+        inputEl.dataset.key = q.key;
+        div.appendChild(inputEl);
+        host.appendChild(div);
+        if (q.required) requiredCount += 1;
+      });
+      $('#qc').textContent = requiredCount ? `${requiredCount} required` : '';
+    }
+
+    $('#next-trial').addEventListener('click', () => {
+      const t = state.trials[state.current];
+      // collect answers
+      const answers = {};
+      t.questions.forEach(q => {
+        if (q.type === 'radio') {
+          const chosen = document.querySelector(`input[name="${q.key}"]:checked`);
+          answers[q.key] = chosen ? chosen.value : '';
+        } else if (q.type === 'checkbox') {
+          const cbs = Array.from(document.querySelectorAll(`input[id^="${q.key}_"][type="checkbox"]:checked`)).map(x => x.value);
+          answers[q.key] = cbs.join('|');
+        } else if (q.type === 'select') {
+          const el = document.querySelector(`[data-key="${q.key}"]`) || document.querySelector(`select[data-key="${q.key}"]`);
+          answers[q.key] = el ? el.value : '';
+        } else {
+          const el = document.querySelector(`[data-key="${q.key}"]`);
+          answers[q.key] = el ? el.value.trim() : '';
+        }
+      });
+
+      // validate required
+      for (const q of t.questions) {
+        if (q.required) {
+          const val = answers[q.key];
+          if (!val) { alert('Please answer all required questions.'); return; }
+        }
+      }
+
+      t.responses = answers;
+
+      // next or finish
+      const nextIndex = state.current + 1;
+      if (nextIndex < state.trials.length) {
+        startTrial(nextIndex);
+      } else {
+        // stop video if recording
+        if (state.video.enabled && state.video.recorder && state.video.recorder.state === 'recording') {
+          try { state.video.recorder.stop(); } catch (_) {}
+        }
+        $('#stimulus-card').classList.add('hidden');
+        $('#questions-card').classList.add('hidden');
+        $('#finish').classList.remove('hidden');
+        updateDebug();
+      }
+    });
+
+    function formatMS(ms) {
+      const total = Math.max(0, Math.floor(ms));
+      const minutes = Math.floor(total / 60000);
+      const seconds = Math.floor((total % 60000) / 1000);
+      const millis = total % 1000;
+      return `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}.${String(millis).padStart(3,'0')}`;
+    }
+
+    function toCSV(rows) {
+      const esc = (v) => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+      const header = Object.keys(rows[0] || {}).map(esc).join(',');
+      const lines = rows.map(r => Object.values(r).map(esc).join(','));
+      return [header, ...lines].join('\n');
+    }
+
+    function compileRows() {
+      const device = {
+        ua: navigator.userAgent,
+        tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        lang: navigator.language
+      };
+      const rows = [];
+      state.trials.forEach(t => {
+        const read_ms = t.timestamps.reading_end_ms - t.timestamps.reading_start_ms;
+        const base = {
+          pid: state.pid,
+          edu: state.edu,
+          trial_id: t.id,
+          read_time_ms: Math.round(read_ms),
+          started_at_iso: new Date(state.framesStart).toISOString(),
+          finished_at_iso: new Date().toISOString(),
+          ua: device.ua,
+          tz: device.tz,
+          lang: device.lang
+        };
+        const resp = t.responses || {};
+        rows.push(Object.assign({}, base, resp));
+      });
+      return rows;
+    }
+
+    function updateDebug() {
+      const rows = compileRows();
+      $('#debug').textContent = JSON.stringify(rows, null, 2);
+    }
+
+    // ---------- Download and submit ----------
+    $('#download').addEventListener('click', async () => {
+      const rows = compileRows();
+      if (!rows.length) return;
+      const csv = toCSV(rows);
+      const blobParts = [csv];
+      // if video recorded, append a note in debug but download as separate file
+      if (state.video.chunks.length) {
+        // prepare a zip-like download by prompting twice
+        const vidBlob = new Blob(state.video.chunks, { type: 'video/webm' });
+        const vurl = URL.createObjectURL(vidBlob);
+        const vlink = document.createElement('a');
+        vlink.href = vurl; vlink.download = `${state.pid}_session.webm`;
+        vlink.click();
+        setTimeout(() => URL.revokeObjectURL(vurl), 10000);
+      }
+      const blob = new Blob(blobParts, { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `${state.pid}_reading_task.csv`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    });
+
+    $('#submit').addEventListener('click', async () => {
+      if (!SUBMIT_ENDPOINT) {
+        $('#submit-status').innerHTML = '<span class="danger-txt">No endpoint configured. Set SUBMIT_ENDPOINT in the script.</span>';
+        return;
+      }
+      const payload = { meta: { pid: state.pid, edu: state.edu }, data: compileRows() };
+      try {
+        const res = await fetch(SUBMIT_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if (!res.ok) throw new Error('Network error');
+        $('#submit-status').innerHTML = '<span class="ok">Submitted successfully.</span>';
+      } catch (e) {
+        $('#submit-status').innerHTML = '<span class="danger-txt">Submit failed. Check endpoint config.</span>';
+      }
+    });
+
+    // ---------- Preload images ----------
+    window.addEventListener('load', () => {
+      TRIALS.forEach(t => {
+        const img = new Image(); img.src = t.img;
+      });
+    });
+  </script>
+</body>
+</html>
