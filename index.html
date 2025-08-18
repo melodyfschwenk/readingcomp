@@ -13,7 +13,7 @@
   }
   .wrap { 
     max-width: 900px; 
-    margin: 0 
+    margin: 0;
     padding: 20px; 
   }
   .card { 
@@ -2024,32 +2024,32 @@ function startRecording() {
   }
 }
 
-function stopRecording() {
-  return new Promise((resolve) => {
-    if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
-      state.mediaRecorder.onstop = () => {
-        // in setupVideoRecording()
-const mime = pickMime('video');
-state.mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
-        const blob = new Blob(state.recordedChunks, { type: mimeType });
-        resolve(blob);
-      };
-      
-      state.mediaRecorder.stop();
-      document.getElementById('sr-live').textContent = 'Recording stopped';
 
       
-      // Stop timer
-      if (state.recordingTimerInterval) {
-        clearInterval(state.recordingTimerInterval);
-        state.recordingTimerInterval = null;
-      }
-      
-      document.getElementById('recording-timer').classList.add('hidden');
-      document.getElementById('rec-indicator').classList.add('hidden');
-    } else {
+   function stopRecording() {
+  return new Promise((resolve) => {
+    if (!state.mediaRecorder || state.mediaRecorder.state !== 'recording') {
       resolve(null);
+      return;
     }
+
+    state.mediaRecorder.onstop = () => {
+      const blob = new Blob(
+        state.recordedChunks,
+        { type: state.recordMime || (state.useVideoRecording ? 'video/webm' : 'audio/webm') }
+      );
+      resolve(blob);
+    };
+
+    state.mediaRecorder.stop();
+    document.getElementById('sr-live').textContent = 'Recording stopped';
+
+    if (state.recordingTimerInterval) {
+      clearInterval(state.recordingTimerInterval);
+      state.recordingTimerInterval = null;
+    }
+    document.getElementById('recording-timer').classList.add('hidden');
+    document.getElementById('rec-indicator').classList.add('hidden');
   });
 }
 
@@ -2060,29 +2060,19 @@ state.mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
 document.querySelectorAll('input[name="participant-group"]').forEach(radio => {
   radio.addEventListener('change', (e) => {
     state.participantGroup = e.target.value;
-    
-    // Show modality selection for all participant groups (updated logic)
+
     const modalityDiv = document.getElementById('modality-selection');
     const deafNote = document.getElementById('deaf-note');
-    
     modalityDiv.classList.remove('hidden');
-    
-    // Show special note for deaf participants
-    if (state.participantGroup.startsWith('deaf')) {
-      deafNote.classList.remove('hidden');
-    } else {
-      deafNote.classList.add('hidden');
-    }
-    
-    // Non-signers default to speaking
+    if (state.participantGroup.startsWith('deaf')) deafNote.classList.remove('hidden');
+    else deafNote.classList.add('hidden');
+
     if (state.participantGroup === 'hearing-nonsigner') {
       document.querySelector('input[name="read-modality"][value="speak"]').checked = true;
       state.readModality = 'speak';
-      document.getElementById('begin').disabled = false;
-    } else {
-      // Wait for modality selection
-      document.getElementById('begin').disabled = true;
     }
+    checkWelcomeReady();
+    document.getElementById('modality-selection').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 });
 
@@ -2091,7 +2081,7 @@ document.querySelectorAll('input[name="participant-group"]').forEach(radio => {
 document.querySelectorAll('input[name="read-modality"]').forEach(radio => {
   radio.addEventListener('change', (e) => {
     state.readModality = e.target.value;
-    document.getElementById('begin').disabled = false;
+    checkWelcomeReady();
   });
 });
 
@@ -3101,13 +3091,6 @@ async function retryUpload() {
 }
 
   
-  await sendToGoogle('save_backup', {
-    pid: state.pid,
-    allData: state.results
-  });
-  
-  updateUploadStatus('✓ Retry successful', 'success');
-}
 
 function saveLocalBackup() {
   state.savedData = {
