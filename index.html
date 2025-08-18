@@ -147,7 +147,13 @@
     0%, 100% { opacity: 1; }
     50% { opacity: 0.3; }
   }
-  
+
+  /* Screen-reader only utility */
+.sr-only {
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+}
+
   /* Timer display */
   .timer-display {
     font-family: monospace;
@@ -367,6 +373,8 @@
 </head>
 <body>
 <div class="wrap">
+  <div id="sr-live" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+
 
   <!-- Welcome Screen -->
   <div id="screen-welcome" class="card">
@@ -376,11 +384,11 @@
     <div class="row">
       <div>
         <label for="pid">Participant Code</label>
-        <input id="pid" type="text" placeholder="Enter code" />
+        <input id="pid" type="text" placeholder="Enter initials" required />
       </div>
       <div>
         <label for="edu">Education Level</label>
-        <select id="edu">
+        <select id="edu" required>
           <option value="">Select...</option>
           <option value="9">Grade 9</option>
           <option value="10">Grade 10</option>
@@ -452,9 +460,9 @@
     <h2>Recording Setup</h2>
     
     <div id="recording-method-info" class="recording-info">
-      <div class="status-message" id="recording-method-text">
-        Setting up recording...
-      </div>
+      <div class="status-message" id="recording-method-text" role="status" aria-live="polite" aria-atomic="true">
+  Setting up recording...
+</div>
     </div>
     
     <div id="video-setup" class="hidden">
@@ -462,7 +470,8 @@
       <div class="video-preview-wrapper">
         <video id="preview" class="video-preview" autoplay muted></video>
       </div>
-      <p id="video-status" class="muted center">Requesting camera access...</p>
+      <p id="video-status" class="muted center" role="status" aria-live="polite" aria-atomic="true">Requesting camera access...</p>
+
     </div>
     
     <div id="audio-setup" class="hidden">
@@ -622,118 +631,417 @@ let state = {
   adminMode: false,
   uploadAttempts: 0,
   savedData: null,
-  connectionStatus: false
+  connectionStatus: false,
+
+    reviewQueue: [],
+  scoringMetrics: {
+    highConfidence: 0,
+    mediumConfidence: 0,
+    lowConfidence: 0,
+    manualReviewNeeded: 0
+  },
 };
 
 /* ===========================
    WIAT-2 Scoring Reference
    =========================== */
+
+// Replace your entire SCORING_REFERENCE with this:
 const SCORING_REFERENCE = {
+  /* =======================
+     Turtle Brothers (75–80)
+     ======================= */
   q75: {
     twoPoint: {
-      concepts: ["great spirit", "god", "deity", "creator", "divine being"],
-      patterns: [/great\s+spirit/i, /\bgod\b/i, /deity/i, /creator/i, /divine/i, /supreme\s+being/i]
+      patterns: [/great\s+spirit/i, /\bgod\b/i, /deity/i, /creator/i, /divine\s+being/i, /supreme\s+being/i]
     },
     onePoint: {
-      concepts: ["spirit", "supernatural"],
-      patterns: [/spirit/i, /supernatural/i]
+      patterns: [/spirit\b/i, /supernatural/i]
     },
-    notes: "Must indicate divine/supreme nature for 2 points"
+    notes: "Must indicate a divine/supreme being for 2 points."
   },
   q76: {
-    twoPoint: {
-      concepts: ["7", "seven"],
-      patterns: [/\b7\b/, /\bseven\b/i]
-    },
-    notes: "Must be exactly 7"
+    twoPoint: { patterns: [/\b7\b/, /\bseven\b/i] },
+    notes: "Must be exactly 7."
   },
   q77: {
-    twoPoint: {
-      concepts: ["soil on turtle's backs"],
-      patterns: [/soil.*turtle/i, /turtle.*soil/i, /earth.*turtle/i]
-    },
-    onePoint: {
-      concepts: ["earth", "brushes", "bushes"],
-      patterns: [/earth/i, /brush/i, /bush/i]
-    }
+    twoPoint: { patterns: [/soil.*turtle/i, /turtle.*soil/i, /earth.*turtle/i] },
+    onePoint: { patterns: [/earth/i, /brush/i, /bush/i] }
   },
   q78: {
-    twoPoint: {
-      concepts: ["earthquake"],
-      patterns: [/earthquake/i]
-    },
-    onePoint: {
-      concepts: ["land quakes", "ground quivers"],
-      patterns: [/land.*quake/i, /ground.*quiver/i]
-    }
+    twoPoint: { patterns: [/earthquake/i] },
+    onePoint: { patterns: [/land.*quake/i, /ground.*quiver/i] }
   },
   q79: {
-    twoPoint: {
-      concepts: ["California on their backs", "California made from them"],
-      patterns: [/california.*back/i, /california.*made/i]
-    },
-    onePoint: {
-      concepts: ["made them part of land"],
-      patterns: [/part.*land/i]
-    }
+    twoPoint: { patterns: [/california.*back/i, /california.*made/i] },
+    onePoint: { patterns: [/part.*land/i] }
   },
   q80: {
-    twoPoint: {
-      concepts: ["think about", "form new plan", "pondering"],
-      patterns: [/think\s+about/i, /form.*plan/i, /ponder/i]
-    },
-    onePoint: {
-      concepts: ["think hard", "think"],
-      patterns: [/think\s+hard/i, /\bthink\b/i]
-    }
+    twoPoint: { patterns: [/think\s+about/i, /form.*plan/i, /ponder/i] },
+    onePoint: { patterns: [/think\s+hard/i, /\bthink\b/i] }
   },
+
+  /* =======================
+     Avalanche (82–83)
+     ======================= */
   q82: {
-    twoPoint: {
-      concepts: ["road covered with debris", "traffic stopped"],
-      patterns: [/road.*covered.*debris/i, /traffic.*stop/i]
-    },
-    onePoint: {
-      concepts: ["snow covered road", "avalanche covered road"],
-      patterns: [/snow.*covered.*road/i, /avalanche.*covered/i]
-    }
+    twoPoint: { patterns: [/road.*covered.*debris/i, /traffic.*stop/i] },
+    onePoint: { patterns: [/snow.*covered.*road/i, /avalanche.*covered/i] }
   },
   q83: {
-    twoPoint: {
-      concepts: ["tree branches", "dirt", "rocks", "mud", "junk"],
-      patterns: [/tree.*branch/i, /\bdirt\b/i, /\brock/i, /\bmud\b/i, /junk/i]
-    },
-    onePoint: {
-      concepts: ["snow", "rubbish"],
-      patterns: [/\bsnow\b/i, /rubbish/i]
-    }
+    twoPoint: { patterns: [/tree.*branch/i, /\bdirt\b/i, /\brock/i, /\bmud\b/i, /junk/i] },
+    onePoint: { patterns: [/\bsnow\b/i, /rubbish/i] }
   },
+
+  /* =======================
+     Fancy (85)
+     ======================= */
   q85: {
-    twoPoint: {
-      concepts: ["like better", "prefer", "like"],
-      patterns: [/like.*better/i, /prefer/i, /\blike\b/i]
-    },
-    onePoint: {
-      concepts: ["adore", "enjoy"],
-      patterns: [/adore/i, /enjoy/i]
-    }
+    twoPoint: { patterns: [/like.*better/i, /prefer/i, /\blike\b/i] },
+    onePoint: { patterns: [/adore/i, /enjoy/i] }
   },
+
+  /* =======================
+     Track Meet (87–88)
+     ======================= */
   q87: {
-    twoPoint: {
-      concepts: ["bad weather and cancellation of long distance events"],
-      patterns: [/bad.*weather.*cancel/i, /weather.*long.*distance/i]
-    },
-    onePoint: {
-      concepts: ["bad weather", "cancellation"],
-      patterns: [/bad.*weather/i, /cancel/i]
-    }
+    twoPoint: { patterns: [/bad.*weather.*cancel/i, /weather.*long.*distance/i] },
+    onePoint: { patterns: [/bad.*weather/i, /cancel/i] }
   },
   q88: {
+  twoPoint: {
+    patterns: [
+      /\binclement\b/i,                           // echoes the key word
+      /(bad|severe|stormy|harsh|rough|foul|nasty)\s+(weather|storm|conditions)/i,
+      /(unpleasant|poor)\s+weather/i
+    ]
+  },
+  notes: "Full = clearly 'bad/severe/stormy weather'. Partial = mentions weather conditions without stating severity."
+},
+
+
+  /* =======================
+     Yukon Gold (89–93)
+     ======================= */
+  q89: {
+    onePoint: {
+      patterns: [
+        /(cold|freez|blizzard|snowstorm)/i,
+        /(bear|wolf|wolves|animal attack|wildlife)/i,
+        /(starv|hunger|food shortage|lack of food)/i,
+        /(rapid|river|ice.*break|thin ice|avalanche|landslide)/i,
+        /(sick|illness|injur|exhaustion|fatigue)/i
+      ]
+    },
+    notes: "Give 2 if two clear journey dangers are named; 1 for one credible danger. Often needs review."
+  },
+  q90: {
     twoPoint: {
-      concepts: ["bad storm", "bad weather", "unpleasant weather"],
-      patterns: [/bad.*storm/i, /bad.*weather/i, /unpleasant.*weather/i]
-    }
+      patterns: [
+        /(does\s*not|doesn't|didn't)\s+want.*(go|yukon).*(cold|freez|danger|hard|difficult|long trip)/i,
+        /(reluctant|unwilling|afraid|fear).*go.*(cold|freez|danger|hard|difficult)/i
+      ]
+    },
+    onePoint: { patterns: [/(does\s*not|doesn't|didn't)\s+want.*go/i, /(afraid|fear|scared)/i, /(cold|freez)/i] },
+    notes: "Full credit if his reason is the cold/dangers/hardship noted by Diana."
+  },
+  q91: {
+    onePoint: {
+      patterns: [
+        /(surviv|persever|endure|overcome)/i,
+        /(family|together|teamwork|loyalty)/i,
+        /(courage|brave|risk|adventure)/i
+      ]
+    },
+    notes: "Give 2 for two accurate themes tied to the text; 1 for one plausible theme (review recommended)."
+  },
+  q92: {
+    twoPoint: { patterns: [/(predictabl|hackneyed|clich[eé]|unoriginal|stale|trite)/i, /(same old|formula(ic)?)/i] },
+    onePoint: { patterns: [/(plot|story).*weak|bad/i, /(boring|dull)/i] },
+    notes: "Gary disliked that it was unoriginal/predictable."
+  },
+  q93: {
+    twoPoint: { patterns: [/(overused|trite|clich[eé]|worn[- ]?out|stale|banal|unoriginal)/i] },
+    onePoint: { patterns: [/(commonplace|old|familiar)/i] },
+    notes: "Meaning of 'hackneyed'."
+  },
+
+  /* =======================
+     Words of Wisdom (94–98)
+     ======================= */
+  q94: {
+    twoPoint: { patterns: [/(written|document|recorded|chronicle|account)s?\b/i] },
+    onePoint: { patterns: [/(history|facts|notes|information)/i] },
+    notes: "‘Records’ = written accounts/documents."
+  },
+  q95: {
+    twoPoint: {
+      patterns: [
+        /(collected|compiled|gathered|borrowed|took)\s+(from\s+)?(others|folk|people|sayings|maxims|aphorisms)/i,
+        /(traditional|folk)\s+(proverb|saying)s?/i
+      ]
+    },
+    onePoint: { patterns: [/(books|almanacs?|newspapers|sources)/i] },
+    notes: "He collected existing proverbs."
+  },
+  q96: {
+    twoPoint: { patterns: [/(rush|haste|hurry).*(mistake|waste|redo|do it again|sloppy|error)/i] },
+    onePoint: { patterns: [/(don'?t|do not)\s+rush/i, /(take your time|be careful)/i] }
+  },
+  q97: {
+    twoPoint: {
+      patterns: [
+        /(short|brief|simple|concise).*(sayings|proverbs)/i,
+        /(easy\s+to\s+remember|memorable)/i,
+        /(wisdom|truth|advice|lesson)/i
+      ]
+    },
+    onePoint: { patterns: [/(people|most).*(like|enjoy).*(proverb|saying)/i] }
+  },
+  q98: {
+    notes: "Selects the proverb that comments on modern technology. Mark for manual review (no scoring patterns here)."
+  },
+
+  /* =======================
+     Mammals vs Saurian (100) & Dust Bowl (102)
+     ======================= */
+  q100: {
+    twoPoint: { patterns: [/(mammal).*(warm[- ]?blood)/i, /(saurian|reptile).*(cold[- ]?blood)/i] },
+    onePoint: { patterns: [/(warm[- ]?blood|cold[- ]?blood)/i, /(mammal|saurian|reptile)/i] }
+  },
+  q102: {
+    twoPoint: { patterns: [/(long|several|many)\s+(years|period).*(no|little)\s+rain/i, /\bdrought\b/i] },
+    onePoint: { patterns: [/(dust\s*storm|sand\s*storm)s?/i] }
+  },
+
+  /* =======================
+     Kristi Yamaguchi (103–107)
+     ======================= */
+  q103: {
+    twoPoint: { patterns: [/(health|medical|therapy|exercise)/i, /(turned[- ]in\s+(hips|feet)|foot\s+problem|hip\s+problem)/i] },
+    onePoint: { patterns: [/(to\s+exercise|for\s+her\s+health)/i] }
+  },
+  q104: {
+    semantic: {
+      full: [
+        ["daily routine", "everyday routine", "habit", "regular schedule", "usual activities", "day-to-day"],
+        ["skating routine", "performance routine", "program", "choreograph", "set sequence", "planned moves"]
+      ],
+      partial: ["daily", "habit", "schedule", "program", "performance", "choreographed"]
+    },
+    notes: "First = everyday schedule; next = choreographed program/performance."
+  },
+  q105: {
+    twoPoint: {
+      patterns: [
+        /(did|skated?)\s+both\s+(pairs|pair)\s+and\s+(singles|single)/i,
+        /(pairs|pair)\s+and\s+(singles|single)\s+at\s+the\s+same\s+time/i
+      ]
+    },
+    onePoint: { patterns: [/(too\s+much\s+work|many\s+events|double\s+workload)/i] }
+  },
+  q106: {
+    twoPoint: { patterns: [/(kristi|yamaguchi).*(rudy|galindo)/i] },
+    notes: "Kristi Yamaguchi & Rudy Galindo."
+  },
+  q107: {
+    twoPoint: { patterns: [/(choreograph(y|ic)|artistry|presentation|style|grace|expression)/i] },
+    onePoint: { patterns: [/(not\s+just\s+jumps|technique|balance|control)/i] },
+    notes: "She compensated with choreography/artistry."
+  },
+
+  /* =======================
+     Humpback Whales (108–112)
+     ======================= */
+  q108: {
+    twoPoint: { patterns: [/(death|dying|end|extinction|downfall|ruin)/i] },
+    onePoint: { patterns: [/(decline|fall|reduce|less)/i] }
+  },
+  q109: {
+    semantic: {
+      full: [
+        ["hunt", "hunted", "whale", "whaling", "killed"],
+        ["net", "fishing net", "entangle", "caught", "bycatch", "pollution", "ship strike"]
+      ],
+      partial: ["hunted", "whaling", "nets", "entangled", "pollution", "bycatch", "ships"]
+    },
+    notes: "Two ways: (1) hunting/whaling; (2) nets/entanglement (pollution/ship strikes may count if text supports)."
+  },
+  q110: {
+    twoPoint: { patterns: [/(we)\s+can\s+(protect|save|help|conserve)/i, /(awareness|understand).*(protect|conserve|laws|action)/i] },
+    onePoint: { patterns: [/(important|know|learn)/i] }
+  },
+  q111: {
+    semantic: {
+      full: [
+        ["drown", "suffocate", "asphyxiate"],
+        ["starve", "starvation"]
+      ],
+      partial: ["drown", "suffocate", "starve"]
+    },
+    notes: "Two things: drown and starve."
+  },
+  q112: {
+    twoPoint: { patterns: [/(become|go)\s+extinct/i, /(die\s+out)/i] },
+    onePoint: { patterns: [/(decline|decrease|fall)\s+in\s+numbers/i, /(endangered|at\s+risk)/i] }
+  },
+
+  /* =======================
+     Peach Prices (114)
+     ======================= */
+  q114: {
+    twoPoint: {
+      patterns: [
+        /(in\s+season|harvest|summer|supply.*high).*price(s)?\s+(low|lower|drop)/i,
+        /(off[- ]season|winter|supply.*low).*price(s)?\s+(rise|higher|increase)/i
+      ]
+    },
+    onePoint: { patterns: [/(supply).*affect(s|ed)?.*price/i, /(season|harvest)/i] },
+    notes: "Seasonal supply explains price changes."
+  },
+
+  /* =======================
+     Zoo Admission (115–119)
+     ======================= */
+  q115: {
+    twoPoint: { patterns: [/\$?\s*3(\.00)?\b/i, /\bthree\s*dollars?\b/i] },
+    onePoint: { patterns: [/(less|cheaper|lower)/i] }
+  },
+  q116: {
+    twoPoint: {
+      patterns: [
+        /(main|primary)\s+reason.*(support|position)/i,
+        /(because|since|as)\s+(costs|expenses|budget|funds|money).*(need|require)/i
+      ]
+    },
+    onePoint: { patterns: [/(money|costs|budget)/i] },
+    notes: "Tom’s main reason: costs/finances; raising price covers expenses."
+  },
+  q117: {
+    twoPoint: {
+      patterns: [
+        /(take\s+up\s+the\s+slack)\s*=\s*(compensate|cover|make\s+up|fill\s+in|carry\s+the\s+load)/i,
+        /(compensate|cover|make\s+up).*(for\s+others|shortfall|lack)/i
+      ]
+    },
+    onePoint: { patterns: [/(help\s+out|do\s+more|pick\s+up\s+the\s+slack)/i] }
+  },
+  q118: {
+    twoPoint: {
+      patterns: [
+        /(acquisition|acquisitions)\s*=\s*(purchases|things\s+the\s+zoo\s+buys|new\s+animals|items\s+obtained)/i,
+        /(purchase|buy|obtain)\s+(animals|exhibits|items)/i
+      ]
+    },
+    onePoint: { patterns: [/(new\s+animals|new\s+exhibits|purchases)/i] }
+  },
+  q119: {
+    onePoint: {
+      patterns: [
+        /(fewer|no)\s+(acquisitions|new\s+animals|new\s+exhibits)/i,
+        /(reduce(d)?|cut)\s+(hours|services|staff|care|maintenance)/i,
+        /(close|closure)/i,
+        /(lack\s+of\s+funds|budget\s+shortfall)/i
+      ]
+    },
+    notes: "Give 2 if three stated consequences are listed; 1 for one–two. Often needs review."
+  },
+
+  /* =======================
+     The King (121–122)
+     ======================= */
+  q121: {
+    twoPoint: { patterns: [/(the\s+)?king\s+(has\s+)?(died|is\s+dead|passed\s+away|was\s+assassinated)/i] },
+    onePoint: { patterns: [/(the\s+)?king\s+(is\s+gone|no\s+longer|not\s+alive)/i] }
+  },
+  q122: {
+    twoPoint: { patterns: [/(new\s+king|succession|heir|prince\s+becomes\s+king)/i, /(funeral|mourning|power\s+struggle|war|chaos)/i] },
+    onePoint: { patterns: [/(someone\s+else\s+will\s+rule|change\s+of\s+power)/i] }
+  },
+
+  /* =======================
+     Central Asiatic Expedition (123–127)
+     ======================= */
+  q123: {
+    twoPoint: { patterns: [/(first|initial)\s+discovery.*(skull|skulls)/i, /(flaming\s+cliffs|bayanzag|gobi)/i] },
+    onePoint: { patterns: [/(dinosaur|fossil)/i] }
+  },
+  q124: {
+    onePoint: { patterns: [/(adventure|expedition|voyage|journey|exploration)/i] },
+    notes: "Give 2 if three specific pre-Gobi adventures are correctly named; 1 for one–two (manual review)."
+  },
+  q125: {
+    twoPoint: { patterns: [/(gobi\s+desert|mongolia|flaming\s+cliffs)/i, /(nest|nests|eggs)/i] },
+    onePoint: { patterns: [/(desert|sand|cliffs)/i] }
+  },
+  q126: {
+    twoPoint: { patterns: [/(proved|showed|demonstrated)\s+that\s+dinosaurs?\s+(laid|lay)\s+eggs/i, /(first|new)\s+dinosaur\s+eggs?\s+discovered/i] },
+    onePoint: { patterns: [/(changed|altered)\s+scientific\s+knowledge/i] }
+  },
+  q127: {
+    twoPoint: { patterns: [/(brigands?)\s*=\s*(bandits?|robbers?|thieves?)/i] },
+    onePoint: { patterns: [/(outlaws?|criminals?)/i] }
+  },
+
+  /* =======================
+     Longevity (129–130)
+     ======================= */
+  q129: {
+    twoPoint: { patterns: [/(longevity)\s*=\s*(length\s+of\s+life|life\s*span|how\s+long\s+people\s+live)/i] },
+    onePoint: { patterns: [/(old|older|age)/i] }
+  },
+  q130: {
+    twoPoint: { patterns: [/(life\s+expectancy|longevity)\s+(has\s+)?(risen|increased|gone\s+up|grown)\b/i, /(trend|graph|chart).*(upward|increase|rise)/i] },
+    onePoint: { patterns: [/(people\s+live\s+longer)/i] }
+  },
+
+  /* =======================
+     Life Stages (131–135)
+     ======================= */
+  q131: {
+    twoPoint: { patterns: [/(young|early)\s+adult(hood)?/i, /(begin|start)\s+a\s+career/i] },
+    onePoint: { patterns: [/\badult\b/i] }
+  },
+  q132: {
+    twoPoint: { patterns: [/(reassess|re[- ]?evaluate|reconsider|question).*(goals|career|life|relationships?)/i, /(change|adjust|redirect).*(life|career|path|relationships?)/i] },
+    onePoint: { patterns: [/(mid[- ]?life).*(change|question|reassess)/i] }
+  },
+  q133: {
+    twoPoint: { patterns: [/(mid[- ]?life\s+rebirth)/i] },
+    onePoint: { patterns: [/(mid[- ]?life|reassessment)/i] }
+  },
+  q134: {
+    twoPoint: { patterns: [/(lack|missing|fail(ed)?\s+to\s+develop).*(independence|self[- ]?reliance)/i, /(remain|stay)\s+(dependent|immature|tied)/i] },
+    onePoint: { patterns: [/(problems|issues)\s+with\s+(independence|identity)/i] }
+  },
+  q135: {
+    twoPoint: { patterns: [/(mentor|guide|teach|advise|give\s+back)/i, /(reflect|wisdom|insight|legacy|purpose|meaning)/i] },
+    onePoint: { patterns: [/(help\s+others|share\s+experience|reflection)/i] }
+  },
+
+  /* =======================
+     The Rock (136–140)
+     ======================= */
+  q136: {
+    twoPoint: { patterns: [/(fissure)\s*=\s*(narrow|thin)\s+(crack|split|opening)\s+in\s+rock/i] },
+    onePoint: { patterns: [/(crack|split|opening)/i] }
+  },
+  q137: {
+    twoPoint: { patterns: [/(sheer|vertical)\s+(wall|face|escarpment)/i, /(sudden(ly)?)\s+(steep|drop|cliff)/i] },
+    onePoint: { patterns: [/(harder|difficult|steeper)/i] }
+  },
+  q138: {
+    twoPoint: { patterns: [/(fatigue|exhaustion|very\s+tired)/i] },
+    onePoint: { patterns: [/(fear|scared|mental|mindset|discouraged)/i] }
+  },
+  q139: {
+    twoPoint: { patterns: [/(determination|willpower|resolve|too\s+far\s+to\s+quit|couldn'?t\s+turn\s+back)/i] },
+    onePoint: { patterns: [/(close\s+to\s+the\s+top|almost\s+there|came\s+so\s+far)/i] }
+  },
+  q140: {
+    twoPoint: { patterns: [/(focus(ed)?\s+on\s+herself|needed\s+to\s+concentrate|had\s+to\s+get\s+herself\s+to\s+the\s+top)/i] },
+    onePoint: { patterns: [/(afraid|fear|if\s+she\s+looked\s+down|discouraged|didn'?t\s+want\s+to\s+look\s+back)/i] }
   }
-  // Continue with all other questions...
 };
 
 /* ===========================
@@ -1552,14 +1860,15 @@ function updateConnectionStatus(connected) {
   state.connectionStatus = connected;
   const statusEl = document.getElementById('connection-status');
   const textEl = document.getElementById('connection-text');
-  
-  if (connected) {
-    statusEl.className = 'connection-status connected';
-    textEl.textContent = '● Connected to Google Sheets';
-  } else {
-    statusEl.className = 'connection-status error';
-    textEl.textContent = '○ Connection error';
-  }
+
+  const live = document.getElementById('connection-text');
+if (connected) {
+  live.setAttribute('role','status');
+  live.setAttribute('aria-live','polite');
+} else {
+  live.setAttribute('role','alert');
+  live.setAttribute('aria-live','assertive');
+}
 }
 
 /* ===========================
@@ -1648,7 +1957,11 @@ function startRecording() {
   if (state.mediaRecorder && state.mediaRecorder.state === 'inactive') {
     state.recordedChunks = [];
     state.mediaRecorder.start();
-    
+
+    document.getElementById('sr-live').textContent = state.useVideoRecording
+  ? 'Recording video started'
+  : 'Recording audio started';
+
     // Start recording timer
     let seconds = 0;
     const timerEl = document.getElementById('recording-timer');
@@ -1677,6 +1990,8 @@ function stopRecording() {
       };
       
       state.mediaRecorder.stop();
+      document.getElementById('sr-live').textContent = 'Recording stopped';
+
       
       // Stop timer
       if (state.recordingTimerInterval) {
@@ -1891,7 +2206,7 @@ function stopTimer() {
 // Item navigation
 document.getElementById('start-reading').addEventListener('click', () => {
   startTimer();
-  
+
   // Send reading start event
   sendToGoogle('reading_time', {
     pid: state.pid,
@@ -1900,7 +2215,7 @@ document.getElementById('start-reading').addEventListener('click', () => {
     readingType: 'silent',
     startTime: new Date().toISOString()
   });
-  
+
   document.getElementById('start-reading').classList.add('hidden');
   document.getElementById('done-reading').classList.remove('hidden');
 });
@@ -1908,14 +2223,14 @@ document.getElementById('start-reading').addEventListener('click', () => {
 document.getElementById('done-reading').addEventListener('click', async () => {
   const readingTime = stopTimer();
   const trial = state.sequence[state.currentIndex];
-  
+
   // For non-scored items, just continue
   if (trial.skipScoring) {
     state.currentIndex++;
     showItem();
     return;
   }
-  
+
   // Send reading complete event
   await sendToGoogle('reading_time', {
     pid: state.pid,
@@ -1926,40 +2241,41 @@ document.getElementById('done-reading').addEventListener('click', async () => {
     endTime: new Date().toISOString(),
     duration: readingTime / 1000
   });
-  
+
   showQuestions(readingTime);
 });
 
-// Recording controls
+/* ---- ADD THIS NEW LISTENER (standalone) ---- */
 document.getElementById('start-recording').addEventListener('click', () => {
   startRecording();
   document.getElementById('start-recording').classList.add('hidden');
   document.getElementById('stop-recording').classList.remove('hidden');
 });
 
+/* ---- REPLACE your entire stop-recording listener with THIS ---- */
 document.getElementById('stop-recording').addEventListener('click', async () => {
   const blob = await stopRecording();
-  
+
   document.getElementById('start-recording').classList.remove('hidden');
   document.getElementById('stop-recording').classList.add('hidden');
-  
+
+  const trial = state.sequence[state.currentIndex];
+
   // Upload recording
   if (blob) {
-    const trial = state.sequence[state.currentIndex];
     uploadRecordingToGoogle(blob, trial.item);
   }
-  
+
   // Move to next item or show questions
-  const trial = state.sequence[state.currentIndex];
   if (trial.skipScoring) {
-    // Read-aloud only, no questions
     state.currentIndex++;
     showItem();
   } else {
-    // Show questions after read-aloud
     showQuestions(0);
   }
 });
+
+
 
 document.getElementById('qa-form').addEventListener('submit', submitAnswers);
 document.getElementById('skip').addEventListener('click', skipItem);
@@ -2100,120 +2416,377 @@ function showQuestions(readingTime) {
   });
 }
 
-// Scoring function
+  /* ===========================
+   Semantic scoring helpers - universal
+   =========================== */
+const STOPWORDS = new Set(['a','an','the','of','to','in','on','for','with','and','or','but','is','are','was','were','be','been','being','as','by','from','that','this','those','these','it','its','at','which','who','whom','what','why','how','do','does','did','so','very','really','just','about','into','over','under','up','down','out','off','than','then','there','their','them','they','you','your']);
+
+const NUMBER_WORDS = new Map([
+  ['zero','0'], ['one','1'], ['two','2'], ['three','3'], ['four','4'],
+  ['five','5'], ['six','6'], ['seven','7'], ['eight','8'], ['nine','9'],
+  ['ten','10'], ['eleven','11'], ['twelve','12']
+]);
+
+// REPLACE normalizeText with this merged version
+function normalizeText(t) {
+  t = String(t || '').toLowerCase();
+  // unify quotes
+  t = t.replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"');
+
+  // expand only true contractions (avoid turning possessives into "is")
+  t = t
+    .replace(/\bwon't\b/g, 'will not')
+    .replace(/\bcan't\b/g, 'cannot')
+    .replace(/n't\b/g, ' not')
+    .replace(/\bI'm\b/gi, 'I am')
+    .replace(/\byou're\b/gi, 'you are')
+    .replace(/\bwe're\b/gi, 'we are')
+    .replace(/\bthey're\b/gi, 'they are')
+    .replace(/\bI've\b/gi, 'I have')
+    .replace(/\bwe've\b/gi, 'we have')
+    .replace(/\bthey've\b/gi, 'they have')
+    .replace(/\bI'll\b/gi, 'I will')
+    .replace(/\byou'll\b/gi, 'you will')
+    .replace(/\bwe'll\b/gi, 'we will')
+    .replace(/\bthey'll\b/gi, 'they will');
+
+  // strip punctuation (keep digits/letters/spaces)
+  t = t.replace(/[.,!?;:"`']/g, ' ').replace(/\s+/g, ' ').trim();
+  return t;
+}
+
+function simpleStem(w) {
+  if (!w) return w;
+  // light stem rules; do NOT eat short words like "is"
+  if (w.length > 3) {
+    if (w.endsWith('ies')) return w.slice(0, -3) + 'y';
+    if (/(ing|ed|ly|ers|er|est)$/.test(w)) return w.replace(/(ing|ed|ly|ers|er|est)$/,'');
+    if (w.endsWith('s') && !w.endsWith('ss')) return w.slice(0, -1);
+  }
+  return w;
+}
+
+function tokenize(t) {
+  const norm = normalizeText(t);
+  const raw = norm.split(' ').map(w => NUMBER_WORDS.get(w) || w);
+  const filtered = raw.filter(w => w && !STOPWORDS.has(w));
+  const stemmed = filtered.map(simpleStem);
+  return { tokens: stemmed, joined: ' ' + stemmed.join(' ') + ' ' };
+}
+
+function patternToTokenSet(pat) {
+  const src = pat instanceof RegExp ? pat.source : String(pat || '');
+  // strip common regex meta so alternations like (foo|bar) become tokens
+  const deRegex = src.replace(/[\\^$.*+?()[\]{}|]/g, ' ');
+  const parts = normalizeText(deRegex).split(' ');
+  const toks = parts.map(simpleStem).filter(Boolean);
+  return new Set(toks);
+}
+
+function tokenSetSatisfied(respTokens, tokenSet) {
+  if (!tokenSet || tokenSet.size === 0) return { hits: 0, need: 0 };
+  let hits = 0;
+  for (const tok of tokenSet) if (respTokens.includes(tok)) hits++;
+  return { hits, need: tokenSet.size };
+}
+
+
+  // --- Simple response quality + review helpers (used in submitAnswers) ---
+function checkKeywords(response, scoringKey) {
+  // Heuristic: does the response hit some tokens from any pattern in SCORING_REFERENCE?
+  const scoring = SCORING_REFERENCE[scoringKey];
+  if (!scoring) return false;
+  const { tokens } = tokenize(response);
+
+  const sets = [];
+  const addSets = (bucket) => {
+    if (bucket && Array.isArray(bucket.patterns)) {
+      bucket.patterns.forEach(p => sets.push(patternToTokenSet(p)));
+    }
+  };
+  addSets(scoring.twoPoint);
+  addSets(scoring.onePoint);
+
+  return sets.some(set => {
+    let hits = 0;
+    set.forEach(tok => { if (tokens.includes(tok)) hits++; });
+    return hits >= Math.max(1, Math.ceil(set.size * 0.4)); // ~40% overlap counts as “has relevant keywords”
+  });
+}
+
+function detectASLGloss(response) {
+  const raw = String(response || '');
+  const words = raw.trim().split(/\s+/);
+  const upperFrac = words.length ? words.filter(w => /^[A-Z0-9-]{2,}$/.test(w)).length / words.length : 0;
+  const hasGlossMarkers = /\b(IX|PRO|CL[:\-]|1P|2P|3P|NEG|PAST|FUTURE)\b/.test(raw);
+  return (upperFrac >= 0.4 || hasGlossMarkers) ? 'asl_gloss' : 'english';
+}
+
+function assessResponseQuality(response, scoringKey) {
+  const txt = String(response || '');
+  return {
+    wordCount: txt ? txt.trim().split(/\s+/).length : 0,
+    hasRelevantKeywords: checkKeywords(txt, scoringKey),
+    isComplete: txt.trim().length > 10,
+    language: detectASLGloss(txt)
+  };
+}
+
+function createReviewInterface(needsReview) {
+  if (!Array.isArray(needsReview) || needsReview.length === 0) return;
+  state.reviewQueue.push(...needsReview);
+}
+
+// Scoring function - semantic-first, tolerant, universal
 function flexibleScore(response, scoringKey) {
   const scoring = SCORING_REFERENCE[scoringKey];
-  if (!scoring) {
-    return {
-      autoScore: null,
-      confidence: 'none',
-      needsReview: true,
-      notes: 'No scoring reference available'
-    };
+  const clean = String(response || '').trim();
+  const { tokens, joined } = tokenize(clean);
+
+  // 1) If a semantic rubric exists, try it first
+  if (scoring && scoring.semantic) {
+    const sem = scoring.semantic;
+
+    const combos = [];
+    if (Array.isArray(sem.full)) combos.push(sem.full);
+    if (Array.isArray(sem.altFull)) combos.push(sem.altFull);
+
+    // full-credit: any combo where each group is satisfied
+    for (const combo of combos) {
+      const ok = combo.every(group => {
+        // group may be array of alternatives or a single key/phrase
+        const alts = Array.isArray(group) ? group : [group];
+        // satisfied if any alt token exists in the response
+        return alts.some(alt => {
+          const toks = Array.isArray(alt) ? alt : [alt];
+          // treat each alt as a literal phrase or keyword bag
+          const altJoined = ' ' + toks.map(x => simpleStem(normalizeText(x))).join(' ') + ' ';
+          // phrase-level relaxed match
+          return joined.includes(altJoined) || toks.some(t => tokens.includes(simpleStem(normalizeText(t))));
+        });
+      });
+      if (ok) return { autoScore: 2, confidence: 'high', needsReview: false, notes: 'Semantic full-credit match' };
+    }
+
+    // partial-credit: if any defined partial set achieves at least half of its elements
+    if (Array.isArray(sem.partial)) {
+      const p = sem.partial;
+      let hits = 0;
+      for (const it of p) {
+        const alts = Array.isArray(it) ? it : [it];
+        const got = alts.some(a => {
+          const aNorm = simpleStem(normalizeText(a));
+          return joined.includes(' ' + aNorm + ' ') || tokens.includes(aNorm);
+        });
+        if (got) hits++;
+      }
+      if (hits >= Math.max(1, Math.ceil(p.length * 0.5))) {
+        return { autoScore: 1, confidence: 'medium', needsReview: true, notes: 'Semantic partial-credit match' };
+      }
+    }
+    // fall through to pattern logic if semantic did not match
   }
-  
-  const cleanResponse = response.toLowerCase().trim();
-  
-  // Check for two-point patterns
-  if (scoring.twoPoint && scoring.twoPoint.patterns) {
-    for (const pattern of scoring.twoPoint.patterns) {
-      if (pattern.test(cleanResponse)) {
-        return {
-          autoScore: 2,
-          confidence: 'high',
-          needsReview: false,
-          notes: 'Pattern match: 2 points'
-        };
+
+  // 2) No semantic rubric, or no match - apply tolerant pattern logic for any question
+  if (scoring) {
+    // 2a) Two-point tolerant check: every keyword in any twoPoint pattern appears
+    if (scoring.twoPoint && Array.isArray(scoring.twoPoint.patterns)) {
+      for (const pat of scoring.twoPoint.patterns) {
+        const set = patternToTokenSet(pat);
+        const { hits, need } = tokenSetSatisfied(tokens, set);
+        if (need > 0 && hits === need) {
+          return { autoScore: 2, confidence: 'medium', needsReview: false, notes: 'Tolerant 2-point pattern match' };
+        }
+      }
+    }
+
+    // 2b) One-point tolerant check: at least half of the keywords in any onePoint pattern appear
+    if (scoring.onePoint && Array.isArray(scoring.onePoint.patterns)) {
+      for (const pat of scoring.onePoint.patterns) {
+        const set = patternToTokenSet(pat);
+        const { hits, need } = tokenSetSatisfied(tokens, set);
+        if (need > 0 && hits >= Math.ceil(need * 0.5)) {
+          return { autoScore: 1, confidence: 'low', needsReview: true, notes: 'Tolerant 1-point pattern match' };
+        }
+      }
+    }
+
+    // 2c) Last-resort literal regex on normalized text (kept as a safety net)
+    if (scoring.twoPoint && Array.isArray(scoring.twoPoint.patterns)) {
+      for (const pat of scoring.twoPoint.patterns) {
+        const rx = pat instanceof RegExp ? pat : new RegExp(String(pat), 'i');
+        if (rx.test(clean.toLowerCase())) {
+          return { autoScore: 2, confidence: 'low', needsReview: true, notes: 'Regex fallback 2-point' };
+        }
+      }
+    }
+    if (scoring.onePoint && Array.isArray(scoring.onePoint.patterns)) {
+      for (const pat of scoring.onePoint.patterns) {
+        const rx = pat instanceof RegExp ? pat : new RegExp(String(pat), 'i');
+        if (rx.test(clean.toLowerCase())) {
+          return { autoScore: 1, confidence: 'low', needsReview: true, notes: 'Regex fallback 1-point' };
+        }
       }
     }
   }
-  
-  // Check for one-point patterns
-  if (scoring.onePoint && scoring.onePoint.patterns) {
-    for (const pattern of scoring.onePoint.patterns) {
-      if (pattern.test(cleanResponse)) {
-        return {
-          autoScore: 1,
-          confidence: 'medium',
-          needsReview: true,
-          notes: 'Pattern match: 1 point (review recommended)'
-        };
-      }
-    }
+
+  // 3) No scoring reference - or still no match
+  return { autoScore: 0, confidence: 'none', needsReview: true, notes: 'No semantic or tolerant match' };
+}
+
+/* ==========================================
+   Multi-idea override rules (q89, q91, q119)
+   ========================================== */
+
+const MULTI_IDEA_RULES = {
+  // q89: 2 dangers = 2 pts; 1 danger = 1 pt
+  q89: {
+    minIdeasForOne: 1,
+    minIdeasForTwo: 2,
+    categories: [
+      [/(?:cold|freez|blizzard|snowstorm)/],                            // weather/cold
+      [/(?:bear|wolf|wolves|animal\s*attack|wildlife)/],               // animals
+      [/(?:starv|hunger|food\s*shortage|lack\s*of\s*food)/],           // hunger
+      [/(?:rapid|river|ice\s*break|thin\s*ice|avalanche|landslide)/],  // terrain/river/ice
+      [/(?:sick|illness|injur|exhaustion|fatigue)/]                    // health/exhaustion
+    ]
+  },
+
+  // q91: 2 themes = 2 pts; 1 theme = 1 pt
+  q91: {
+    minIdeasForOne: 1,
+    minIdeasForTwo: 2,
+    categories: [
+      [/(?:surviv|persever|endure|overcome)/],                         // survival/perseverance
+      [/(?:family|together|teamwork|loyalty)/],                        // family/teamwork
+      [/(?:courage|brave|risk|adventure)/]                             // courage/adventure
+    ]
+  },
+
+  // q119: 3 consequences = 2 pts; 1–2 = 1 pt
+  q119: {
+    minIdeasForOne: 1,
+    minIdeasForTwo: 3,
+    categories: [
+      [/(?:fewer|no)\s+(?:acquisitions|new\s*animals|new\s*exhibits)/], // fewer/no acquisitions/exhibits
+      [/(?:reduce(?:d)?|cut)\s+(?:hours|services|staff|care|maintenance)/], // cuts to ops
+      [/(?:close|closure)/]                                              // closure
+    ]
   }
-  
+};
+
+function applyMultiIdeaOverride(scoringKey, response) {
+  const rule = MULTI_IDEA_RULES[scoringKey];
+  if (!rule) return { applied: false, ideas: 0, score: 0, reason: '' };
+
+  const text = normalizeText(response || ''); // you already have normalizeText()
+  let ideas = 0;
+
+  for (const category of rule.categories) {
+    const matched = category.some(rx => rx.test(text));
+    if (matched) ideas++;
+  }
+
+  let score = 0;
+  if (ideas >= rule.minIdeasForTwo) score = 2;
+  else if (ideas >= rule.minIdeasForOne) score = 1;
+
   return {
-    autoScore: 0,
-    confidence: 'none',
-    needsReview: true,
-    notes: 'No pattern match - requires human scoring'
+    applied: score > 0,
+    ideas,
+    score,
+    reason: `Matched ${ideas} distinct idea(s)`
   };
 }
 
 async function submitAnswers(e) {
   e.preventDefault();
-  
+
   const trial = state.sequence[state.currentIndex];
   const endTime = new Date().toISOString();
   const duration = (Date.now() - state.itemStartTime) / 1000;
-  
+
   let totalScore = 0;
-  let allNeedReview = false;
+  let anyNeedsReview = false;
   const responses = {};
-  
-  // Score each question
-  trial.questions.forEach(q => {
+  const needsReviewList = [];
+
+  for (const q of trial.questions) {
     const response = document.getElementById(q.id).value.trim();
-    const scoringResult = flexibleScore(response, q.scoringKey);
-    
-    if (scoringResult.needsReview) allNeedReview = true;
+
+    // 1) Base semantic/pattern scoring
+    let scoringResult = flexibleScore(response, q.scoringKey);
+
+    // 2) Multi-idea override (q89, q91, q119)
+    const override = applyMultiIdeaOverride(q.scoringKey, response);
+    if (override.applied && override.score > (scoringResult.autoScore || 0)) {
+      scoringResult = {
+        autoScore: override.score,
+        confidence: override.score === 2 ? 'high' : 'medium',
+        needsReview: override.score < 2, // full 2 usually doesn’t need review; 1 still might
+        notes: (scoringResult.notes ? scoringResult.notes + ' | ' : '') + `Multi-idea override: ${override.reason}`
+      };
+    }
+
+    // 3) Response quality diagnostics (unchanged)
+    const quality = assessResponseQuality(response, q.scoringKey);
+
+    // 4) Review queue + metrics (now using the possibly-overridden result)
+    if (scoringResult.needsReview) {
+      state.scoringMetrics.manualReviewNeeded += 1;
+      anyNeedsReview = true;
+      needsReviewList.push({
+        item: trial.item,
+        questionId: q.id,
+        question: q.text,
+        response: response,
+        scoringKey: q.scoringKey,
+        scoringDetails: scoringResult
+      });
+    }
+
+    if (scoringResult.confidence === 'high') state.scoringMetrics.highConfidence += 1;
+    else if (scoringResult.confidence === 'medium') state.scoringMetrics.mediumConfidence += 1;
+    else if (scoringResult.confidence === 'low') state.scoringMetrics.lowConfidence += 1;
+
     totalScore += (scoringResult.autoScore || 0);
-    
+
     responses[q.id] = {
       question: q.text,
       response: response,
       autoScore: scoringResult.autoScore,
       scoringDetails: scoringResult,
-      needsReview: scoringResult.needsReview
+      needsReview: scoringResult.needsReview,
+      quality: quality
     };
-  });
-  
-  const finalScore = Math.round(totalScore / trial.questions.length);
-  
-  // Update running totals
-  state.totalPoints += finalScore;
-  if (finalScore === 0) {
-    state.consecutiveZeros++;
-  } else {
-    state.consecutiveZeros = 0;
-  }
-  
-  // Check gate items
-  if (trial.isGateItem && finalScore === 0) {
-    state.gateItemsFailed.push(trial.item);
-  }
-  
-  // Send to Google Sheets
-  for (const qId in responses) {
-    const q = responses[qId];
+
+    // 5) Send per-question record to Google (unchanged)
     await sendToGoogle('item_completed', {
       pid: state.pid,
       itemNumber: trial.item,
       endTime: endTime,
       duration: duration,
-      response: q.response,
+      response: response,
       explanation: '',
-      autoScore: q.autoScore,
-      scoreConfidence: q.scoringDetails.confidence,
-      needsReview: q.needsReview,
-      scoringNotes: q.scoringDetails.notes,
-      finalScore: q.autoScore,
+      autoScore: scoringResult.autoScore,
+      scoreConfidence: scoringResult.confidence,
+      needsReview: scoringResult.needsReview,
+      scoringNotes: scoringResult.notes,
+      finalScore: scoringResult.autoScore,
       consecutiveZeros: state.consecutiveZeros,
-      scoringDetails: q.scoringDetails
+      scoringDetails: scoringResult,
+      responseQuality: quality
     });
   }
-  
-  // Store results
+
+  // Average across all questions in the item (unchanged)
+  const finalScore = Math.round(totalScore / Math.max(1, trial.questions.length));
+
+  state.totalPoints += finalScore;
+  state.consecutiveZeros = finalScore === 0 ? state.consecutiveZeros + 1 : 0;
+
+  createReviewInterface(needsReviewList);
+
   state.results.push({
     pid: state.pid,
     edu: state.edu,
@@ -2221,14 +2794,17 @@ async function submitAnswers(e) {
     image: trial.image,
     responses: responses,
     autoScoreTotal: finalScore,
-    needsReview: allNeedReview,
+    needsReview: anyNeedsReview,
     totalTime: duration * 1000,
     timestamp: endTime
   });
-  
+
   state.currentIndex++;
   showItem();
 }
+
+
+
 
 async function skipItem() {
   const trial = state.sequence[state.currentIndex];
@@ -2323,12 +2899,14 @@ async function finishAssessment() {
 function showSummary() {
   const statsDiv = document.getElementById('final-stats');
   const content = document.getElementById('stats-content');
-  
+
   const itemsReviewed = state.results.filter(r => r.needsReview).length;
-  const avgScore = state.results.length > 0 ? 
-    (state.totalPoints / state.results.length).toFixed(2) : 0;
-  
-  content.innerHTML = `
+  const avgScore = state.results.length > 0
+    ? (state.totalPoints / state.results.length).toFixed(2)
+    : 0;
+
+  // base stats
+  let html = `
     <div>Participant Group: ${state.participantGroup}</div>
     <div>Communication Mode: ${state.readModality === 'sign' ? 'ASL' : 'Spoken'}</div>
     <div>Total Items Completed: ${state.results.length}</div>
@@ -2337,12 +2915,25 @@ function showSummary() {
     <div>Items Needing Review: ${itemsReviewed}</div>
     <div>Session Duration: ${Math.round((Date.now() - state.sessionStartTime) / 1000 / 60)} minutes</div>
   `;
-  
+
+  // metrics (only if present)
+  if (state.scoringMetrics) {
+    html += `
+      <div>High confidence auto-scores: ${state.scoringMetrics.highConfidence}</div>
+      <div>Medium confidence auto-scores: ${state.scoringMetrics.mediumConfidence}</div>
+      <div>Low confidence auto-scores: ${state.scoringMetrics.lowConfidence}</div>
+      <div>Flagged for manual review: ${state.scoringMetrics.manualReviewNeeded}</div>
+      <div>Review queue length: ${state.reviewQueue.length}</div>
+    `;
+  }
+
+  content.innerHTML = html;
   statsDiv.classList.remove('hidden');
-  
+
   updateUploadStatus('✓ All data saved to Google Sheets', 'success');
   document.getElementById('download-backup').classList.remove('hidden');
 }
+
 
 async function uploadRecordingToGoogle(blob, itemNumber) {
   if (!blob) return;
@@ -2372,6 +2963,14 @@ function updateUploadStatus(message, type = '') {
   
   progressDiv.textContent = message;
   statusDiv.className = 'status-box' + (type ? ' ' + type : '');
+  if (type === 'error') {
+  progressDiv.setAttribute('role','alert');
+  progressDiv.setAttribute('aria-live','assertive');
+} else {
+  progressDiv.setAttribute('role','status');
+  progressDiv.setAttribute('aria-live','polite');
+}
+
 }
 
 async function retryUpload() {
