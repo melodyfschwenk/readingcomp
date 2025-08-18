@@ -2793,4 +2793,322 @@ window.addEventListener('beforeunload', (e) => {
     e.returnValue = '';
   }
 });
+
+// ---------- Utilities ----------
+function timeout(ms) {
+  return new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms));
+}
+
+async function postWithTimeout(url, body, timeoutMs, asForm=false) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      mode: 'cors',
+      headers: asForm ? {} : { 'Content-Type': 'application/json' },
+      body: asForm ? body : JSON.stringify(body),
+      signal: ctrl.signal
+    });
+    clearTimeout(t);
+    if (!res.ok) throw new Error('bad status ' + res.status);
+    return await res.json().catch(() => ({}));
+  } finally { clearTimeout(t); }
+}
+
+// Update the bottom-left connection chip
+function updateConnectionStatus(connected) {
+  const el = document.getElementById('connection-status');
+  const txt = document.getElementById('connection-text');
+  if (!el || !txt) return;
+  if (connected) {
+    el.classList.remove('error');
+    el.classList.add('connected');
+    txt.textContent = 'Connected';
+  } else {
+    el.classList.remove('connected');
+    el.classList.add('error');
+    txt.textContent = 'Offline (saved locally)';
+  }
+}
+
+// Try Google first, then backup, then give up (return false)
+async function sendEventSafely(kind, payload) {
+  // If payload is FormData we’re doing a media upload
+  const isForm = (typeof FormData !== 'undefined') && (payload instanceof FormData);
+
+  // Attach some light metadata for server-side dedupe
+  if (!isForm) {
+    payload = { kind, sessionId: SESSION_ID, ...payload };
+  } else {
+    payload.append('kind', kind);
+    payload.append('sessionId', SESSION_ID);
+  }
+
+  try {
+    await postWithTimeout(GOOGLE_SCRIPT_URL, payload, GOOGLE_TIMEOUT_MS, isForm);
+    updateConnectionStatus(true);
+    return true;
+  } catch (_) {
+    // Try backup
+    try {
+      await postWithTimeout(GITHUB_BACKUP_URL, payload, BACKUP_TIMEOUT_MS, isForm);
+      updateConnectionStatus(true);
+      return true;
+    } catch (e2) {
+      updateConnectionStatus(false);
+      return false;
+    }
+  }
+}
+
+// Clean up media + timers
+function cleanupResources() {
+  try { clearAllTimers(); } catch (_) {}
+  try {
+    if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
+      state.mediaRecorder.stop();
+    }
+  } catch (_) {}
+  try {
+    if (state.stream) {
+      state.stream.getTracks().forEach(t => t.stop());
+      state.stream = null;
+    }
+  } catch (_) {}
+}
+
+// ---------- Button wiring ----------
+(function wireUI() {
+  const startStudy = document.getElementById('start-study');
+  if (startStudy) startStudy.addEventListener('click', startAssessment);
+
+  // Silent reading
+  const btnStartReading = document.getElementById('start-reading');
+  const btnDoneReading  = document.getElementById('done-reading');
+  if (btnStartReading) btnStartReading.addEventListener('click', () => {
+    startTimer();
+    btnStartReading.classList.add('hidden');
+    btnDoneReading.classList.remove('hidden');
+  });
+  if (btnDoneReading) btnDoneReading.addEventListener('click', () => {
+    stopTimer();
+    showQuestions(); // reading time is captured from state.readingStartTime
+  });
+
+  // QA form + Skip
+  const form = document.getElementById('qa-form');
+  if (form) form.addEventListener('submit', submitAnswers);
+  const skipBtn = document.getElementById('skip');
+  if (skipBtn) skipBtn.addEventListener('click', () => {
+    const trial = state.sequence[state.currentIndex];
+    // Minimal skip record
+    state.results.push({
+      item: trial.item,
+      image: trial.image,
+      type: trial.type,
+      readingTime: state.readingStartTime ? Date.now() - state.readingStartTime : 0,
+      responses: {},
+      scores: {},
+      totalScore: 0,
+      skipped: true,
+      timestamp: new Date().toISOString()
+    });
+    state.totalPoints += 0;
+    state.consecutiveZeros++;
+    state.currentIndex++;
+    showItem();
+  });
+
+  // Read-aloud recording controls
+  const startRec = document.getElementById('start-recording');
+  const stopRec  = document.getElementById('stop-recording');
+  if (startRec) startRec.addEventListener('click', startRecording);
+  if (stopRec)  stopRec.addEventListener('click', stopRecording);
+
+  // Audio “Test” controls
+  const btnTest = document.getElementById('test-audio-record');
+  const btnStopTest = document.getElementById('stop-test-audio');
+  if (btnTest && btnStopTest) setupAudioTest(btnTest, btnStopTest);
+
+  // Self-view toggle
+  const selfViewTgl = document.getElementById('toggle-selfview');
+  if (selfViewTgl) selfViewTgl.addEventListener('change', (e) => {
+    const v = document.getElementById('preview');
+    if (v) v.classList.toggle('hidden-selfview', e.target.checked);
+  });
+
+  // Finish screen actions
+  const retry = document.getElementById('retry-upload');
+  const dl = document.getElementById('download-backup');
+  if (retry) retry.addEventListener('click', async () => {
+    if (!state.savedData) return;
+    document.getElementById('upload-progress').textContent = 'Retrying upload...';
+    const ok = await sendEventSafely('session_completed', state.savedData);
+    if (ok) {
+      document.getElementById('upload-status').className = 'status-box success';
+      document.getElementById('upload-progress').textContent = 'Results uploaded successfully!';
+      retry.classList.add('hidden');
+    } else {
+      document.getElementById('upload-status').className = 'status-box error';
+      document.getElementById('upload-progress').textContent = 'Still offline; data is safe locally.';
+    }
+  });
+  if (dl) dl.addEventListener('click', () => {
+    if (!state.savedData) return;
+    const blob = new Blob([JSON.stringify(state.savedData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const ts = new Date().toISOString().replace(/[:.]/g,'-');
+    a.download = `wiat2_${state.pid || 'anon'}_${ts}.json`;
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(url);
+    a.remove();
+  });
+
+  // Show config banner early if endpoint is blank
+  if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+    const warn = document.getElementById('config-warning');
+    if (warn) warn.classList.remove('hidden');
+  }
+})();
+
+// ---------- Recording (read-aloud) ----------
+let recTimerSec = 0;
+function startRecording() {
+  if (!state.mediaRecorder) {
+    alert('Recorder not ready. Please go back to Setup.');
+    return;
+  }
+  state.recordedChunks = [];
+  try {
+    state.mediaRecorder.start(200); // gather chunks
+  } catch (e) {
+    alert('Could not start recording in this browser.');
+    return;
+  }
+  // UI
+  document.getElementById('rec-indicator').classList.remove('hidden');
+  document.getElementById('recording-timer').classList.remove('hidden');
+  document.getElementById('start-recording').classList.add('hidden');
+  document.getElementById('stop-recording').classList.remove('hidden');
+
+  // Timer
+  recTimerSec = 0;
+  const tEl = document.getElementById('recording-timer');
+  tEl.textContent = '00:00';
+  state.timers.recording = setInterval(() => {
+    recTimerSec++;
+    const m = String(Math.floor(recTimerSec/60)).padStart(2,'0');
+    const s = String(recTimerSec%60).padStart(2,'0');
+    tEl.textContent = `${m}:${s}`;
+  }, 1000);
+}
+
+async function stopRecording() {
+  try { if (state.mediaRecorder?.state === 'recording') state.mediaRecorder.stop(); } catch (_) {}
+  if (state.timers.recording) { clearInterval(state.timers.recording); state.timers.recording = null; }
+
+  // UI
+  document.getElementById('rec-indicator').classList.add('hidden');
+  document.getElementById('recording-timer').classList.add('hidden');
+  document.getElementById('stop-recording').classList.add('hidden');
+
+  // Wait one tick for last dataavailable
+  await new Promise(r => setTimeout(r, 100));
+
+  const mime = state.recordMime || (state.useVideoRecording ? 'video/webm' : 'audio/webm');
+  const ext  = mime.includes('mp4') ? 'mp4' : (mime.startsWith('audio/') ? 'webm' : 'webm');
+  const trial = state.sequence[state.currentIndex];
+
+  const blob = new Blob(state.recordedChunks, { type: mime });
+  state.recordedChunks = [];
+
+  // Try to upload
+  const fd = new FormData();
+  fd.append('pid', state.pid);
+  fd.append('edu', state.edu);
+  fd.append('participantGroup', state.participantGroup);
+  fd.append('readModality', state.readModality);
+  fd.append('itemNumber', String(trial.item));
+  fd.append('mime', mime);
+  const fname = `${state.pid || 'anon'}_item${trial.item}_${Date.now()}.${ext}`;
+  fd.append('fileName', fname);
+  fd.append('media', blob, fname);
+
+  const ok = await sendEventSafely('media_upload', fd);
+  if (!ok) {
+    // Fallback: client-side download so nothing is lost
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fname;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    const live = document.getElementById('sr-live');
+    if (live) live.textContent = 'Network issue: recording saved to your device.';
+  }
+
+  // Read-aloud items are non-scored → advance
+  state.currentIndex++;
+  showItem();
+}
+
+// ---------- Audio Test ----------
+function setupAudioTest(btnStart, btnStop) {
+  const timerEl = document.getElementById('test-audio-timer');
+  const pb = document.getElementById('test-audio-playback');
+  let testChunks = [];
+  let testRecorder = null;
+
+  btnStart.addEventListener('click', () => {
+    if (!state.stream) { alert('Microphone not initialized.'); return; }
+    testChunks = [];
+    try {
+      const mime = pickMime('audio') || 'audio/webm';
+      testRecorder = new MediaRecorder(state.stream, mime ? { mimeType: mime } : {});
+    } catch (e) { alert('Audio recording not supported here.'); return; }
+
+    testRecorder.ondataavailable = (e) => { if (e.data.size) testChunks.push(e.data); };
+    testRecorder.start(200);
+
+    // UI
+    btnStart.classList.add('hidden');
+    btnStop.classList.remove('hidden');
+    timerEl.classList.remove('hidden');
+    testTimerSeconds = 0;
+    timerEl.textContent = '00:00';
+    state.timers.test = setInterval(() => {
+      testTimerSeconds++;
+      const m = String(Math.floor(testTimerSeconds/60)).padStart(2,'0');
+      const s = String(testTimerSeconds%60).padStart(2,'0');
+      timerEl.textContent = `${m}:${s}`;
+    }, 1000);
+  });
+
+  btnStop.addEventListener('click', () => {
+    try { if (testRecorder?.state === 'recording') testRecorder.stop(); } catch (_) {}
+    if (state.timers.test) { clearInterval(state.timers.test); state.timers.test = null; }
+    btnStop.classList.add('hidden');
+    btnStart.classList.remove('hidden');
+    timerEl.classList.add('hidden');
+
+    setTimeout(() => {
+      const blob = new Blob(testChunks, { type: state.recordMime || 'audio/webm' });
+      pb.src = URL.createObjectURL(blob);
+      pb.classList.remove('hidden');
+      document.getElementById('audio-status').textContent = 'Test recorded. Play it back to confirm.';
+    }, 50);
+  });
+}
+
+// ---------- Optional: keyboard to toggle admin panel ----------
+window.addEventListener('keydown', (e) => {
+  if (e.altKey && e.key.toLowerCase() === 'a') {
+    state.adminMode = !state.adminMode;
+    document.body.classList.toggle('admin-mode', state.adminMode);
+    updateAdminPanel();
+  }
+});
 </script>
