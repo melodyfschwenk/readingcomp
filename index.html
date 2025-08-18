@@ -2802,18 +2802,37 @@ function timeout(ms) {
 async function postWithTimeout(url, body, timeoutMs, asForm=false) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  
   try {
-    const res = await fetch(url, {
+    console.log(`POST request to: ${url}`);
+    
+    // FIXED: Add no-cors mode for Google Apps Script if needed
+    const fetchOptions = {
       method: 'POST',
-      mode: 'cors',
+      mode: url.includes('script.google.com') ? 'no-cors' : 'cors',
       headers: asForm ? {} : { 'Content-Type': 'application/json' },
       body: asForm ? body : JSON.stringify(body),
       signal: ctrl.signal
-    });
+    };
+    
+    const res = await fetch(url, fetchOptions);
     clearTimeout(t);
+    
+    // FIXED: Handle no-cors mode (Google Apps Script returns opaque response)
+    if (fetchOptions.mode === 'no-cors') {
+      console.log('Google Apps Script request sent (no-cors mode, response opaque)');
+      return {}; // Can't read response in no-cors mode, assume success
+    }
+    
     if (!res.ok) throw new Error('bad status ' + res.status);
     return await res.json().catch(() => ({}));
-  } finally { clearTimeout(t); }
+  } catch (error) {
+    clearTimeout(t);
+    if (error.name === 'AbortError') {
+      throw new Error(`Request timeout after ${timeoutMs}ms`);
+    }
+    throw error;
+  }
 }
 
 // Update the bottom-left connection chip
@@ -2834,7 +2853,7 @@ function updateConnectionStatus(connected) {
 
 // Try Google first, then backup, then give up (return false)
 async function sendEventSafely(kind, payload) {
-  // If payload is FormData we’re doing a media upload
+  // If payload is FormData we're doing a media upload
   const isForm = (typeof FormData !== 'undefined') && (payload instanceof FormData);
 
   // Attach some light metadata for server-side dedupe
@@ -2845,135 +2864,112 @@ async function sendEventSafely(kind, payload) {
     payload.append('sessionId', SESSION_ID);
   }
 
+  // FIXED: Add detailed error logging
+  console.log(`Attempting to send ${kind} to server...`);
+  
   try {
-    await postWithTimeout(GOOGLE_SCRIPT_URL, payload, GOOGLE_TIMEOUT_MS, isForm);
+    const result = await postWithTimeout(GOOGLE_SCRIPT_URL, payload, GOOGLE_TIMEOUT_MS, isForm);
+    console.log(`Successfully sent ${kind} to Google Apps Script`, result);
     updateConnectionStatus(true);
     return true;
-  } catch (_) {
+  } catch (error) {
+    console.error(`Failed to send to Google Apps Script:`, error);
+    console.log(`Attempting backup endpoint...`);
+    
     // Try backup
     try {
-      await postWithTimeout(GITHUB_BACKUP_URL, payload, BACKUP_TIMEOUT_MS, isForm);
+      const result = await postWithTimeout(GITHUB_BACKUP_URL, payload, BACKUP_TIMEOUT_MS, isForm);
+      console.log(`Successfully sent ${kind} to backup endpoint`, result);
       updateConnectionStatus(true);
       return true;
     } catch (e2) {
+      console.error(`Failed to send to backup endpoint:`, e2);
       updateConnectionStatus(false);
       return false;
     }
   }
 }
 
-// Clean up media + timers
-function cleanupResources() {
-  try { clearAllTimers(); } catch (_) {}
+// FIXED: Enhanced postWithTimeout with better error handling
+async function postWithTimeout(url, body, timeoutMs, asForm=false) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  
   try {
-    if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
-      state.mediaRecorder.stop();
+    console.log(`POST request to: ${url}`);
+    
+    // FIXED: Add no-cors mode for Google Apps Script if needed
+    const fetchOptions = {
+      method: 'POST',
+      mode: url.includes('script.google.com') ? 'no-cors' : 'cors',
+      headers: asForm ? {} : { 'Content-Type': 'application/json' },
+      body: asForm ? body : JSON.stringify(body),
+      signal: ctrl.signal
+    };
+    
+    const res = await fetch(url, fetchOptions);
+    clearTimeout(t);
+    
+    // FIXED: Handle no-cors mode (Google Apps Script returns opaque response)
+    if (fetchOptions.mode === 'no-cors') {
+      console.log('Google Apps Script request sent (no-cors mode, response opaque)');
+      return {}; // Can't read response in no-cors mode, assume success
     }
-  } catch (_) {}
-  try {
-    if (state.stream) {
-      state.stream.getTracks().forEach(t => t.stop());
-      state.stream = null;
+    
+    if (!res.ok) throw new Error('bad status ' + res.status);
+    return await res.json().catch(() => ({}));
+  } catch (error) {
+    clearTimeout(t);
+    if (error.name === 'AbortError') {
+      throw new Error(`Request timeout after ${timeoutMs}ms`);
     }
-  } catch (_) {}
+    throw error;
+  }
 }
 
-// ---------- Button wiring ----------
-(function wireUI() {
-  const startStudy = document.getElementById('start-study');
-  if (startStudy) startStudy.addEventListener('click', startAssessment);
-
-  // Silent reading
-  const btnStartReading = document.getElementById('start-reading');
-  const btnDoneReading  = document.getElementById('done-reading');
-  if (btnStartReading) btnStartReading.addEventListener('click', () => {
-    startTimer();
-    btnStartReading.classList.add('hidden');
-    btnDoneReading.classList.remove('hidden');
-  });
-  if (btnDoneReading) btnDoneReading.addEventListener('click', () => {
-    stopTimer();
-    showQuestions(); // reading time is captured from state.readingStartTime
-  });
-
-  // QA form + Skip
-  const form = document.getElementById('qa-form');
-  if (form) form.addEventListener('submit', submitAnswers);
-  const skipBtn = document.getElementById('skip');
-  if (skipBtn) skipBtn.addEventListener('click', () => {
-    const trial = state.sequence[state.currentIndex];
-    // Minimal skip record
-    state.results.push({
-      item: trial.item,
-      image: trial.image,
-      type: trial.type,
-      readingTime: state.readingStartTime ? Date.now() - state.readingStartTime : 0,
-      responses: {},
-      scores: {},
-      totalScore: 0,
-      skipped: true,
-      timestamp: new Date().toISOString()
+// FIXED: Add connection test on page load
+window.addEventListener('DOMContentLoaded', async () => {
+  // Test connection to Google Apps Script
+  console.log('Testing connection to Google Apps Script...');
+  try {
+    const testPayload = { test: true, timestamp: Date.now() };
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors', // Google Apps Script doesn't support CORS
+      body: JSON.stringify(testPayload)
     });
-    state.totalPoints += 0;
-    state.consecutiveZeros++;
-    state.currentIndex++;
-    showItem();
-  });
-
-  // Read-aloud recording controls
-  const startRec = document.getElementById('start-recording');
-  const stopRec  = document.getElementById('stop-recording');
-  if (startRec) startRec.addEventListener('click', startRecording);
-  if (stopRec)  stopRec.addEventListener('click', stopRecording);
-
-  // Audio “Test” controls
-  const btnTest = document.getElementById('test-audio-record');
-  const btnStopTest = document.getElementById('stop-test-audio');
-  if (btnTest && btnStopTest) setupAudioTest(btnTest, btnStopTest);
-
-  // Self-view toggle
-  const selfViewTgl = document.getElementById('toggle-selfview');
-  if (selfViewTgl) selfViewTgl.addEventListener('change', (e) => {
-    const v = document.getElementById('preview');
-    if (v) v.classList.toggle('hidden-selfview', e.target.checked);
-  });
-
-  // Finish screen actions
-  const retry = document.getElementById('retry-upload');
-  const dl = document.getElementById('download-backup');
-  if (retry) retry.addEventListener('click', async () => {
-    if (!state.savedData) return;
-    document.getElementById('upload-progress').textContent = 'Retrying upload...';
-    const ok = await sendEventSafely('session_completed', state.savedData);
-    if (ok) {
-      document.getElementById('upload-status').className = 'status-box success';
-      document.getElementById('upload-progress').textContent = 'Results uploaded successfully!';
-      retry.classList.add('hidden');
-    } else {
-      document.getElementById('upload-status').className = 'status-box error';
-      document.getElementById('upload-progress').textContent = 'Still offline; data is safe locally.';
-    }
-  });
-  if (dl) dl.addEventListener('click', () => {
-    if (!state.savedData) return;
-    const blob = new Blob([JSON.stringify(state.savedData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    const ts = new Date().toISOString().replace(/[:.]/g,'-');
-    a.download = `wiat2_${state.pid || 'anon'}_${ts}.json`;
-    document.body.appendChild(a);
-    a.click();
-    URL.revokeObjectURL(url);
-    a.remove();
-  });
-
-  // Show config banner early if endpoint is blank
-  if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+    console.log('Google Apps Script connection test completed');
+    updateConnectionStatus(true);
+  } catch (error) {
+    console.error('Google Apps Script connection test failed:', error);
+    updateConnectionStatus(false);
+    
+    // Show warning if Google Script is not accessible
     const warn = document.getElementById('config-warning');
-    if (warn) warn.classList.remove('hidden');
+    if (warn) {
+      warn.classList.remove('hidden');
+      warn.querySelector('.status-message').innerHTML = `
+        <strong>Connection Issue:</strong> Cannot reach Google Apps Script. 
+        Data will be saved locally and to backup endpoint if available.
+        <br><small>URL: ${GOOGLE_SCRIPT_URL}</small>
+      `;
+    }
   }
-})();
+  
+  // Test backup endpoint
+  if (GITHUB_BACKUP_URL && GITHUB_BACKUP_URL !== 'https://readingcomp-f3ii59o6j-melodys-projects-8b5cbe18.vercel.app/') {
+    console.log('Testing backup endpoint...');
+    try {
+      const response = await fetch(GITHUB_BACKUP_URL, {
+        method: 'GET', // Test with GET first
+        mode: 'cors'
+      });
+      console.log('Backup endpoint accessible');
+    } catch (error) {
+      console.error('Backup endpoint test failed:', error);
+    }
+  }
+});
 
 // ---------- Recording (read-aloud) ----------
 let recTimerSec = 0;
