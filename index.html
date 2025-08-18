@@ -13,7 +13,7 @@
   }
   .wrap { 
     max-width: 900px; 
-    margin: 0 auto; 
+    margin: 0 
     padding: 20px; 
   }
   .card { 
@@ -474,6 +474,7 @@
     </div>
   </div>
 
+
   <!-- Setup Screen -->
   <div id="screen-setup" class="card hidden">
     <h2>Recording Setup</h2>
@@ -498,7 +499,7 @@
     <div id="video-setup" class="hidden">
       <p class="muted">For ASL "read aloud" items, we need to set up video recording.</p>
       <div class="video-preview-wrapper">
-        <video id="preview" class="video-preview" autoplay muted></video>
+        <video id="preview" class="video-preview" autoplay muted playsinline></video>
       </div>
       <p id="video-status" class="muted center" role="status" aria-live="polite" aria-atomic="true">Requesting camera access...</p>
 
@@ -1834,6 +1835,20 @@ function determineRecordingNeeds() {
   }
 }
 
+function checkWelcomeReady() {
+  const hasPid = document.getElementById('pid').value.trim().length > 0;
+  const hasEdu = !!document.getElementById('edu').value;
+  const hasGroup = !!state.participantGroup;
+  const hasModality = !!state.readModality;
+  document.getElementById('begin').disabled = !(hasPid && hasEdu && hasGroup && hasModality);
+}
+
+// call this in all these places:
+document.getElementById('pid').addEventListener('input', checkWelcomeReady);
+document.getElementById('edu').addEventListener('change', checkWelcomeReady);
+document.querySelectorAll('input[name="participant-group"]').forEach(r => r.addEventListener('change', () => { state.participantGroup = r.value; /* existing logic... */ checkWelcomeReady(); }));
+document.querySelectorAll('input[name="read-modality"]').forEach(r => r.addEventListener('change', () => { state.readModality = r.value; checkWelcomeReady(); }));
+
 function getReadAloudInstructions() {
   const modality = state.readModality;
   
@@ -2013,7 +2028,9 @@ function stopRecording() {
   return new Promise((resolve) => {
     if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
       state.mediaRecorder.onstop = () => {
-        const mimeType = state.useVideoRecording ? 'video/webm' : 'audio/webm';
+        // in setupVideoRecording()
+const mime = pickMime('video');
+state.mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
         const blob = new Blob(state.recordedChunks, { type: mimeType });
         resolve(blob);
       };
@@ -2411,6 +2428,14 @@ async function showItem() {
   
   state.itemStartTime = Date.now();
 }
+// Helper to pick a recorder mime type the browser actually supports
+function pickMime(kind) {
+  const candidates = kind === 'video'
+    ? ['video/mp4;codecs=h264', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4']
+    : ['audio/mp4', 'audio/aac', 'audio/webm', 'audio/ogg'];
+  return candidates.find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || '';
+}
+
 
 function showQuestions(readingTime) {
   const trial = state.sequence[state.currentIndex];
