@@ -386,6 +386,14 @@
   background:#f8f9fa; border:1px solid #e9ecef; border-radius:4px; padding:12px; margin:12px 0;
 }
 .video-preview.hidden-selfview{ visibility:hidden; }
+@media (max-width: 480px) {
+  body { font-size: 16px; }
+  .row { flex-direction: column; gap: 6px; }
+  button { font-size: 16px; padding: 12px 16px; }
+  .video-preview { max-width: 100%; height: auto; }
+  .recording-indicator { bottom: 8px; right: 8px; top: auto; }
+  .connection-status { display: none; }
+}
 
 </style>
 </head>
@@ -1920,36 +1928,28 @@ function updateConnectionStatus(connected) {
    =========================== */
 async function setupVideoRecording() {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ 
-      video: { 
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-        facingMode: 'user'
-      }, 
-      audio: false // No audio needed for ASL
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+      audio: false
     });
-    
     state.stream = stream;
     const preview = document.getElementById('preview');
     preview.srcObject = stream;
-    
-    const options = {
-      mimeType: 'video/webm;codecs=vp8'
-    };
-    
-    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-      options.mimeType = 'video/webm';
-    }
-    
-    state.mediaRecorder = new MediaRecorder(stream, options);
+
+    const mime = pickMime('video');        // ← choose best supported
+    state.recordMime = mime || 'video/webm';
+    state.mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
     state.recordedChunks = [];
-    
-    state.mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        state.recordedChunks.push(event.data);
-      }
-    };
-    
+    state.mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) state.recordedChunks.push(e.data); };
+
+    document.getElementById('video-status').textContent = 'Camera ready. You can see yourself above.';
+    return true;
+  } catch (err) {
+    console.error('Video setup error:', err);
+    document.getElementById('video-status').textContent = 'Error: Could not access camera. Please check permissions.';
+    return false;
+  }
+}
     document.getElementById('video-status').textContent = 'Camera ready. You can see yourself above.';
     return true;
   } catch (err) {
@@ -1961,33 +1961,17 @@ async function setupVideoRecording() {
 
 async function setupAudioRecording() {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ 
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        sampleRate: 44100
-      } 
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true }
     });
-    
     state.stream = stream;
-    
-    const options = {
-      mimeType: 'audio/webm'
-    };
-    
-    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-      options.mimeType = 'audio/ogg';
-    }
-    
-    state.mediaRecorder = new MediaRecorder(stream, options);
+
+    const mime = pickMime('audio');        // ← choose best supported
+    state.recordMime = mime || 'audio/webm';
+    state.mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
     state.recordedChunks = [];
-    
-    state.mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        state.recordedChunks.push(event.data);
-      }
-    };
-    
+    state.mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) state.recordedChunks.push(e.data); };
+
     document.getElementById('audio-status').textContent = 'Microphone ready. Test your audio above.';
     return true;
   } catch (err) {
@@ -2171,20 +2155,18 @@ document.getElementById('test-audio-record').addEventListener('click', () => {
   
   // Start test recording
   const testChunks = [];
-  const testRecorder = new MediaRecorder(state.stream);
-  
-  testRecorder.ondataavailable = (e) => {
-    if (e.data.size > 0) testChunks.push(e.data);
-  };
-  
-  testRecorder.onstop = () => {
-    const blob = new Blob(testChunks, { type: 'audio/webm' });
-    const url = URL.createObjectURL(blob);
-    const playback = document.getElementById('test-audio-playback');
-    playback.src = url;
-    playback.classList.remove('hidden');
-    document.getElementById('audio-status').textContent = 'Recording saved. Play it back to verify quality.';
-  };
+const mime = pickMime('audio');
+const testRecorder = new MediaRecorder(state.stream, mime ? { mimeType: mime } : {});
+// ...
+testRecorder.onstop = () => {
+  const chosen = testRecorder.mimeType || mime || 'audio/webm';
+  const blob = new Blob(testChunks, { type: chosen });
+  const url = URL.createObjectURL(blob);
+  const playback = document.getElementById('test-audio-playback');
+  playback.src = url;
+  playback.classList.remove('hidden');
+  document.getElementById('audio-status').textContent = 'Recording saved. Play it back to verify quality.';
+};
   
   testRecorder.start();
   
