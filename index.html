@@ -353,6 +353,16 @@
     border-radius: 4px;
     margin: 15px 0;
   }
+  
+  /* Accessibility note for deaf participants */
+  .accessibility-note {
+    background: #e7f3ff;
+    border: 1px solid #0d6efd;
+    border-radius: 4px;
+    padding: 10px;
+    margin: 10px 0;
+    font-size: 13px;
+  }
 </style>
 </head>
 <body>
@@ -410,6 +420,9 @@
     <div id="modality-selection" class="modality-selection hidden">
       <h3 style="font-size: 14px; margin: 0 0 10px;">Communication Preference for "Read Aloud" Items</h3>
       <p class="muted" style="margin: 0 0 10px;">How would you prefer to "read aloud"?</p>
+      <div id="deaf-note" class="accessibility-note hidden">
+        <strong>Note for deaf participants:</strong> You may choose to sign in ASL (video recording) or use spoken language (audio recording) based on your preference and comfort level.
+      </div>
       <div class="radio-group">
         <label>
           <input type="radio" name="read-modality" value="sign" />
@@ -579,7 +592,7 @@ let state = {
   pid: '',
   edu: '',
   participantGroup: '', // deaf-fluent, hearing-fluent, deaf-nonfluent, hearing-nonfluent, hearing-nonsigner
-  readModality: '', // sign or speak (for hearing signers only)
+  readModality: '', // sign or speak (for all participants who can choose)
   sessionStartTime: null,
   
   // Progress tracking
@@ -599,8 +612,8 @@ let state = {
   recordingTimerInterval: null,
   
   // Recording
-  useVideoRecording: false, // Will be set based on participant group
-  useAudioRecording: false, // Will be set based on participant group
+  useVideoRecording: false,
+  useAudioRecording: false,
   mediaRecorder: null,
   recordedChunks: [],
   stream: null,
@@ -613,10 +626,9 @@ let state = {
 };
 
 /* ===========================
-   WIAT-2 Scoring Reference (abbreviated for space - same as before)
+   WIAT-2 Scoring Reference
    =========================== */
 const SCORING_REFERENCE = {
-  // [Previous scoring reference content - keeping abbreviated for space]
   q75: {
     twoPoint: {
       concepts: ["great spirit", "god", "deity", "creator", "divine being"],
@@ -628,14 +640,107 @@ const SCORING_REFERENCE = {
     },
     notes: "Must indicate divine/supreme nature for 2 points"
   },
-  // ... [rest of scoring continues as before]
+  q76: {
+    twoPoint: {
+      concepts: ["7", "seven"],
+      patterns: [/\b7\b/, /\bseven\b/i]
+    },
+    notes: "Must be exactly 7"
+  },
+  q77: {
+    twoPoint: {
+      concepts: ["soil on turtle's backs"],
+      patterns: [/soil.*turtle/i, /turtle.*soil/i, /earth.*turtle/i]
+    },
+    onePoint: {
+      concepts: ["earth", "brushes", "bushes"],
+      patterns: [/earth/i, /brush/i, /bush/i]
+    }
+  },
+  q78: {
+    twoPoint: {
+      concepts: ["earthquake"],
+      patterns: [/earthquake/i]
+    },
+    onePoint: {
+      concepts: ["land quakes", "ground quivers"],
+      patterns: [/land.*quake/i, /ground.*quiver/i]
+    }
+  },
+  q79: {
+    twoPoint: {
+      concepts: ["California on their backs", "California made from them"],
+      patterns: [/california.*back/i, /california.*made/i]
+    },
+    onePoint: {
+      concepts: ["made them part of land"],
+      patterns: [/part.*land/i]
+    }
+  },
+  q80: {
+    twoPoint: {
+      concepts: ["think about", "form new plan", "pondering"],
+      patterns: [/think\s+about/i, /form.*plan/i, /ponder/i]
+    },
+    onePoint: {
+      concepts: ["think hard", "think"],
+      patterns: [/think\s+hard/i, /\bthink\b/i]
+    }
+  },
+  q82: {
+    twoPoint: {
+      concepts: ["road covered with debris", "traffic stopped"],
+      patterns: [/road.*covered.*debris/i, /traffic.*stop/i]
+    },
+    onePoint: {
+      concepts: ["snow covered road", "avalanche covered road"],
+      patterns: [/snow.*covered.*road/i, /avalanche.*covered/i]
+    }
+  },
+  q83: {
+    twoPoint: {
+      concepts: ["tree branches", "dirt", "rocks", "mud", "junk"],
+      patterns: [/tree.*branch/i, /\bdirt\b/i, /\brock/i, /\bmud\b/i, /junk/i]
+    },
+    onePoint: {
+      concepts: ["snow", "rubbish"],
+      patterns: [/\bsnow\b/i, /rubbish/i]
+    }
+  },
+  q85: {
+    twoPoint: {
+      concepts: ["like better", "prefer", "like"],
+      patterns: [/like.*better/i, /prefer/i, /\blike\b/i]
+    },
+    onePoint: {
+      concepts: ["adore", "enjoy"],
+      patterns: [/adore/i, /enjoy/i]
+    }
+  },
+  q87: {
+    twoPoint: {
+      concepts: ["bad weather and cancellation of long distance events"],
+      patterns: [/bad.*weather.*cancel/i, /weather.*long.*distance/i]
+    },
+    onePoint: {
+      concepts: ["bad weather", "cancellation"],
+      patterns: [/bad.*weather/i, /cancel/i]
+    }
+  },
+  q88: {
+    twoPoint: {
+      concepts: ["bad storm", "bad weather", "unpleasant weather"],
+      patterns: [/bad.*storm/i, /bad.*weather/i, /unpleasant.*weather/i]
+    }
+  }
+  // Continue with all other questions...
 };
 
 /* ===========================
-   TRIALS Configuration (abbreviated for space - same as before)
+   TRIALS Configuration - COMPLETE
    =========================== */
 const TRIALS = [
-  // [Previous TRIALS array - keeping abbreviated for space]
+  // Turtle Brothers passage
   {
     item: 75,
     image: "1.jpeg",
@@ -647,7 +752,729 @@ const TRIALS = [
       scoringKey: "q75"
     }]
   },
-  // ... [rest of trials continue as before]
+  {
+    item: 76,
+    image: "1.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q76",
+      text: "In all, how many Turtle Brothers were needed to fulfill Kwawar's request?",
+      scoringKey: "q76"
+    }]
+  },
+  {
+    item: 77,
+    image: "1.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q77",
+      text: "What caused the mountains to arise?",
+      scoringKey: "q77"
+    }]
+  },
+  {
+    item: 78,
+    image: "1.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q78",
+      text: "What natural event does the Turtle Brothers' quarreling explain?",
+      scoringKey: "q78"
+    }]
+  },
+  {
+    item: 79,
+    image: "1.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q79",
+      text: "What great gift did Kwawr give the Turtle Brothers?",
+      scoringKey: "q79"
+    }]
+  },
+  {
+    item: 80,
+    image: "1.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q80",
+      text: "What is the meaning of contemplated in the story?",
+      scoringKey: "q80"
+    }]
+  },
+  
+  // Avalanche passage (read aloud)
+  {
+    item: 81,
+    image: "2.jpeg",
+    type: "read-aloud",
+    readAloud: true,
+    instruction: "Read this aloud.",
+    skipScoring: true
+  },
+  {
+    item: 82,
+    image: "2.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q82",
+      text: "Tell me in your own words, what has happened as a result of the avalanche?",
+      scoringKey: "q82"
+    }]
+  },
+  {
+    item: 83,
+    image: "2.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q83",
+      text: "What does the word debris mean in this sentence?",
+      scoringKey: "q83"
+    }]
+  },
+  
+  // Fancy passage (read aloud)
+  {
+    item: 84,
+    image: "3.jpeg",
+    type: "read-aloud",
+    readAloud: true,
+    instruction: "Read this aloud.",
+    skipScoring: true
+  },
+  {
+    item: 85,
+    image: "3.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q85",
+      text: "What does the word fancy mean in this sentence?",
+      scoringKey: "q85"
+    }]
+  },
+  
+  // Track meet passage (read aloud)
+  {
+    item: 86,
+    image: "4.jpeg",
+    type: "read-aloud",
+    readAloud: true,
+    instruction: "Read this aloud.",
+    skipScoring: true
+  },
+  {
+    item: 87,
+    image: "4.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q87",
+      text: "Why did the track meet end earlier than expected?",
+      scoringKey: "q87"
+    }]
+  },
+  {
+    item: 88,
+    image: "4.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q88",
+      text: "What does the word inclement mean in this sentence?",
+      scoringKey: "q88"
+    }]
+  },
+  
+  // Yukon Gold passage
+  {
+    item: 89,
+    image: "5.jpeg",
+    type: "passage",
+    instruction: "Read the passage. Click 'Start Reading' when ready.",
+    questions: [{
+      id: "q89",
+      text: "What were two dangers encountered by the family on their journey?",
+      scoringKey: "q89"
+    }]
+  },
+  {
+    item: 90,
+    image: "5.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q90",
+      text: "According to Diana, why doesn't Charlie want to go to Yukon?",
+      scoringKey: "q90"
+    }]
+  },
+  {
+    item: 91,
+    image: "5.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q91",
+      text: "According to the reviewers, what are two main themes or ideas in Yukon Gold?",
+      scoringKey: "q91"
+    }]
+  },
+  {
+    item: 92,
+    image: "5.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q92",
+      text: "Diana gave Yukon Gold four stars although Gary gave it two. What did Gary dislike about the movie?",
+      scoringKey: "q92"
+    }]
+  },
+  {
+    item: 93,
+    image: "5.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q93",
+      text: "What is the meaning of the word hackneyed in Gary's review?",
+      scoringKey: "q93"
+    }]
+  },
+  
+  // Words of Wisdom (Grades 9-12 Start)
+  {
+    item: 94,
+    image: "6.jpeg",
+    type: "passage",
+    instruction: "Read the passage. Click 'Start Reading' when ready.",
+    questions: [{
+      id: "q94",
+      text: "What is the meaning of the word records in the first paragraph?",
+      scoringKey: "q94"
+    }]
+  },
+  {
+    item: 95,
+    image: "6.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q95",
+      text: "Where do you think Ben Franklin found the proverbs he included in the Poor Richard's Almanack?",
+      scoringKey: "q95"
+    }]
+  },
+  {
+    item: 96,
+    image: "6.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q96",
+      text: "What do you think 'Haste makes waste' might mean?",
+      scoringKey: "q96"
+    }]
+  },
+  {
+    item: 97,
+    image: "6.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q97",
+      text: "Why do you think most people like proverbs?",
+      scoringKey: "q97"
+    }]
+  },
+  {
+    item: 98,
+    image: "6.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q98",
+      text: "Which of the proverbs mentioned in the passage is a comment on modern technology?",
+      scoringKey: "q98"
+    }]
+  },
+  
+  // Mammals vs Saurian (read aloud)
+  {
+    item: 99,
+    image: "7.jpeg",
+    type: "read-aloud",
+    readAloud: true,
+    instruction: "Read this aloud.",
+    skipScoring: true
+  },
+  {
+    item: 100,
+    image: "7.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q100",
+      text: "How are mammals and saurian different?",
+      scoringKey: "q100"
+    }]
+  },
+  
+  // Dust Bowl (read aloud)
+  {
+    item: 101,
+    image: "8.jpeg",
+    type: "read-aloud",
+    readAloud: true,
+    instruction: "Read this aloud.",
+    skipScoring: true
+  },
+  {
+    item: 102,
+    image: "8.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q102",
+      text: "What does the sentence tell you that the great Dust Bowl was?",
+      scoringKey: "q102"
+    }]
+  },
+  
+  // Kristi Yamaguchi passage
+  {
+    item: 103,
+    image: "9.jpeg",
+    type: "passage",
+    instruction: "Read the passage. Click 'Start Reading' when ready.",
+    questions: [{
+      id: "q103",
+      text: "For what primary reason did Kristi's mother want her daughter to skate?",
+      scoringKey: "q103"
+    }]
+  },
+  {
+    item: 104,
+    image: "9.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q104",
+      text: "How does the definition of routine in the first paragraph differ from that in the next paragraph?",
+      scoringKey: "q104"
+    }]
+  },
+  {
+    item: 105,
+    image: "9.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q105",
+      text: "Why was Kristi's workload double that of other skaters?",
+      scoringKey: "q105"
+    }]
+  },
+  {
+    item: 106,
+    image: "9.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q106",
+      text: "Who won the pairs gold medal at the 1990 Nationals?",
+      scoringKey: "q106"
+    }]
+  },
+  {
+    item: 107,
+    image: "9.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q107",
+      text: "How was Kristi able to compensate for her athletic limitations?",
+      scoringKey: "q107"
+    }]
+  },
+  
+  // Humpback whales passage
+  {
+    item: 108,
+    image: "10.jpeg",
+    type: "passage",
+    instruction: "Read the passage. Click 'Start Reading' when ready.",
+    questions: [{
+      id: "q108",
+      text: "What is the meaning of the word demise in this story?",
+      scoringKey: "q108"
+    }]
+  },
+  {
+    item: 109,
+    image: "10.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q109",
+      text: "In what two ways have people been the primary reason for the whales' demise?",
+      scoringKey: "q109"
+    }]
+  },
+  {
+    item: 110,
+    image: "10.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q110",
+      text: "Why is it important for us to know about the struggles of the humpback whales?",
+      scoringKey: "q110"
+    }]
+  },
+  {
+    item: 111,
+    image: "10.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q111",
+      text: "What two things might happen if a whale is caught in a fishing net?",
+      scoringKey: "q111"
+    }]
+  },
+  {
+    item: 112,
+    image: "10.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q112",
+      text: "According to current studies, what is likely to happen to the humpback whale in the future?",
+      scoringKey: "q112"
+    }]
+  },
+  
+  // Peach prices (read aloud)
+  {
+    item: 113,
+    image: "11.jpeg",
+    type: "read-aloud",
+    readAloud: true,
+    instruction: "Read this aloud.",
+    skipScoring: true
+  },
+  {
+    item: 114,
+    image: "11.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q114",
+      text: "What is the most likely reason for the changes in the peach prices during the year?",
+      scoringKey: "q114"
+    }]
+  },
+  
+  // Zoo admission passage
+  {
+    item: 115,
+    image: "12.jpeg",
+    type: "passage",
+    instruction: "Read the passage. Click 'Start Reading' when ready.",
+    questions: [{
+      id: "q115",
+      text: "If today's zoo admission is $4.00, what was zoo admission in January 1993?",
+      scoringKey: "q115"
+    }]
+  },
+  {
+    item: 116,
+    image: "12.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q116",
+      text: "What is the main reason Tom gives to support his position?",
+      scoringKey: "q116"
+    }]
+  },
+  {
+    item: 117,
+    image: "12.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q117",
+      text: "When he says 'take up the slack' in his sentence, what does Tom mean?",
+      scoringKey: "q117"
+    }]
+  },
+  {
+    item: 118,
+    image: "12.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q118",
+      text: "Tanisha uses the word 'acquisitions' in her letter. What does it mean?",
+      scoringKey: "q118"
+    }]
+  },
+  {
+    item: 119,
+    image: "12.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q119",
+      text: "According to Tanisha, what three things might happen if zoo prices are not raised?",
+      scoringKey: "q119"
+    }]
+  },
+  
+  // King passage (read aloud)
+  {
+    item: 120,
+    image: "13.jpeg",
+    type: "read-aloud",
+    readAloud: true,
+    instruction: "Read this aloud.",
+    skipScoring: true
+  },
+  {
+    item: 121,
+    image: "13.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q121",
+      text: "What has happened to the king?",
+      scoringKey: "q121"
+    }]
+  },
+  {
+    item: 122,
+    image: "13.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q122",
+      text: "What would you predict might happen as a result of the event described?",
+      scoringKey: "q122"
+    }]
+  },
+  
+  // Central Asiatic Expedition passage
+  {
+    item: 123,
+    image: "14.jpeg",
+    type: "passage",
+    instruction: "Read the passage. Click 'Start Reading' when ready.",
+    questions: [{
+      id: "q123",
+      text: "What was the first discovery of the Central Asiatic Expedition?",
+      scoringKey: "q123"
+    }]
+  },
+  {
+    item: 124,
+    image: "14.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q124",
+      text: "Tell three adventures Andrews had experienced before going to the Gobi desert.",
+      scoringKey: "q124"
+    }]
+  },
+  {
+    item: 125,
+    image: "14.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q125",
+      text: "Where did the scientists discover the dinosaur eggs?",
+      scoringKey: "q125"
+    }]
+  },
+  {
+    item: 126,
+    image: "14.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q126",
+      text: "How did Andrew's expedition alter scientific knowledge?",
+      scoringKey: "q126"
+    }]
+  },
+  {
+    item: 127,
+    image: "14.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q127",
+      text: "What is the meaning of the word brigands as used in the passage?",
+      scoringKey: "q127"
+    }]
+  },
+  
+  // Longevity (read aloud)
+  {
+    item: 128,
+    image: "15.jpeg",
+    type: "read-aloud",
+    readAloud: true,
+    instruction: "Read this aloud.",
+    skipScoring: true
+  },
+  {
+    item: 129,
+    image: "15.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q129",
+      text: "What is the meaning of the word longevity in this sentence?",
+      scoringKey: "q129"
+    }]
+  },
+  {
+    item: 130,
+    image: "15.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q130",
+      text: "Describe the trend reported in this sentence",
+      scoringKey: "q130"
+    }]
+  },
+  
+  // Life stages passage
+  {
+    item: 131,
+    image: "16.jpeg",
+    type: "passage",
+    instruction: "Read the passage. Click 'Start Reading' when ready.",
+    questions: [{
+      id: "q131",
+      text: "At what life stage is a person likely to begin a career?",
+      scoringKey: "q131"
+    }]
+  },
+  {
+    item: 132,
+    image: "16.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q132",
+      text: "What is the main theme of the 'Mid-life Rebirth' developmental tasks?",
+      scoringKey: "q132"
+    }]
+  },
+  {
+    item: 133,
+    image: "16.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q133",
+      text: "Although Rachel was recently promoted to manager of her office, she is questioning her choice of careers and regrets that she never pursued her dream of composing music. At the same time, she is reluctant to quit her job because she recently bought a new home. What developmental stage is Rachel probably in?",
+      scoringKey: "q133"
+    }]
+  },
+  {
+    item: 134,
+    image: "16.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q134",
+      text: "What might happen if a person did not accomplish the developmental tasks of the 'Breaking Loose' stage?",
+      scoringKey: "q134"
+    }]
+  },
+  {
+    item: 135,
+    image: "16.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q135",
+      text: "If the last life stage called 'Deepening Wisdom' were added to the chart, what would you predict two of the developmental tasks would be?",
+      scoringKey: "q135"
+    }]
+  },
+  
+  // The Rock passage
+  {
+    item: 136,
+    image: "17.jpeg",
+    type: "passage",
+    instruction: "Read the passage. Click 'Start Reading' when ready.",
+    questions: [{
+      id: "q136",
+      text: "What is the fissure as described in the passage?",
+      scoringKey: "q136"
+    }]
+  },
+  {
+    item: 137,
+    image: "17.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q137",
+      text: "What suddenly made this rock climb so difficult?",
+      scoringKey: "q137"
+    }]
+  },
+  {
+    item: 138,
+    image: "17.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q138",
+      text: "What was the most important thing the women had to overcome in order to scale the rock?",
+      scoringKey: "q138"
+    }]
+  },
+  {
+    item: 139,
+    image: "17.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q139",
+      text: "What kept the women from turning back when they saw the sheer surface of the rock?",
+      scoringKey: "q139"
+    }]
+  },
+  {
+    item: 140,
+    image: "17.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q140",
+      text: "Why did Angela refuse to look at Sherry as she approached the summit?",
+      scoringKey: "q140"
+    }]
+  }
 ];
 
 /* ===========================
@@ -657,25 +1484,12 @@ function determineRecordingNeeds() {
   const group = state.participantGroup;
   const modality = state.readModality;
   
-  // Determine recording requirements based on group
-  if (group.startsWith('deaf')) {
-    // Deaf participants always use video for ASL
+  // All participants can choose their modality
+  if (modality === 'sign') {
     state.useVideoRecording = true;
     state.useAudioRecording = false;
     return 'video';
-  } else if (group === 'hearing-fluent' || group === 'hearing-nonfluent') {
-    // Hearing signers choose their modality
-    if (modality === 'sign') {
-      state.useVideoRecording = true;
-      state.useAudioRecording = false;
-      return 'video';
-    } else {
-      state.useVideoRecording = false;
-      state.useAudioRecording = true;
-      return 'audio';
-    }
   } else {
-    // Hearing non-signers use audio
     state.useVideoRecording = false;
     state.useAudioRecording = true;
     return 'audio';
@@ -683,16 +1497,9 @@ function determineRecordingNeeds() {
 }
 
 function getReadAloudInstructions() {
-  const group = state.participantGroup;
   const modality = state.readModality;
   
-  if (group.startsWith('deaf')) {
-    return {
-      title: "Sign This Passage",
-      text: "Please sign this passage in ASL. Click 'Start Recording' when ready to begin signing.",
-      buttonText: "Start Signing"
-    };
-  } else if ((group === 'hearing-fluent' || group === 'hearing-nonfluent') && modality === 'sign') {
+  if (modality === 'sign') {
     return {
       title: "Sign This Passage",
       text: "Please sign this passage in ASL. Click 'Start Recording' when ready to begin signing.",
@@ -893,26 +1700,32 @@ document.querySelectorAll('input[name="participant-group"]').forEach(radio => {
   radio.addEventListener('change', (e) => {
     state.participantGroup = e.target.value;
     
-    // Show modality selection only for hearing signers
+    // Show modality selection for all participant groups (updated logic)
     const modalityDiv = document.getElementById('modality-selection');
-    if (state.participantGroup === 'hearing-fluent' || state.participantGroup === 'hearing-nonfluent') {
-      modalityDiv.classList.remove('hidden');
-      document.getElementById('begin').disabled = true; // Wait for modality selection
+    const deafNote = document.getElementById('deaf-note');
+    
+    modalityDiv.classList.remove('hidden');
+    
+    // Show special note for deaf participants
+    if (state.participantGroup.startsWith('deaf')) {
+      deafNote.classList.remove('hidden');
     } else {
-      modalityDiv.classList.add('hidden');
+      deafNote.classList.add('hidden');
+    }
+    
+    // Non-signers default to speaking
+    if (state.participantGroup === 'hearing-nonsigner') {
+      document.querySelector('input[name="read-modality"][value="speak"]').checked = true;
+      state.readModality = 'speak';
       document.getElementById('begin').disabled = false;
-      
-      // Set default modality for other groups
-      if (state.participantGroup.startsWith('deaf')) {
-        state.readModality = 'sign';
-      } else {
-        state.readModality = 'speak';
-      }
+    } else {
+      // Wait for modality selection
+      document.getElementById('begin').disabled = true;
     }
   });
 });
 
-// Modality selection for hearing signers
+// Modality selection
 document.querySelectorAll('input[name="read-modality"]').forEach(radio => {
   radio.addEventListener('change', (e) => {
     state.readModality = e.target.value;
@@ -924,7 +1737,7 @@ document.getElementById('begin').addEventListener('click', async () => {
   state.pid = document.getElementById('pid').value.trim();
   state.edu = document.getElementById('edu').value;
   
-  if (!state.pid || !state.edu || !state.participantGroup) {
+  if (!state.pid || !state.edu || !state.participantGroup || !state.readModality) {
     alert('Please complete all required fields.');
     return;
   }
@@ -1287,7 +2100,7 @@ function showQuestions(readingTime) {
   });
 }
 
-// Scoring function (abbreviated - same as before)
+// Scoring function
 function flexibleScore(response, scoringKey) {
   const scoring = SCORING_REFERENCE[scoringKey];
   if (!scoring) {
@@ -1299,7 +2112,35 @@ function flexibleScore(response, scoringKey) {
     };
   }
   
-  // [Previous scoring logic remains the same]
+  const cleanResponse = response.toLowerCase().trim();
+  
+  // Check for two-point patterns
+  if (scoring.twoPoint && scoring.twoPoint.patterns) {
+    for (const pattern of scoring.twoPoint.patterns) {
+      if (pattern.test(cleanResponse)) {
+        return {
+          autoScore: 2,
+          confidence: 'high',
+          needsReview: false,
+          notes: 'Pattern match: 2 points'
+        };
+      }
+    }
+  }
+  
+  // Check for one-point patterns
+  if (scoring.onePoint && scoring.onePoint.patterns) {
+    for (const pattern of scoring.onePoint.patterns) {
+      if (pattern.test(cleanResponse)) {
+        return {
+          autoScore: 1,
+          confidence: 'medium',
+          needsReview: true,
+          notes: 'Pattern match: 1 point (review recommended)'
+        };
+      }
+    }
+  }
   
   return {
     autoScore: 0,
@@ -1652,10 +2493,10 @@ document.addEventListener('DOMContentLoaded', () => {
   showScreen('welcome');
   
   // Check if Google Script URL is configured
-if (GOOGLE_SCRIPT_URL.includes('YOUR_GOOGLE_APPS_SCRIPT_URL_HERE')) {
-  document.getElementById('config-warning').classList.remove('hidden');
-  document.getElementById('begin').disabled = true;
-}
+  if (GOOGLE_SCRIPT_URL.includes('YOUR_GOOGLE_APPS_SCRIPT_URL_HERE')) {
+    document.getElementById('config-warning').classList.remove('hidden');
+    document.getElementById('begin').disabled = true;
+  }
   
   updateConnectionStatus(false);
 });
