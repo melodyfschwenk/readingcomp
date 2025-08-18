@@ -467,225 +467,199 @@ html, body {
   <div id="sr-live" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
 
   <!-- Welcome Screen -->
-
   <div id="screen-welcome" class="card">
     <h1>WIAT-2 Reading Comprehension Study</h1>
     <p class="muted">Please enter your information to begin.</p>
 
-```
-<div class="row">
-  <div>
-    <label for="pid">Participant Code</label>
-    <input id="pid" type="text" placeholder="Enter initials" required />
-  </div>
-  <div>
-    <label for="edu">Education Level</label>
-    <select id="edu" required>
-      <option value="">Select...</option>
-      <option value="9">Grade 9</option>
-      <option value="10">Grade 10</option>
-      <option value="11">Grade 11</option>
-      <option value="12">Grade 12</option>
-      <option value="13+">College or higher</option>
-    </select>
-  </div>
-</div>
+    <div class="row">
+      <div>
+        <label for="pid">Participant Code</label>
+        <input id="pid" type="text" placeholder="Enter initials" required />
+      </div>
+      <div>
+        <label for="edu">Education Level</label>
+        <select id="edu" required>
+          <option value="">Select...</option>
+          <option value="9">Grade 9</option>
+          <option value="10">Grade 10</option>
+          <option value="11">Grade 11</option>
+          <option value="12">Grade 12</option>
+          <option value="13+">College or higher</option>
+        </select>
+      </div>
+    </div>
 
-<div class="group-info">
-  <h3>Participant Group</h3>
-  <div class="radio-group">
-    <label>
-      <input type="radio" name="participant-group" value="deaf-fluent" />
-      <span>Deaf - Fluent ASL signer</span>
-    </label>
-    <label>
-      <input type="radio" name="participant-group" value="hearing-fluent" />
-      <span>Hearing - Fluent ASL signer</span>
-    </label>
-    <label>
-      <input type="radio" name="participant-group" value="deaf-nonfluent" />
-      <span>Deaf - Non-fluent ASL signer</span>
-    </label>
-    <label>
-      <input type="radio" name="participant-group" value="hearing-nonfluent" />
-      <span>Hearing - Non-fluent ASL signer</span>
-    </label>
-    <label>
-      <input type="radio" name="participant-group" value="hearing-nonsigner" />
-      <span>Hearing - Non-signer</span>
-    </label>
-  </div>
-</div>
+    <div class="group-info">
+      <h3>Participant Group</h3>
+      <div class="radio-group">
+        <label>
+          <input type="radio" name="participant-group" value="deaf-fluent" />
+          <span>Deaf - Fluent ASL signer</span>
+        </label>
+        <label>
+          <input type="radio" name="participant-group" value="hearing-fluent" />
+          <span>Hearing - Fluent ASL signer</span>
+        </label>
+        <label>
+          <input type="radio" name="participant-group" value="deaf-nonfluent" />
+          <span>Deaf - Non-fluent ASL signer</span>
+        </label>
+        <label>
+          <input type="radio" name="participant-group" value="hearing-nonfluent" />
+          <span>Hearing - Non-fluent ASL signer</span>
+        </label>
+        <label>
+          <input type="radio" name="participant-group" value="hearing-nonsigner" />
+          <span>Hearing - Non-signer</span>
+        </label>
+      </div>
+    </div>
 
-<div id="modality-selection" class="modality-selection hidden">
-  <h3 style="font-size: 14px; margin: 0 0 10px;">Communication Preference for "Read Aloud" Items</h3>
-  <p class="muted" style="margin: 0 0 10px;">How would you prefer to "read aloud"?</p>
-  <div id="deaf-note" class="accessibility-note hidden">
-    <strong>Note for deaf participants:</strong> You may choose to sign in ASL (video recording) or use spoken language (audio recording) based on your preference and comfort level.
-  </div>
-  <div class="radio-group">
-    <label>
-      <input type="radio" name="read-modality" value="sign" />
-      <span>Sign (ASL) - Video recording</span>
-    </label>
-    <label>
-      <input type="radio" name="read-modality" value="speak" />
-      <span>Speak - Audio recording</span>
-    </label>
-  </div>
-</div>
-```
+    <div id="modality-selection" class="modality-selection hidden">
+      <h3 style="font-size: 14px; margin: 0 0 10px;">Communication Preference for "Read Aloud" Items</h3>
+      <p class="muted" style="margin: 0 0 10px;">How would you prefer to "read aloud"?</p>
+      <div id="deaf-note" class="accessibility-note hidden">
+        <strong>Note for deaf participants:</strong> You may choose to sign in ASL (video recording) or use spoken language (audio recording) based on your preference and comfort level.
+      </div>
+      <div class="radio-group">
+        <label>
+          <input type="radio" name="read-modality" value="sign" />
+          <span>Sign (ASL) - Video recording</span>
+        </label>
+        <label>
+          <input type="radio" name="read-modality" value="speak" />
+          <span>Speak - Audio recording</span>
+        </label>
+      </div>
+    </div>
 
-<div id="config-warning" class="status-box error hidden" role="alert" aria-live="assertive" aria-atomic="true">
-  <div class="status-message">
-    <strong>Setup Required:</strong> Google Drive integration not configured. 
-    Please update GOOGLE_SCRIPT_URL in the code.
-  </div>
-</div>
+    <div id="config-warning" class="status-box error hidden" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="status-message">
+        <strong>Setup Required:</strong> Google Drive integration not configured. 
+        Please update GOOGLE_SCRIPT_URL in the code.
+      </div>
+    </div>
 
-```
-<div style="margin-top: 20px;">
-  <button id="begin" class="primary" disabled>Continue to Setup</button>
-</div>
-```
-
+    <div style="margin-top: 20px;">
+      <button id="begin" class="primary" disabled>Continue to Setup</button>
+    </div>
   </div>
 
   <!-- Setup Screen -->
-
   <div id="screen-setup" class="card hidden">
     <h2>Recording Setup</h2>
 
-```
-<div id="recording-method-info" class="recording-info">
-  <div class="status-message" id="recording-method-text" role="status" aria-live="polite" aria-atomic="true">
-```
-
-Setting up recording…
-
-</div>
+    <div id="recording-method-info" class="recording-info">
+      <div class="status-message" id="recording-method-text" role="status" aria-live="polite" aria-atomic="true">
+        Setting up recording...
+      </div>
     </div>
+    
     <div class="comfort-options">
-  <label style="display:flex;align-items:center;gap:8px;">
-    <input type="checkbox" id="pref-hide-timer" />
-    <span>Hide the reading timer during passages</span>
-  </label>
-  <label id="pref-hide-selfview" class="hidden" style="display:flex;align-items:center;gap:8px;margin-top:8px;">
-    <input type="checkbox" id="toggle-selfview" />
-    <span>Hide my camera preview during recording</span>
-  </label>
-  <p class="muted" style="margin:8px 0 0;">You can change these anytime.</p>
-</div>
-
-```
-<div id="video-setup" class="hidden">
-  <p class="muted">For ASL "read aloud" items, we need to set up video recording.</p>
-  <div class="video-preview-wrapper">
-    <video id="preview" class="video-preview" autoplay muted playsinline></video>
-  </div>
-  <p id="video-status" class="muted center" role="status" aria-live="polite" aria-atomic="true">Requesting camera access...</p>
-
-</div>
-
-<div id="audio-setup" class="hidden">
-  <p class="muted">For spoken "read aloud" items, we need to set up audio recording.</p>
-  <div class="recording-controls">
-    <button id="test-audio-record" class="danger">Test Audio Recording</button>
-    <button id="stop-test-audio" class="hidden">Stop Test</button>
-    <span class="recording-timer hidden" id="test-audio-timer">00:00</span>
-  </div>
-  <audio id="test-audio-playback" controls class="hidden" style="width: 100%; max-width: 400px; margin: 10px auto; display: block;"></audio>
-  <p id="audio-status" class="muted center" role="status" aria-live="polite" aria-atomic="true">Click "Test Audio Recording" to verify your microphone is working.</p>
-</div>
-
-<div id="setup-status" class="status-box" style="margin-top: 20px;">
-```
-
-<div class="status-message" id="setup-status-text" role="status" aria-live="polite" aria-atomic="true">Initializing...</div>
+      <label style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="pref-hide-timer" />
+        <span>Hide the reading timer during passages</span>
+      </label>
+      <label id="pref-hide-selfview" class="hidden" style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+        <input type="checkbox" id="toggle-selfview" />
+        <span>Hide my camera preview during recording</span>
+      </label>
+      <p class="muted" style="margin:8px 0 0;">You can change these anytime.</p>
     </div>
 
-```
-<div style="margin-top: 20px; text-align: center;">
-  <button id="start-study" class="primary" disabled>Start Assessment</button>
-</div>
-```
+    <div id="video-setup" class="hidden">
+      <p class="muted">For ASL "read aloud" items, we need to set up video recording.</p>
+      <div class="video-preview-wrapper">
+        <video id="preview" class="video-preview" autoplay muted playsinline></video>
+      </div>
+      <p id="video-status" class="muted center" role="status" aria-live="polite" aria-atomic="true">Requesting camera access...</p>
+    </div>
 
+    <div id="audio-setup" class="hidden">
+      <p class="muted">For spoken "read aloud" items, we need to set up audio recording.</p>
+      <div class="recording-controls">
+        <button id="test-audio-record" class="danger">Test Audio Recording</button>
+        <button id="stop-test-audio" class="hidden">Stop Test</button>
+        <span class="recording-timer hidden" id="test-audio-timer">00:00</span>
+      </div>
+      <audio id="test-audio-playback" controls class="hidden" style="width: 100%; max-width: 400px; margin: 10px auto; display: block;"></audio>
+      <p id="audio-status" class="muted center" role="status" aria-live="polite" aria-atomic="true">Click "Test Audio Recording" to verify your microphone is working.</p>
+    </div>
+
+    <div id="setup-status" class="status-box" style="margin-top: 20px;">
+      <div class="status-message" id="setup-status-text" role="status" aria-live="polite" aria-atomic="true">Initializing...</div>
+    </div>
+
+    <div style="margin-top: 20px; text-align: center;">
+      <button id="start-study" class="primary" disabled>Start Assessment</button>
+    </div>
   </div>
 
   <!-- Item Screen -->
-
   <div id="screen-item" class="card hidden">
     <div class="recording-indicator hidden" id="rec-indicator">
       <span class="recording-dot"></span>
       <span id="rec-type">Recording</span>
     </div>
 
-```
-<div class="progress-bar">
-  <div class="progress-fill" id="progress" style="width: 0%"></div>
-</div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress" style="width: 0%"></div>
+    </div>
 
-<div class="item-header">
-  <div class="item-info">
-    <span id="item-number"></span> | Item <span id="actual-item-number"></span>
-  </div>
-  <div id="timer-container" class="hidden">
-    <span class="timer-display" id="timer">00:00</span>
-  </div>
-</div>
+    <div class="item-header">
+      <div class="item-info">
+        <span id="item-number"></span> | Item <span id="actual-item-number"></span>
+      </div>
+      <div id="timer-container" class="hidden">
+        <span class="timer-display" id="timer">00:00</span>
+      </div>
+    </div>
 
-<div id="stim-container" class="center">
-  <img id="stim" class="stim" alt="Reading material" />
-</div>
+    <div id="stim-container" class="center">
+      <img id="stim" class="stim" alt="Reading material" />
+    </div>
 
-<div id="instructions" class="muted center" style="margin: 16px 0;">
-  <span id="instruction-text"></span>
-</div>
+    <div id="instructions" class="muted center" style="margin: 16px 0;">
+      <span id="instruction-text"></span>
+    </div>
 
-<!-- Read Aloud Instructions Box -->
-<div id="read-aloud-instructions" class="read-aloud-box hidden">
-  <h4 id="read-aloud-title">Read Aloud Instructions</h4>
-  <p id="read-aloud-text" class="muted" style="margin: 0;"></p>
-</div>
+    <!-- Read Aloud Instructions Box -->
+    <div id="read-aloud-instructions" class="read-aloud-box hidden">
+      <h4 id="read-aloud-title">Read Aloud Instructions</h4>
+      <p id="read-aloud-text" class="muted" style="margin: 0;"></p>
+    </div>
 
-<!-- Recording controls for read-aloud items -->
-<div id="recording-controls" class="recording-controls hidden">
-  <button id="start-recording" class="danger">Start Recording</button>
-  <button id="stop-recording" class="hidden">Stop Recording</button>
-  <span class="recording-timer hidden" id="recording-timer">00:00</span>
-</div>
+    <!-- Recording controls for read-aloud items -->
+    <div id="recording-controls" class="recording-controls hidden">
+      <button id="start-recording" class="danger">Start Recording</button>
+      <button id="stop-recording" class="hidden">Stop Recording</button>
+      <span class="recording-timer hidden" id="recording-timer">00:00</span>
+    </div>
 
-<!-- Standard reading controls -->
-<div id="reading-controls" class="center hidden" style="margin: 16px 0;">
-  <button id="start-reading" class="primary">Start Reading</button>
-  <button id="done-reading" class="hidden">Done Reading</button>
-</div>
+    <!-- Standard reading controls -->
+    <div id="reading-controls" class="center hidden" style="margin: 16px 0;">
+      <button id="start-reading" class="primary">Start Reading</button>
+      <button id="done-reading" class="hidden">Done Reading</button>
+    </div>
 
-<form id="qa-form" class="hidden">
-  <div id="qa-fields"></div>
-  <div style="margin-top: 16px;">
-    <button type="submit" class="primary">Submit</button>
-    <button type="button" id="skip">Skip</button>
-  </div>
-</form>
-```
-
+    <form id="qa-form" class="hidden">
+      <div id="qa-fields"></div>
+      <div style="margin-top: 16px;">
+        <button type="submit" class="primary">Submit</button>
+        <button type="button" id="skip">Skip</button>
+      </div>
+    </form>
   </div>
 
   <!-- Finish Screen -->
-
   <div id="screen-finish" class="card hidden">
     <h2>Assessment Complete</h2>
 <p id="finish-msg" class="muted" role="status" aria-live="polite" aria-atomic="true">Thank you for participating.</p>
 
-```
 <div id="upload-status" class="status-box">
-```
-
 <div class="status-message" id="upload-progress" role="status" aria-live="polite" aria-atomic="true">Saving your data...</div>
     </div>
 
-```
 <div id="final-stats" class="hidden" style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 4px;">
   <h3 style="font-size: 14px; margin: 0 0 10px;">Session Summary</h3>
   <div id="stats-content"></div>
@@ -695,12 +669,9 @@ Setting up recording…
   <button id="retry-upload" class="primary hidden">Retry Upload</button>
   <button id="download-backup" class="hidden">Download Backup</button>
 </div>
-```
-
   </div>
 
   <!-- Admin Panel -->
-
   <div class="admin-panel">
     <div>Group: <span id="admin-group">-</span></div>
     <div>Item: <span id="admin-item">-</span></div>
@@ -710,7 +681,6 @@ Setting up recording…
   </div>
 
   <!-- Connection Status -->
-
   <div class="connection-status" id="connection-status">
 <span id="connection-text" role="status" aria-live="polite" aria-atomic="true">Not connected</span>
   </div>
@@ -757,6 +727,7 @@ let state = {
   mediaRecorder: null,
   recordedChunks: [],
   stream: null,
+  recordMime: '', // FIXED: Add missing property
   
   // Admin and upload
   adminMode: false,
@@ -764,13 +735,13 @@ let state = {
   savedData: null,
   connectionStatus: false,
 
-    reviewQueue: [],
+  reviewQueue: [],
   scoringMetrics: {
     highConfidence: 0,
     mediumConfidence: 0,
     lowConfidence: 0,
     manualReviewNeeded: 0
-  },
+  }
 };
 
 /* ===========================
@@ -840,16 +811,15 @@ const SCORING_REFERENCE = {
     onePoint: { patterns: [/bad.*weather/i, /cancel/i] }
   },
   q88: {
-  twoPoint: {
-    patterns: [
-      /\binclement\b/i,                           // echoes the key word
-      /(bad|severe|stormy|harsh|rough|foul|nasty)\s+(weather|storm|conditions)/i,
-      /(unpleasant|poor)\s+weather/i
-    ]
+    twoPoint: {
+      patterns: [
+        /\binclement\b/i,                           // echoes the key word
+        /(bad|severe|stormy|harsh|rough|foul|nasty)\s+(weather|storm|conditions)/i,
+        /(unpleasant|poor)\s+weather/i
+      ]
+    },
+    notes: "Full = clearly 'bad/severe/stormy weather'. Partial = mentions weather conditions without stating severity."
   },
-  notes: "Full = clearly 'bad/severe/stormy weather'. Partial = mentions weather conditions without stating severity."
-},
-
 
   /* =======================
      Yukon Gold (89–93)
@@ -1179,741 +1149,741 @@ const SCORING_REFERENCE = {
    TRIALS Configuration - COMPLETE
    =========================== */
 const TRIALS = [
-  // Turtle Brothers passage
-  {
-    item: 75,
-    image: "1.jpeg",
-    type: "passage",
-    instruction: "Read the passage. Click 'Start Reading' when ready.",
-    questions: [{
-      id: "q75",
-      text: "Who is Kwawar?",
-      scoringKey: "q75"
-    }]
-  },
-  {
-    item: 76,
-    image: "1.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q76",
-      text: "In all, how many Turtle Brothers were needed to fulfill Kwawar's request?",
-      scoringKey: "q76"
-    }]
-  },
-  {
-    item: 77,
-    image: "1.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q77",
-      text: "What caused the mountains to arise?",
-      scoringKey: "q77"
-    }]
-  },
-  {
-    item: 78,
-    image: "1.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q78",
-      text: "What natural event does the Turtle Brothers' quarreling explain?",
-      scoringKey: "q78"
-    }]
-  },
-  {
-    item: 79,
-    image: "1.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q79",
-      text: "What great gift did Kwawr give the Turtle Brothers?",
-      scoringKey: "q79"
-    }]
-  },
-  {
-    item: 80,
-    image: "1.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q80",
-      text: "What is the meaning of contemplated in the story?",
-      scoringKey: "q80"
-    }]
-  },
-  
-  // Avalanche passage (read aloud)
-  {
-    item: 81,
-    image: "2.jpeg",
-    type: "read-aloud",
-    readAloud: true,
-    instruction: "Read this aloud.",
-    skipScoring: true
-  },
-  {
-    item: 82,
-    image: "2.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q82",
-      text: "Tell me in your own words, what has happened as a result of the avalanche?",
-      scoringKey: "q82"
-    }]
-  },
-  {
-    item: 83,
-    image: "2.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q83",
-      text: "What does the word debris mean in this sentence?",
-      scoringKey: "q83"
-    }]
-  },
-  
-  // Fancy passage (read aloud)
-  {
-    item: 84,
-    image: "3.jpeg",
-    type: "read-aloud",
-    readAloud: true,
-    instruction: "Read this aloud.",
-    skipScoring: true
-  },
-  {
-    item: 85,
-    image: "3.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q85",
-      text: "What does the word fancy mean in this sentence?",
-      scoringKey: "q85"
-    }]
-  },
-  
-  // Track meet passage (read aloud)
-  {
-    item: 86,
-    image: "4.jpeg",
-    type: "read-aloud",
-    readAloud: true,
-    instruction: "Read this aloud.",
-    skipScoring: true
-  },
-  {
-    item: 87,
-    image: "4.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q87",
-      text: "Why did the track meet end earlier than expected?",
-      scoringKey: "q87"
-    }]
-  },
-  {
-    item: 88,
-    image: "4.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q88",
-      text: "What does the word inclement mean in this sentence?",
-      scoringKey: "q88"
-    }]
-  },
-  
-  // Yukon Gold passage
-  {
-    item: 89,
-    image: "5.jpeg",
-    type: "passage",
-    instruction: "Read the passage. Click 'Start Reading' when ready.",
-    questions: [{
-      id: "q89",
-      text: "What were two dangers encountered by the family on their journey?",
-      scoringKey: "q89"
-    }]
-  },
-  {
-    item: 90,
-    image: "5.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q90",
-      text: "According to Diana, why doesn't Charlie want to go to Yukon?",
-      scoringKey: "q90"
-    }]
-  },
-  {
-    item: 91,
-    image: "5.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q91",
-      text: "According to the reviewers, what are two main themes or ideas in Yukon Gold?",
-      scoringKey: "q91"
-    }]
-  },
-  {
-    item: 92,
-    image: "5.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q92",
-      text: "Diana gave Yukon Gold four stars although Gary gave it two. What did Gary dislike about the movie?",
-      scoringKey: "q92"
-    }]
-  },
-  {
-    item: 93,
-    image: "5.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q93",
-      text: "What is the meaning of the word hackneyed in Gary's review?",
-      scoringKey: "q93"
-    }]
-  },
-  
-  // Words of Wisdom (Grades 9-12 Start)
-  {
-    item: 94,
-    image: "6.jpeg",
-    type: "passage",
-    instruction: "Read the passage. Click 'Start Reading' when ready.",
-    questions: [{
-      id: "q94",
-      text: "What is the meaning of the word records in the first paragraph?",
-      scoringKey: "q94"
-    }]
-  },
-  {
-    item: 95,
-    image: "6.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q95",
-      text: "Where do you think Ben Franklin found the proverbs he included in the Poor Richard's Almanack?",
-      scoringKey: "q95"
-    }]
-  },
-  {
-    item: 96,
-    image: "6.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q96",
-      text: "What do you think 'Haste makes waste' might mean?",
-      scoringKey: "q96"
-    }]
-  },
-  {
-    item: 97,
-    image: "6.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q97",
-      text: "Why do you think most people like proverbs?",
-      scoringKey: "q97"
-    }]
-  },
-  {
-    item: 98,
-    image: "6.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q98",
-      text: "Which of the proverbs mentioned in the passage is a comment on modern technology?",
-      scoringKey: "q98"
-    }]
-  },
-  
-  // Mammals vs Saurian (read aloud)
-  {
-    item: 99,
-    image: "7.jpeg",
-    type: "read-aloud",
-    readAloud: true,
-    instruction: "Read this aloud.",
-    skipScoring: true
-  },
-  {
-    item: 100,
-    image: "7.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q100",
-      text: "How are mammals and saurian different?",
-      scoringKey: "q100"
-    }]
-  },
-  
-  // Dust Bowl (read aloud)
-  {
-    item: 101,
-    image: "8.jpeg",
-    type: "read-aloud",
-    readAloud: true,
-    instruction: "Read this aloud.",
-    skipScoring: true
-  },
-  {
-    item: 102,
-    image: "8.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q102",
-      text: "What does the sentence tell you that the great Dust Bowl was?",
-      scoringKey: "q102"
-    }]
-  },
-  
-  // Kristi Yamaguchi passage
-  {
-    item: 103,
-    image: "9.jpeg",
-    type: "passage",
-    instruction: "Read the passage. Click 'Start Reading' when ready.",
-    questions: [{
-      id: "q103",
-      text: "For what primary reason did Kristi's mother want her daughter to skate?",
-      scoringKey: "q103"
-    }]
-  },
-  {
-    item: 104,
-    image: "9.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q104",
-      text: "How does the definition of routine in the first paragraph differ from that in the next paragraph?",
-      scoringKey: "q104"
-    }]
-  },
-  {
-    item: 105,
-    image: "9.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q105",
-      text: "Why was Kristi's workload double that of other skaters?",
-      scoringKey: "q105"
-    }]
-  },
-  {
-    item: 106,
-    image: "9.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q106",
-      text: "Who won the pairs gold medal at the 1990 Nationals?",
-      scoringKey: "q106"
-    }]
-  },
-  {
-    item: 107,
-    image: "9.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q107",
-      text: "How was Kristi able to compensate for her athletic limitations?",
-      scoringKey: "q107"
-    }]
-  },
-  
-  // Humpback whales passage
-  {
-    item: 108,
-    image: "10.jpeg",
-    type: "passage",
-    instruction: "Read the passage. Click 'Start Reading' when ready.",
-    questions: [{
-      id: "q108",
-      text: "What is the meaning of the word demise in this story?",
-      scoringKey: "q108"
-    }]
-  },
-  {
-    item: 109,
-    image: "10.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q109",
-      text: "In what two ways have people been the primary reason for the whales' demise?",
-      scoringKey: "q109"
-    }]
-  },
-  {
-    item: 110,
-    image: "10.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q110",
-      text: "Why is it important for us to know about the struggles of the humpback whales?",
-      scoringKey: "q110"
-    }]
-  },
-  {
-    item: 111,
-    image: "10.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q111",
-      text: "What two things might happen if a whale is caught in a fishing net?",
-      scoringKey: "q111"
-    }]
-  },
-  {
-    item: 112,
-    image: "10.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q112",
-      text: "According to current studies, what is likely to happen to the humpback whale in the future?",
-      scoringKey: "q112"
-    }]
-  },
-  
-  // Peach prices (read aloud)
-  {
-    item: 113,
-    image: "11.jpeg",
-    type: "read-aloud",
-    readAloud: true,
-    instruction: "Read this aloud.",
-    skipScoring: true
-  },
-  {
-    item: 114,
-    image: "11.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q114",
-      text: "What is the most likely reason for the changes in the peach prices during the year?",
-      scoringKey: "q114"
-    }]
-  },
-  
-  // Zoo admission passage
-  {
-    item: 115,
-    image: "12.jpeg",
-    type: "passage",
-    instruction: "Read the passage. Click 'Start Reading' when ready.",
-    questions: [{
-      id: "q115",
-      text: "If today's zoo admission is $4.00, what was zoo admission in January 1993?",
-      scoringKey: "q115"
-    }]
-  },
-  {
-    item: 116,
-    image: "12.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q116",
-      text: "What is the main reason Tom gives to support his position?",
-      scoringKey: "q116"
-    }]
-  },
-  {
-    item: 117,
-    image: "12.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q117",
-      text: "When he says 'take up the slack' in his sentence, what does Tom mean?",
-      scoringKey: "q117"
-    }]
-  },
-  {
-    item: 118,
-    image: "12.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q118",
-      text: "Tanisha uses the word 'acquisitions' in her letter. What does it mean?",
-      scoringKey: "q118"
-    }]
-  },
-  {
-    item: 119,
-    image: "12.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q119",
-      text: "According to Tanisha, what three things might happen if zoo prices are not raised?",
-      scoringKey: "q119"
-    }]
-  },
-  
-  // King passage (read aloud)
-  {
-    item: 120,
-    image: "13.jpeg",
-    type: "read-aloud",
-    readAloud: true,
-    instruction: "Read this aloud.",
-    skipScoring: true
-  },
-  {
-    item: 121,
-    image: "13.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q121",
-      text: "What has happened to the king?",
-      scoringKey: "q121"
-    }]
-  },
-  {
-    item: 122,
-    image: "13.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q122",
-      text: "What would you predict might happen as a result of the event described?",
-      scoringKey: "q122"
-    }]
-  },
-  
-  // Central Asiatic Expedition passage
-  {
-    item: 123,
-    image: "14.jpeg",
-    type: "passage",
-    instruction: "Read the passage. Click 'Start Reading' when ready.",
-    questions: [{
-      id: "q123",
-      text: "What was the first discovery of the Central Asiatic Expedition?",
-      scoringKey: "q123"
-    }]
-  },
-  {
-    item: 124,
-    image: "14.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q124",
-      text: "Tell three adventures Andrews had experienced before going to the Gobi desert.",
-      scoringKey: "q124"
-    }]
-  },
-  {
-    item: 125,
-    image: "14.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q125",
-      text: "Where did the scientists discover the dinosaur eggs?",
-      scoringKey: "q125"
-    }]
-  },
-  {
-    item: 126,
-    image: "14.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q126",
-      text: "How did Andrew's expedition alter scientific knowledge?",
-      scoringKey: "q126"
-    }]
-  },
-  {
-    item: 127,
-    image: "14.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q127",
-      text: "What is the meaning of the word brigands as used in the passage?",
-      scoringKey: "q127"
-    }]
-  },
-  
-  // Longevity (read aloud)
-  {
-    item: 128,
-    image: "15.jpeg",
-    type: "read-aloud",
-    readAloud: true,
-    instruction: "Read this aloud.",
-    skipScoring: true
-  },
-  {
-    item: 129,
-    image: "15.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q129",
-      text: "What is the meaning of the word longevity in this sentence?",
-      scoringKey: "q129"
-    }]
-  },
-  {
-    item: 130,
-    image: "15.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q130",
-      text: "Describe the trend reported in this sentence",
-      scoringKey: "q130"
-    }]
-  },
-  
-  // Life stages passage
-  {
-    item: 131,
-    image: "16.jpeg",
-    type: "passage",
-    instruction: "Read the passage. Click 'Start Reading' when ready.",
-    questions: [{
-      id: "q131",
-      text: "At what life stage is a person likely to begin a career?",
-      scoringKey: "q131"
-    }]
-  },
-  {
-    item: 132,
-    image: "16.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q132",
-      text: "What is the main theme of the 'Mid-life Rebirth' developmental tasks?",
-      scoringKey: "q132"
-    }]
-  },
-  {
-    item: 133,
-    image: "16.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q133",
-      text: "Although Rachel was recently promoted to manager of her office, she is questioning her choice of careers and regrets that she never pursued her dream of composing music. At the same time, she is reluctant to quit her job because she recently bought a new home. What developmental stage is Rachel probably in?",
-      scoringKey: "q133"
-    }]
-  },
-  {
-    item: 134,
-    image: "16.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q134",
-      text: "What might happen if a person did not accomplish the developmental tasks of the 'Breaking Loose' stage?",
-      scoringKey: "q134"
-    }]
-  },
-  {
-    item: 135,
-    image: "16.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q135",
-      text: "If the last life stage called 'Deepening Wisdom' were added to the chart, what would you predict two of the developmental tasks would be?",
-      scoringKey: "q135"
-    }]
-  },
-  
-  // The Rock passage
-  {
-    item: 136,
-    image: "17.jpeg",
-    type: "passage",
-    instruction: "Read the passage. Click 'Start Reading' when ready.",
-    questions: [{
-      id: "q136",
-      text: "What is the fissure as described in the passage?",
-      scoringKey: "q136"
-    }]
-  },
-  {
-    item: 137,
-    image: "17.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q137",
-      text: "What suddenly made this rock climb so difficult?",
-      scoringKey: "q137"
-    }]
-  },
-  {
-    item: 138,
-    image: "17.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q138",
-      text: "What was the most important thing the women had to overcome in order to scale the rock?",
-      scoringKey: "q138"
-    }]
-  },
-  {
-    item: 139,
-    image: "17.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q139",
-      text: "What kept the women from turning back when they saw the sheer surface of the rock?",
-      scoringKey: "q139"
-    }]
-  },
-  {
-    item: 140,
-    image: "17.jpeg",
-    type: "question",
-    skipReading: true,
-    questions: [{
-      id: "q140",
-      text: "Why did Angela refuse to look at Sherry as she approached the summit?",
-      scoringKey: "q140"
-    }]
-  }
+    // Turtle Brothers passage
+    {
+        item: 75,
+        image: "1.jpeg",
+        type: "passage",
+        instruction: "Read the passage. Click 'Start Reading' when ready.",
+        questions: [{
+            id: "q75",
+            text: "Who is Kwawar?",
+            scoringKey: "q75"
+        }]
+    },
+    {
+        item: 76,
+        image: "1.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q76",
+            text: "In all, how many Turtle Brothers were needed to fulfill Kwawar's request?",
+            scoringKey: "q76"
+        }]
+    },
+    {
+        item: 77,
+        image: "1.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q77",
+            text: "What caused the mountains to arise?",
+            scoringKey: "q77"
+        }]
+    },
+    {
+        item: 78,
+        image: "1.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q78",
+            text: "What natural event does the Turtle Brothers' quarreling explain?",
+            scoringKey: "q78"
+        }]
+    },
+    {
+        item: 79,
+        image: "1.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q79",
+            text: "What great gift did Kwawr give the Turtle Brothers?",
+            scoringKey: "q79"
+        }]
+    },
+    {
+        item: 80,
+        image: "1.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q80",
+            text: "What is the meaning of contemplated in the story?",
+            scoringKey: "q80"
+        }]
+    },
+    
+    // Avalanche passage (read aloud)
+    {
+        item: 81,
+        image: "2.jpeg",
+        type: "read-aloud",
+        readAloud: true,
+        instruction: "Read this aloud.",
+        skipScoring: true
+    },
+    {
+        item: 82,
+        image: "2.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q82",
+            text: "Tell me in your own words, what has happened as a result of the avalanche?",
+            scoringKey: "q82"
+        }]
+    },
+    {
+        item: 83,
+        image: "2.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q83",
+            text: "What does the word debris mean in this sentence?",
+            scoringKey: "q83"
+        }]
+    },
+    
+    // Fancy passage (read aloud)
+    {
+        item: 84,
+        image: "3.jpeg",
+        type: "read-aloud",
+        readAloud: true,
+        instruction: "Read this aloud.",
+        skipScoring: true
+    },
+    {
+        item: 85,
+        image: "3.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q85",
+            text: "What does the word fancy mean in this sentence?",
+            scoringKey: "q85"
+        }]
+    },
+    
+    // Track meet passage (read aloud)
+    {
+        item: 86,
+        image: "4.jpeg",
+        type: "read-aloud",
+        readAloud: true,
+        instruction: "Read this aloud.",
+        skipScoring: true
+    },
+    {
+        item: 87,
+        image: "4.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q87",
+            text: "Why did the track meet end earlier than expected?",
+            scoringKey: "q87"
+        }]
+    },
+    {
+        item: 88,
+        image: "4.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q88",
+            text: "What does the word inclement mean in this sentence?",
+            scoringKey: "q88"
+        }]
+    },
+    
+    // Yukon Gold passage
+    {
+        item: 89,
+        image: "5.jpeg",
+        type: "passage",
+        instruction: "Read the passage. Click 'Start Reading' when ready.",
+        questions: [{
+            id: "q89",
+            text: "What were two dangers encountered by the family on their journey?",
+            scoringKey: "q89"
+        }]
+    },
+    {
+        item: 90,
+        image: "5.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q90",
+            text: "According to Diana, why doesn't Charlie want to go to Yukon?",
+            scoringKey: "q90"
+        }]
+    },
+    {
+        item: 91,
+        image: "5.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q91",
+            text: "According to the reviewers, what are two main themes or ideas in Yukon Gold?",
+            scoringKey: "q91"
+        }]
+    },
+    {
+        item: 92,
+        image: "5.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q92",
+            text: "Diana gave Yukon Gold four stars although Gary gave it two. What did Gary dislike about the movie?",
+            scoringKey: "q92"
+        }]
+    },
+    {
+        item: 93,
+        image: "5.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q93",
+            text: "What is the meaning of the word hackneyed in Gary's review?",
+            scoringKey: "q93"
+        }]
+    },
+    
+    // Words of Wisdom (Grades 9-12 Start)
+    {
+        item: 94,
+        image: "6.jpeg",
+        type: "passage",
+        instruction: "Read the passage. Click 'Start Reading' when ready.",
+        questions: [{
+            id: "q94",
+            text: "What is the meaning of the word records in the first paragraph?",
+            scoringKey: "q94"
+        }]
+    },
+    {
+        item: 95,
+        image: "6.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q95",
+            text: "Where do you think Ben Franklin found the proverbs he included in the Poor Richard's Almanack?",
+            scoringKey: "q95"
+        }]
+    },
+    {
+        item: 96,
+        image: "6.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q96",
+            text: "What do you think 'Haste makes waste' might mean?",
+            scoringKey: "q96"
+        }]
+    },
+    {
+        item: 97,
+        image: "6.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q97",
+            text: "Why do you think most people like proverbs?",
+            scoringKey: "q97"
+        }]
+    },
+    {
+        item: 98,
+        image: "6.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q98",
+            text: "Which of the proverbs mentioned in the passage is a comment on modern technology?",
+            scoringKey: "q98"
+        }]
+    },
+    
+    // Mammals vs Saurian (read aloud)
+    {
+        item: 99,
+        image: "7.jpeg",
+        type: "read-aloud",
+        readAloud: true,
+        instruction: "Read this aloud.",
+        skipScoring: true
+    },
+    {
+        item: 100,
+        image: "7.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q100",
+            text: "How are mammals and saurian different?",
+            scoringKey: "q100"
+        }]
+    },
+    
+    // Dust Bowl (read aloud)
+    {
+        item: 101,
+        image: "8.jpeg",
+        type: "read-aloud",
+        readAloud: true,
+        instruction: "Read this aloud.",
+        skipScoring: true
+    },
+    {
+        item: 102,
+        image: "8.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q102",
+            text: "What does the sentence tell you that the great Dust Bowl was?",
+            scoringKey: "q102"
+        }]
+    },
+    
+    // Kristi Yamaguchi passage
+    {
+        item: 103,
+        image: "9.jpeg",
+        type: "passage",
+        instruction: "Read the passage. Click 'Start Reading' when ready.",
+        questions: [{
+            id: "q103",
+            text: "For what primary reason did Kristi's mother want her daughter to skate?",
+            scoringKey: "q103"
+        }]
+    },
+    {
+        item: 104,
+        image: "9.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q104",
+            text: "How does the definition of routine in the first paragraph differ from that in the next paragraph?",
+            scoringKey: "q104"
+        }]
+    },
+    {
+        item: 105,
+        image: "9.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q105",
+            text: "Why was Kristi's workload double that of other skaters?",
+            scoringKey: "q105"
+        }]
+    },
+    {
+        item: 106,
+        image: "9.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q106",
+            text: "Who won the pairs gold medal at the 1990 Nationals?",
+            scoringKey: "q106"
+        }]
+    },
+    {
+        item: 107,
+        image: "9.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q107",
+            text: "How was Kristi able to compensate for her athletic limitations?",
+            scoringKey: "q107"
+        }]
+    },
+    
+    // Humpback whales passage
+    {
+        item: 108,
+        image: "10.jpeg",
+        type: "passage",
+        instruction: "Read the passage. Click 'Start Reading' when ready.",
+        questions: [{
+            id: "q108",
+            text: "What is the meaning of the word demise in this story?",
+            scoringKey: "q108"
+        }]
+    },
+    {
+        item: 109,
+        image: "10.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q109",
+            text: "In what two ways have people been the primary reason for the whales' demise?",
+            scoringKey: "q109"
+        }]
+    },
+    {
+        item: 110,
+        image: "10.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q110",
+            text: "Why is it important for us to know about the struggles of the humpback whales?",
+            scoringKey: "q110"
+        }]
+    },
+    {
+        item: 111,
+        image: "10.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q111",
+            text: "What two things might happen if a whale is caught in a fishing net?",
+            scoringKey: "q111"
+        }]
+    },
+    {
+        item: 112,
+        image: "10.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q112",
+            text: "According to current studies, what is likely to happen to the humpback whale in the future?",
+            scoringKey: "q112"
+        }]
+    },
+    
+    // Peach prices (read aloud)
+    {
+        item: 113,
+        image: "11.jpeg",
+        type: "read-aloud",
+        readAloud: true,
+        instruction: "Read this aloud.",
+        skipScoring: true
+    },
+    {
+        item: 114,
+        image: "11.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q114",
+            text: "What is the most likely reason for the changes in the peach prices during the year?",
+            scoringKey: "q114"
+        }]
+    },
+    
+    // Zoo admission passage
+    {
+        item: 115,
+        image: "12.jpeg",
+        type: "passage",
+        instruction: "Read the passage. Click 'Start Reading' when ready.",
+        questions: [{
+            id: "q115",
+            text: "If today's zoo admission is $4.00, what was zoo admission in January 1993?",
+            scoringKey: "q115"
+        }]
+    },
+    {
+        item: 116,
+        image: "12.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q116",
+            text: "What is the main reason Tom gives to support his position?",
+            scoringKey: "q116"
+        }]
+    },
+    {
+        item: 117,
+        image: "12.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q117",
+            text: "When he says 'take up the slack' in his sentence, what does Tom mean?",
+            scoringKey: "q117"
+        }]
+    },
+    {
+        item: 118,
+        image: "12.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q118",
+            text: "Tanisha uses the word 'acquisitions' in her letter. What does it mean?",
+            scoringKey: "q118"
+        }]
+    },
+    {
+        item: 119,
+        image: "12.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q119",
+            text: "According to Tanisha, what three things might happen if zoo prices are not raised?",
+            scoringKey: "q119"
+        }]
+    },
+    
+    // King passage (read aloud)
+    {
+        item: 120,
+        image: "13.jpeg",
+        type: "read-aloud",
+        readAloud: true,
+        instruction: "Read this aloud.",
+        skipScoring: true
+    },
+    {
+        item: 121,
+        image: "13.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q121",
+            text: "What has happened to the king?",
+            scoringKey: "q121"
+        }]
+    },
+    {
+        item: 122,
+        image: "13.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q122",
+            text: "What would you predict might happen as a result of the event described?",
+            scoringKey: "q122"
+        }]
+    },
+    
+    // Central Asiatic Expedition passage
+    {
+        item: 123,
+        image: "14.jpeg",
+        type: "passage",
+        instruction: "Read the passage. Click 'Start Reading' when ready.",
+        questions: [{
+            id: "q123",
+            text: "What was the first discovery of the Central Asiatic Expedition?",
+            scoringKey: "q123"
+        }]
+    },
+    {
+        item: 124,
+        image: "14.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q124",
+            text: "Tell three adventures Andrews had experienced before going to the Gobi desert.",
+            scoringKey: "q124"
+        }]
+    },
+    {
+        item: 125,
+        image: "14.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q125",
+            text: "Where did the scientists discover the dinosaur eggs?",
+            scoringKey: "q125"
+        }]
+    },
+    {
+        item: 126,
+        image: "14.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q126",
+            text: "How did Andrew's expedition alter scientific knowledge?",
+            scoringKey: "q126"
+        }]
+    },
+    {
+        item: 127,
+        image: "14.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q127",
+            text: "What is the meaning of the word brigands as used in the passage?",
+            scoringKey: "q127"
+        }]
+    },
+    
+    // Longevity (read aloud)
+    {
+        item: 128,
+        image: "15.jpeg",
+        type: "read-aloud",
+        readAloud: true,
+        instruction: "Read this aloud.",
+        skipScoring: true
+    },
+    {
+        item: 129,
+        image: "15.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q129",
+            text: "What is the meaning of the word longevity in this sentence?",
+            scoringKey: "q129"
+        }]
+    },
+    {
+        item: 130,
+        image: "15.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q130",
+            text: "Describe the trend reported in this sentence",
+            scoringKey: "q130"
+        }]
+    },
+    
+    // Life stages passage
+    {
+        item: 131,
+        image: "16.jpeg",
+        type: "passage",
+        instruction: "Read the passage. Click 'Start Reading' when ready.",
+        questions: [{
+            id: "q131",
+            text: "At what life stage is a person likely to begin a career?",
+            scoringKey: "q131"
+        }]
+    },
+    {
+        item: 132,
+        image: "16.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q132",
+            text: "What is the main theme of the 'Mid-life Rebirth' developmental tasks?",
+            scoringKey: "q132"
+        }]
+    },
+    {
+        item: 133,
+        image: "16.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q133",
+            text: "Although Rachel was recently promoted to manager of her office, she is questioning her choice of careers and regrets that she never pursued her dream of composing music. At the same time, she is reluctant to quit her job because she recently bought a new home. What developmental stage is Rachel probably in?",
+            scoringKey: "q133"
+        }]
+    },
+    {
+        item: 134,
+        image: "16.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q134",
+            text: "What might happen if a person did not accomplish the developmental tasks of the 'Breaking Loose' stage?",
+            scoringKey: "q134"
+        }]
+    },
+    {
+        item: 135,
+        image: "16.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q135",
+            text: "If the last life stage called 'Deepening Wisdom' were added to the chart, what would you predict two of the developmental tasks would be?",
+            scoringKey: "q135"
+        }]
+    },
+    
+    // The Rock passage
+    {
+        item: 136,
+        image: "17.jpeg",
+        type: "passage",
+        instruction: "Read the passage. Click 'Start Reading' when ready.",
+        questions: [{
+            id: "q136",
+            text: "What is the fissure as described in the passage?",
+            scoringKey: "q136"
+        }]
+    },
+    {
+        item: 137,
+        image: "17.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q137",
+            text: "What suddenly made this rock climb so difficult?",
+            scoringKey: "q137"
+        }]
+    },
+    {
+        item: 138,
+        image: "17.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q138",
+            text: "What was the most important thing the women had to overcome in order to scale the rock?",
+            scoringKey: "q138"
+        }]
+    },
+    {
+        item: 139,
+        image: "17.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q139",
+            text: "What kept the women from turning back when they saw the sheer surface of the rock?",
+            scoringKey: "q139"
+        }]
+    },
+    {
+        item: 140,
+        image: "17.jpeg",
+        type: "question",
+        skipReading: true,
+        questions: [{
+            id: "q140",
+            text: "Why did Angela refuse to look at Sherry as she approached the summit?",
+            scoringKey: "q140"
+        }]
+    }
 ];
 
 /* ===========================
@@ -1937,18 +1907,13 @@ function determineRecordingNeeds() {
 
 // FIXED: Single, clean function
 function checkWelcomeReady() {
-  console.log('Checking welcome ready...'); // DEBUG
   const hasPid = document.getElementById('pid').value.trim().length > 0;
   const hasEdu = !!document.getElementById('edu').value;
   const hasGroup = !!state.participantGroup;
   const hasModality = !!state.readModality;
   
-  console.log('Validation:', { hasPid, hasEdu, hasGroup, hasModality }); // DEBUG
-  
   const isReady = hasPid && hasEdu && hasGroup && hasModality;
   document.getElementById('begin').disabled = !isReady;
-
-  console.log('Button disabled:', !isReady); // DEBUG
 }
 
 // Bind welcome screen inputs so the Continue button can enable
@@ -2010,6 +1975,11 @@ function getReadAloudInstructions() {
    Google Apps Script Communication
    =========================== */
 async function sendToGoogle(action, data) {
+  // Skip if no URL configured to reduce console spam
+  if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
+    return { status: 'skipped' };
+  }
+  
   try {
     const payload = {
       action: action,
@@ -2019,7 +1989,10 @@ async function sendToGoogle(action, data) {
       timestamp: new Date().toISOString()
     };
     
-    console.log('Sending to Google:', action, payload);
+    // Remove verbose logging in production
+    if (window.location.hostname === 'localhost') {
+      console.log('Sending to Google:', action);
+    }
     
     const response = await fetch(GOOGLE_SCRIPT_URL, {
       method: 'POST',
@@ -2040,25 +2013,18 @@ async function sendToGoogle(action, data) {
   }
 }
 
-function updateConnectionStatus(connected) {
-  state.connectionStatus = connected;
-  const box = document.getElementById('connection-status');
-  const live = document.getElementById('connection-text');
-
-  box.classList.toggle('connected', connected);
-  box.classList.toggle('error', !connected);
-
-  live.setAttribute('role', connected ? 'status' : 'alert');
-  live.setAttribute('aria-live', connected ? 'polite' : 'assertive');
-  live.textContent = connected ? 'Connected' : 'Not connected';
-}
-
-
 /* ===========================
-   Recording Functions
+   Recording Functions - OPTIMIZED
    =========================== */
 async function setupVideoRecording() {
   try {
+      
+      
+       // Clean up any existing stream
+    if (state.stream) {
+      state.stream.getTracks().forEach(track => track.stop());
+    }
+    
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
       audio: false
@@ -2067,11 +2033,13 @@ async function setupVideoRecording() {
     const preview = document.getElementById('preview');
     preview.srcObject = stream;
 
-    const mime = pickMime('video');        // ← choose best supported
+    const mime = pickMime('video');
     state.recordMime = mime || 'video/webm';
     state.mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
     state.recordedChunks = [];
-    state.mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) state.recordedChunks.push(e.data); };
+    state.mediaRecorder.ondataavailable = (e) => { 
+      if (e.data.size > 0) state.recordedChunks.push(e.data); 
+    };
 
     document.getElementById('video-status').textContent = 'Camera ready. You can see yourself above.';
     return true;
@@ -2084,16 +2052,23 @@ async function setupVideoRecording() {
 
 async function setupAudioRecording() {
   try {
+    // Clean up any existing stream
+    if (state.stream) {
+      state.stream.getTracks().forEach(track => track.stop());
+    }
+    
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: true, noiseSuppression: true }
     });
     state.stream = stream;
 
-    const mime = pickMime('audio');        // ← choose best supported
+    const mime = pickMime('audio');
     state.recordMime = mime || 'audio/webm';
     state.mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
     state.recordedChunks = [];
-    state.mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) state.recordedChunks.push(e.data); };
+    state.mediaRecorder.ondataavailable = (e) => { 
+      if (e.data.size > 0) state.recordedChunks.push(e.data); 
+    };
 
     document.getElementById('audio-status').textContent = 'Microphone ready. Test your audio above.';
     return true;
@@ -2639,6 +2614,9 @@ async function startAssessment() {
 }
 
 async function finishAssessment() {
+  // Clean up resources first
+  cleanupResources();
+  
   showScreen('finish');
   
   const sessionData = {
@@ -2694,10 +2672,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Check configuration
   if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
     document.getElementById('config-warning').classList.remove('hidden');
-    // Still allow the study to proceed for testing
   }
   
-  // Setup recording based on selection
+  // FIXED: Setup button handler only once after DOM is ready
   document.getElementById('begin').addEventListener('click', async () => {
     const recordingType = determineRecordingNeeds();
     
@@ -2728,11 +2705,28 @@ window.addEventListener('DOMContentLoaded', async () => {
   });
 });
 
-// Test audio recording
+// Test audio recording - FIXED: Add timer cleanup
+let testTimerInterval = null;
+let testTimerSeconds = 0;
+
 document.getElementById('test-audio-record').addEventListener('click', () => {
   document.getElementById('test-audio-record').classList.add('hidden');
   document.getElementById('stop-test-audio').classList.remove('hidden');
-  document.getElementById('test-audio-timer').classList.remove('hidden');
+  const timerEl = document.getElementById('test-audio-timer');
+  timerEl.classList.remove('hidden');
+  
+  // Clear any existing timer
+  if (testTimerInterval) {
+    clearInterval(testTimerInterval);
+  }
+  
+  testTimerSeconds = 0;
+  testTimerInterval = setInterval(() => {
+    testTimerSeconds++;
+    const mins = Math.floor(testTimerSeconds / 60);
+    const secs = testTimerSeconds % 60;
+    timerEl.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }, 1000);
   
   startRecording();
   
@@ -2745,6 +2739,12 @@ document.getElementById('test-audio-record').addEventListener('click', () => {
 });
 
 document.getElementById('stop-test-audio').addEventListener('click', async () => {
+  // Clear test timer
+  if (testTimerInterval) {
+    clearInterval(testTimerInterval);
+    testTimerInterval = null;
+  }
+  
   const blob = await stopRecording();
   
   document.getElementById('test-audio-record').classList.remove('hidden');
@@ -2754,23 +2754,14 @@ document.getElementById('stop-test-audio').addEventListener('click', async () =>
   if (blob) {
     const url = URL.createObjectURL(blob);
     const audio = document.getElementById('test-audio-playback');
+    // Clean up old blob URL to prevent memory leak
+    if (audio.src && audio.src.startsWith('blob:')) {
+      URL.revokeObjectURL(audio.src);
+    }
     audio.src = url;
     audio.classList.remove('hidden');
     document.getElementById('audio-status').textContent = 'Test complete! Play back your recording above to verify quality.';
   }
-});
-
-// Reading controls
-document.getElementById('start-reading').addEventListener('click', () => {
-  startTimer();
-  document.getElementById('start-reading').classList.add('hidden');
-  document.getElementById('done-reading').classList.remove('hidden');
-});
-
-document.getElementById('done-reading').addEventListener('click', () => {
-  stopTimer();
-  const readingTime = state.readingStartTime ? Date.now() - state.readingStartTime : 0;
-  showQuestions(readingTime);
 });
 
 // Recording controls for items
@@ -2866,6 +2857,56 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// Add cleanup on page unload
+window.addEventListener('beforeunload', () => {
+  cleanupResources();
+});
+
+// FIXED: Add cleanupResources function
+function cleanupResources() {
+  // Stop all timers
+  if (state.timerInterval) {
+    clearInterval(state.timerInterval);
+    state.timerInterval = null;
+  }
+  if (state.recordingTimerInterval) {
+    clearInterval(state.recordingTimerInterval);
+    state.recordingTimerInterval = null;
+  }
+  if (typeof testTimerInterval !== 'undefined' && testTimerInterval) {
+    clearInterval(testTimerInterval);
+    testTimerInterval = null;
+  }
+  
+  // Stop media streams
+  if (state.stream) {
+    state.stream.getTracks().forEach(track => track.stop());
+    state.stream = null;
+  }
+  
+  // Clean up media recorder
+  if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
+    state.mediaRecorder.stop();
+  }
+  state.mediaRecorder = null;
+  state.recordedChunks = [];
+}
+
+// FIXED: Add updateConnectionStatus function
+function updateConnectionStatus(connected) {
+  const statusEl = document.getElementById('connection-status');
+  const textEl = document.getElementById('connection-text');
+  
+  if (connected) {
+    statusEl.className = 'connection-status connected';
+    textEl.textContent = 'Connected';
+  } else {
+    statusEl.className = 'connection-status error';
+    textEl.textContent = 'Connection error';
+  }
+  
+  state.connectionStatus = connected;
+}
 </script>
 </body>
 </html>
