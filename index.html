@@ -2801,12 +2801,138 @@ async function finishAssessment() {
   }
 }
 
+// Add cleanup function if it doesn't exist
+function cleanupResources() {
+  // Stop all timers
+  clearAllTimers();
+  
+  // Stop any active media streams
+  if (state.stream) {
+    state.stream.getTracks().forEach(track => track.stop());
+    state.stream = null;
+  }
+  
+  // Stop any active recording
+  if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
+    state.mediaRecorder.stop();
+  }
+}
+
 // Before-unload cleanup & “unsaved” prompt
 window.addEventListener('beforeunload', (e) => {
   try { cleanupResources(); } catch (_) {}
   if (state.results.length && !state.savedData) {
     e.preventDefault();
     e.returnValue = '';
+  }
+});
+
+// Add event listeners for buttons that might be missing
+document.addEventListener('DOMContentLoaded', () => {
+  // Start Study button
+  const startStudyBtn = document.getElementById('start-study');
+  if (startStudyBtn) {
+    startStudyBtn.addEventListener('click', startAssessment);
+  }
+  
+  // Start/Done Reading buttons
+  const startReadingBtn = document.getElementById('start-reading');
+  if (startReadingBtn) {
+    startReadingBtn.addEventListener('click', () => {
+      startTimer();
+      startReadingBtn.classList.add('hidden');
+      document.getElementById('done-reading').classList.remove('hidden');
+    });
+  }
+  
+  const doneReadingBtn = document.getElementById('done-reading');
+  if (doneReadingBtn) {
+    doneReadingBtn.addEventListener('click', () => {
+      stopTimer();
+      const readingTime = Date.now() - state.readingStartTime;
+      showQuestions(readingTime);
+    });
+  }
+  
+  // Recording buttons
+  const startRecordingBtn = document.getElementById('start-recording');
+  if (startRecordingBtn) {
+    startRecordingBtn.addEventListener('click', startRecording);
+  }
+  
+  const stopRecordingBtn = document.getElementById('stop-recording');
+  if (stopRecordingBtn) {
+    stopRecordingBtn.addEventListener('click', stopRecording);
+  }
+  
+  // Form submission
+  const qaForm = document.getElementById('qa-form');
+  if (qaForm) {
+    qaForm.addEventListener('submit', submitAnswers);
+  }
+  
+  // Skip button
+  const skipBtn = document.getElementById('skip');
+  if (skipBtn) {
+    skipBtn.addEventListener('click', () => {
+      // Send skip event to Google Apps Script
+      sendEventSafely('item_skipped', {
+        itemNumber: state.sequence[state.currentIndex].item,
+        imageFile: state.sequence[state.currentIndex].image,
+        questionText: state.sequence[state.currentIndex].questions?.[0]?.text || '',
+        itemType: state.sequence[state.currentIndex].type,
+        reason: 'User choice',
+        consecutiveZeros: state.consecutiveZeros + 1
+      });
+      
+      state.consecutiveZeros++;
+      state.currentIndex++;
+      showItem();
+    });
+  }
+  
+  // Retry upload button
+  const retryBtn = document.getElementById('retry-upload');
+  if (retryBtn) {
+    retryBtn.addEventListener('click', async () => {
+      retryBtn.disabled = true;
+      document.getElementById('upload-progress').textContent = 'Retrying upload...';
+      
+      const ok = await sendEventSafely('session_completed', state.savedData);
+      
+      if (ok) {
+        document.getElementById('upload-status').className = 'status-box success';
+        document.getElementById('upload-progress').textContent = 'Results uploaded successfully!';
+        retryBtn.classList.add('hidden');
+      } else {
+        document.getElementById('upload-progress').textContent = 'Upload failed again. Please download backup.';
+        retryBtn.disabled = false;
+      }
+    });
+  }
+  
+  // Download backup button
+  const downloadBtn = document.getElementById('download-backup');
+  if (downloadBtn) {
+    downloadBtn.addEventListener('click', () => {
+      const dataStr = JSON.stringify(state.savedData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `wiat2_${state.pid}_${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+  }
+  
+  // Audio test setup
+  const testAudioBtn = document.getElementById('test-audio-record');
+  const stopTestBtn = document.getElementById('stop-test-audio');
+  if (testAudioBtn && stopTestBtn) {
+    setupAudioTest(testAudioBtn, stopTestBtn);
   }
 });
 
