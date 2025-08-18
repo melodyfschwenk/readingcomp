@@ -2579,16 +2579,27 @@ async function submitAnswers(e) {
     state.consecutiveZeros = 0;
   }
   
-  // Try to send to Google, but don't block on failure
+  // Prepare data for Google Apps Script
+  const gasData = {
+    itemNumber: trial.item,
+    imageFile: trial.image,
+    questionText: trial.questions ? trial.questions[0].text : '',
+    itemType: trial.type,
+    response: Object.values(itemResult.responses).join(' | '),
+    explanation: '',
+    autoScore: itemScore,
+    scoreConfidence: itemScore > 0 ? 'High' : 'Low',
+    needsReview: itemScore === 0 && response.length > 10,
+    scoringNotes: `Auto-scored: ${itemScore}`,
+    finalScore: itemScore,
+    duration: Math.round((Date.now() - state.itemStartTime) / 1000),
+    endTime: new Date().toISOString(),
+    consecutiveZeros: state.consecutiveZeros
+  };
+  
+  // Try to send to Google
   try {
-    await sendEventSafely('item_completed', {
-      sessionId: SESSION_ID,
-      pid: state.pid,
-      edu: state.edu,
-      participantGroup: state.participantGroup,
-      readModality: state.readModality,
-      ...itemResult
-    });
+    await sendEventSafely('item_completed', gasData);
     updateConnectionStatus(true);
   } catch (error) {
     console.warn('Failed to send item to Google, continuing locally:', error);
@@ -2725,14 +2736,16 @@ async function startAssessment() {
   state.sessionStartTime = Date.now();
   buildSequence();
 
-  // Send session start (Google-first, then backup if slow/fails)
+  // Send session start with correct field names for GAS
   await sendEventSafely('session_started', {
-    sessionId: SESSION_ID,
-    pid: state.pid,
-    edu: state.edu,
+    education: state.edu, // GAS expects 'education'
     participantGroup: state.participantGroup,
     readModality: state.readModality,
-    totalItems: state.sequence.length
+    totalItems: state.sequence.length,
+    adminMode: state.adminMode,
+    hasRecording: state.useVideoRecording || state.useAudioRecording,
+    userAgent: navigator.userAgent,
+    ipAddress: '' // Will be filled by GAS if needed
   });
 
   state.currentIndex = 0;
@@ -2747,14 +2760,17 @@ async function finishAssessment() {
   
   const sessionData = {
     pid: state.pid,
-    edu: state.edu,
+    education: state.edu, // Will be mapped to 'education' in sendEventSafely
     participantGroup: state.participantGroup,
     readModality: state.readModality,
     sessionStartTime: state.sessionStartTime,
     sessionEndTime: Date.now(),
+    duration: Math.round((Date.now() - state.sessionStartTime) / 60000),
     totalPoints: state.totalPoints,
     itemsCompleted: state.results.length,
     consecutiveZeros: state.consecutiveZeros,
+    discontinued: state.consecutiveZeros >= DISCONTINUE_AFTER_ZEROS,
+    gateItemsFailed: state.gateItemsFailed.join(', '),
     results: state.results
   };
   
@@ -2853,40 +2869,90 @@ function updateConnectionStatus(connected) {
 
 // Try Google first, then backup, then give up (return false)
 async function sendEventSafely(kind, payload) {
-  // If payload is FormData we're doing a media upload
-  const isForm = (typeof FormData !== 'undefined') && (payload instanceof FormData);
-
-  // Attach some light metadata for server-side dedupe
-  if (!isForm) {
-    payload = { kind, sessionId: SESSION_ID, ...payload };
-  } else {
-    payload.append('kind', kind);
-    payload.append('sessionId', SESSION_ID);
+  // Map frontend events to Google Apps Script actions
+  const actionMap = {
+    'session_started': 'session_start',
+    'item_started': 'item_started',
+    'item_completed': 'item_completed',
+    'session_completed': 'session_complete',
+    'media_upload': 'video_upload'
+  };
+  
+  // Prepare payload for Google Apps Script
+  const gasPayload = {
+    action: actionMap[kind] || kind,
+    sessionId: SESSION_ID,
+    pid: state.pid,
+    education: state.edu, // Note: GAS expects 'education' not 'edu'
+    timestamp: new Date().toISOString(),
+    ...payload
+  };
+  
+  // Remove duplicate fields
+  delete gasPayload.kind;
+  delete gasPayload.edu;
+  
+  // Special handling for media uploads
+  if (kind === 'media_upload' && payload instanceof FormData) {
+    // Convert FormData to base64 for Google Apps Script
+    try {
+      const mediaBlob = payload.get('media');
+      if (mediaBlob) {
+        const arrayBuffer = await mediaBlob.arrayBuffer();
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+        
+        gasPayload.videoData = base64;
+        gasPayload.itemNumber = payload.get('itemNumber');
+        gasPayload.sessionDate = new Date().toISOString().split('T')[0];
+      }
+    } catch (err) {
+      console.error('Failed to convert media to base64:', err);
+      return false;
+    }
   }
 
-  // FIXED: Add detailed error logging
   console.log(`Attempting to send ${kind} to server...`);
   
   try {
-    const result = await postWithTimeout(GOOGLE_SCRIPT_URL, payload, GOOGLE_TIMEOUT_MS, isForm);
-    console.log(`Successfully sent ${kind} to Google Apps Script`, result);
+    // Google Apps Script expects POST with JSON body
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors', // GAS doesn't support CORS
+      headers: {
+        'Content-Type': 'text/plain' // GAS prefers text/plain for CORS workaround
+      },
+      body: JSON.stringify(gasPayload)
+    });
+    
+    console.log(`Successfully sent ${kind} to Google Apps Script`);
     updateConnectionStatus(true);
     return true;
   } catch (error) {
     console.error(`Failed to send to Google Apps Script:`, error);
-    console.log(`Attempting backup endpoint...`);
     
-    // Try backup
-    try {
-      const result = await postWithTimeout(GITHUB_BACKUP_URL, payload, BACKUP_TIMEOUT_MS, isForm);
-      console.log(`Successfully sent ${kind} to backup endpoint`, result);
-      updateConnectionStatus(true);
-      return true;
-    } catch (e2) {
-      console.error(`Failed to send to backup endpoint:`, e2);
-      updateConnectionStatus(false);
-      return false;
+    // Try backup endpoint if available
+    if (GITHUB_BACKUP_URL && GITHUB_BACKUP_URL !== 'https://readingcomp-f3ii59o6j-melodys-projects-8b5cbe18.vercel.app/') {
+      console.log(`Attempting backup endpoint...`);
+      try {
+        const backupResponse = await fetch(GITHUB_BACKUP_URL, {
+          method: 'POST',
+          mode: 'cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        if (backupResponse.ok) {
+          console.log(`Successfully sent ${kind} to backup endpoint`);
+          updateConnectionStatus(true);
+          return true;
+        }
+      } catch (e2) {
+        console.error(`Failed to send to backup endpoint:`, e2);
+      }
     }
+    
+    updateConnectionStatus(false);
+    return false;
   }
 }
 
