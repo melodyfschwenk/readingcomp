@@ -1948,9 +1948,46 @@ function checkWelcomeReady() {
   
   const isReady = hasPid && hasEdu && hasGroup && hasModality;
   document.getElementById('begin').disabled = !isReady;
-  
+
   console.log('Button disabled:', !isReady); // DEBUG
 }
+
+// Bind welcome screen inputs so the Continue button can enable
+document.getElementById('pid').addEventListener('input', (e) => {
+  state.pid = e.target.value.trim();
+  checkWelcomeReady();
+});
+
+document.getElementById('edu').addEventListener('change', (e) => {
+  state.edu = e.target.value;
+  checkWelcomeReady();
+});
+
+document.querySelectorAll('input[name="participant-group"]').forEach((radio) => {
+  radio.addEventListener('change', (e) => {
+    state.participantGroup = e.target.value;
+    // Reveal modality options and deaf note if applicable
+    document.getElementById('modality-selection').classList.remove('hidden');
+    const deafNote = document.getElementById('deaf-note');
+    if (e.target.value.startsWith('deaf')) deafNote.classList.remove('hidden');
+    else deafNote.classList.add('hidden');
+    checkWelcomeReady();
+  });
+});
+
+document.querySelectorAll('input[name="read-modality"]').forEach((radio) => {
+  radio.addEventListener('change', (e) => {
+    state.readModality = e.target.value;
+    checkWelcomeReady();
+  });
+});
+
+// Move from welcome to setup once all fields are ready
+document.getElementById('begin').addEventListener('click', () => {
+  if (document.getElementById('begin').disabled) return;
+  document.getElementById('screen-welcome').classList.add('hidden');
+  document.getElementById('screen-setup').classList.remove('hidden');
+});
 
 function getReadAloudInstructions() {
   const modality = state.readModality;
