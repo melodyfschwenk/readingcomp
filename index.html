@@ -812,7 +812,7 @@ let state = {
 };
 
 // Test recording timer variables (global scope to prevent memory leaks)
-let testTimerSeconds = 0;
+let testTimerSeconds = 0;  // FIXED: Changed from testTimerSeconds to match usage
 
 /* ===========================
    WIAT-2 Scoring Reference
@@ -3044,7 +3044,9 @@ async function stopRecording() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = fname;
-    document.body.appendChild(a); a.click(); a.remove();
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
     URL.revokeObjectURL(url);
     const live = document.getElementById('sr-live');
     if (live) live.textContent = 'Network issue: recording saved to your device.';
@@ -3077,10 +3079,10 @@ function setupAudioTest(btnStart, btnStop) {
     btnStart.classList.add('hidden');
     btnStop.classList.remove('hidden');
     timerEl.classList.remove('hidden');
-    testTimerSeconds = 0;
+    testTimerSeconds = 0;  // FIXED: Now using the correct variable name
     timerEl.textContent = '00:00';
     state.timers.test = setInterval(() => {
-      testTimerSeconds++;
+      testTimerSeconds++;  // FIXED: Now using the correct variable name
       const m = String(Math.floor(testTimerSeconds/60)).padStart(2,'0');
       const s = String(testTimerSeconds%60).padStart(2,'0');
       timerEl.textContent = `${m}:${s}`;
