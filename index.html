@@ -1,597 +1,2871 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spatial Navigation Task</title>
-    <script src="stimulus_mappings.js"></script>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-            background: white;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        
-        #experiment-container {
-            width: 100%;
-            max-width: 800px;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background: white;
-        }
-        
-        #instruction-screen, #stimulus-screen, #feedback-screen, #data-entry-screen {
-            display: none;
-            text-align: center;
-            padding: 20px;
-        }
-        
-        #instruction-screen.active, #stimulus-screen.active, 
-        #feedback-screen.active, #data-entry-screen.active {
-            display: block;
-        }
-        
-        #stimulus-image {
-            max-width: 500px;
-            max-height: 500px;
-            border: 2px solid #ddd;
-        }
-        
-        .instruction-text {
-            font-size: 18px;
-            line-height: 1.5;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        
-        .button {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 16px;
-            cursor: pointer;
-            margin: 10px;
-            border-radius: 4px;
-        }
-        
-        .button:hover {
-            background: #45a049;
-        }
-        
-        .fixation {
-            font-size: 48px;
-            font-weight: bold;
-            color: #333;
-        }
-        
-        .progress {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            font-size: 14px;
-            color: #666;
-        }
-        
-        .nav-type-header {
-            padding: 10px 20px;
-            margin: 20px 0;
-            font-weight: bold;
-            color: white;
-            font-size: 20px;
-        }
-        
-        .egocentric-header {
-            background: #4CAF50;
-        }
-        
-        .allocentric-header {
-            background: #9C27B0;
-        }
-        
-        .control-header {
-            background: #FF9800;
-        }
-        
-        input[type="text"], input[type="number"], select {
-            padding: 8px;
-            margin: 5px;
-            font-size: 16px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        
-        .form-group {
-            margin: 15px 0;
-        }
-        
-        .form-group label {
-            display: inline-block;
-            width: 150px;
-            text-align: right;
-            margin-right: 10px;
-        }
-        
-        #download-data {
-            display: none;
-            background: #2196F3;
-        }
-        
-        #download-data:hover {
-            background: #1976D2;
-        }
-    </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WIAT-2 Reading Comprehension Study</title>
+<style>
+  body { 
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; 
+    margin: 0; 
+    background: #f8f9fa; 
+    color: #212529; 
+  }
+  .wrap { 
+    max-width: 900px; 
+    margin: 0 auto; /* FIXED: Center content */
+    padding: 20px; 
+  }
+  .card { 
+    background: #fff; 
+    border: 1px solid #dee2e6; 
+    border-radius: 4px; 
+    padding: 20px; 
+    margin: 12px 0; 
+  }
+  h1 { 
+    font-size: 1.5rem; 
+    margin: 0 0 12px; 
+    font-weight: 400; 
+  }
+  h2 { 
+    font-size: 1.25rem; 
+    margin: 0 0 12px; 
+    font-weight: 400; 
+  }
+  .row { 
+    display: flex; 
+    gap: 12px; 
+    flex-wrap: wrap; 
+    margin: 12px 0; 
+  }
+  .row > * { 
+    flex: 1 1 auto; 
+    min-width: 200px; 
+  }
+  label { 
+    display: block; 
+    margin: 8px 0 4px; 
+    font-size: 14px; 
+  }
+  input[type="text"], textarea, select { 
+    width: 100%; 
+    border: 1px solid #ced4da; 
+    border-radius: 3px; 
+    padding: 6px 8px; 
+    font-size: 14px; 
+    box-sizing: border-box; /* FIXED: Prevent overflow */
+  }
+  textarea { 
+    min-height: 70px; 
+    resize: vertical; 
+    font-family: inherit; 
+  }
+  button { 
+    padding: 8px 16px; 
+    border-radius: 3px; 
+    border: 1px solid #6c757d; 
+    background: #6c757d; 
+    color: #fff; 
+    cursor: pointer; 
+    font-size: 14px; 
+    /* FIXED: Better touch targets */
+    min-height: 44px;
+    min-width: 44px;
+  }
+  button:hover { 
+    background: #5a6268; 
+  }
+  button.primary { 
+    background: #0d6efd; 
+    border-color: #0d6efd; 
+  }
+  button.primary:hover { 
+    background: #0b5ed7; 
+  }
+  button.danger {
+    background: #dc3545;
+    border-color: #dc3545;
+  }
+  button.danger:hover {
+    background: #c82333;
+  }
+  button:disabled { 
+    opacity: 0.6; 
+    cursor: not-allowed; 
+  }
+  .hidden { 
+    display: none !important; 
+  }
+  .muted { 
+    color: #6c757d; 
+    font-size: 13px; 
+    margin: 8px 0; 
+  }
+  .center { 
+    text-align: center; 
+  }
+  img.stim { 
+    max-width: 100%; 
+    height: auto; 
+    border: 1px solid #dee2e6; 
+    display: block; 
+    margin: 12px auto; 
+  }
+  .q-block { 
+    margin: 12px 0; 
+    padding: 8px; 
+    background: #f8f9fa; 
+    border-left: 3px solid #dee2e6; 
+  }
+  .explain-field { 
+    margin-top: 8px; 
+    padding: 8px; 
+    background: #fff3cd; 
+    border-left: 3px solid #ffc107; 
+  }
+
+/* Recording indicator */
+.recording-indicator {
+position: fixed;
+top: 20px;
+right: 20px;
+padding: 8px 12px;
+background: #dc3545;
+color: #fff;
+border-radius: 4px;
+display: flex;
+align-items: center;
+gap: 8px;
+font-size: 13px;
+box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+.recording-dot {
+width: 8px;
+height: 8px;
+background: #fff;
+border-radius: 50%;
+animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+0%, 100% { opacity: 1; }
+50% { opacity: 0.3; }
+}
+
+/* Screen-reader only utility */
+.sr-only {
+position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+}
+
+/* Timer display */
+.timer-display {
+font-family: monospace;
+font-size: 18px;
+color: #495057;
+background: #f8f9fa;
+padding: 4px 8px;
+border-radius: 3px;
+display: inline-block;
+}
+
+/* Progress bar */
+.progress-bar {
+height: 3px;
+background: #e9ecef;
+margin: 20px 0;
+border-radius: 3px;
+overflow: hidden;
+}
+.progress-fill {
+height: 100%;
+background: #0d6efd;
+transition: width 0.3s ease;
+}
+
+/* Item display */
+.item-header {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 12px;
+padding-bottom: 8px;
+border-bottom: 1px solid #e9ecef;
+}
+.item-info {
+font-size: 13px;
+color: #6c757d;
+}
+
+/* Admin panel */
+.admin-panel {
+position: fixed;
+bottom: 10px;
+right: 10px;
+background: rgba(255,255,255,0.95);
+border: 1px solid #dee2e6;
+border-radius: 4px;
+padding: 8px;
+font-size: 11px;
+color: #6c757d;
+display: none;
+}
+.admin-mode .admin-panel {
+display: block;
+}
+
+/* Upload status */
+.status-box {
+padding: 12px;
+background: #f8f9fa;
+border-radius: 4px;
+border-left: 3px solid #0d6efd;
+margin: 12px 0;
+}
+.status-box.success {
+border-left-color: #28a745;
+background: #d4edda;
+}
+.status-box.error {
+border-left-color: #dc3545;
+background: #f8d7da;
+}
+.status-box.warning {
+border-left-color: #ffc107;
+background: #fff3cd;
+}
+.status-message {
+font-size: 14px;
+color: #495057;
+}
+.success .status-message {
+color: #155724;
+}
+.error .status-message {
+color: #721c24;
+}
+.warning .status-message {
+color: #856404;
+}
+
+/* Participant group info */
+.group-info {
+background: #e9ecef;
+padding: 15px;
+border-radius: 4px;
+margin: 15px 0;
+}
+.group-info h3 {
+font-size: 14px;
+margin: 0 0 10px;
+font-weight: 600;
+}
+.radio-group {
+margin: 10px 0;
+}
+.radio-group label {
+display: flex;
+align-items: center;
+margin: 8px 0;
+cursor: pointer;
+/* FIXED: Better touch targets */
+min-height: 44px;
+padding: 8px;
+border-radius: 4px;
+background: rgba(255,255,255,0.5);
+}
+.radio-group label:hover {
+background: rgba(255,255,255,0.8);
+}
+.radio-group input[type=“radio”] {
+width: auto;
+margin-right: 10px;
+/* FIXED: Larger touch target */
+transform: scale(1.5);
+}
+
+/* Recording setup info */
+.recording-info {
+background: #f8f9fa;
+padding: 12px;
+border-radius: 4px;
+margin: 15px 0;
+border: 1px solid #dee2e6;
+}
+.recording-info.video {
+border-color: #0d6efd;
+background: #e7f3ff;
+}
+.recording-info.audio {
+border-color: #28a745;
+background: #e6f4ea;
+}
+
+/* Recording controls */
+.recording-controls {
+display: flex;
+gap: 10px;
+align-items: center;
+justify-content: center;
+margin: 20px 0;
+}
+.recording-timer {
+font-family: monospace;
+font-size: 18px;
+color: #dc3545;
+padding: 4px 8px;
+background: #f8f9fa;
+border-radius: 3px;
+}
+
+/* Connection status */
+.connection-status {
+position: fixed;
+bottom: 10px;
+left: 10px;
+padding: 5px 10px;
+background: #fff;
+border: 1px solid #dee2e6;
+border-radius: 3px;
+font-size: 11px;
+}
+.connection-status.connected {
+border-color: #28a745;
+color: #28a745;
+}
+.connection-status.error {
+border-color: #dc3545;
+color: #dc3545;
+}
+
+/* Video preview */
+.video-preview-wrapper {
+text-align: center;
+margin: 20px 0;
+}
+.video-preview {
+width: 100%;
+max-width: 480px;
+height: auto;
+background: #000;
+border: 2px solid #dee2e6;
+border-radius: 4px;
+}
+
+/* Read aloud instructions */
+.read-aloud-box {
+background: #fff3cd;
+border: 1px solid #ffc107;
+border-radius: 4px;
+padding: 15px;
+margin: 15px 0;
+}
+.read-aloud-box h4 {
+margin: 0 0 10px;
+font-size: 14px;
+color: #856404;
+}
+
+/* Modality selection */
+.modality-selection {
+background: #f8f9fa;
+padding: 15px;
+border-radius: 4px;
+margin: 15px 0;
+}
+
+/* Accessibility note for deaf participants */
+.accessibility-note {
+background: #e7f3ff;
+border: 1px solid #0d6efd;
+border-radius: 4px;
+padding: 10px;
+margin: 10px 0;
+font-size: 13px;
+}
+.tip-box{
+background:#eef7ff;
+border:1px solid #cfe2ff;
+border-radius:4px;
+padding:12px;
+margin:12px 0;
+font-size:14px;
+}
+.tip-box ul{ margin:8px 0 0 18px; }
+.kbd{
+border:1px solid #ced4da; border-bottom-width:2px;
+padding:2px 6px; border-radius:3px; font-family:monospace; font-size:12px;
+}
+.comfort-options{
+background:#f8f9fa; border:1px solid #e9ecef; border-radius:4px; padding:12px; margin:12px 0;
+}
+.video-preview.hidden-selfview{ visibility:hidden; }
+
+/* FIXED: Better mobile support */
+@media (max-width: 480px) {
+body {
+font-size: 16px;
+}
+.wrap {
+padding: 10px; /* Reduce padding on mobile */
+}
+.row {
+flex-direction: column;
+gap: 6px;
+}
+.row > * {
+min-width: 0; /* Allow full width on mobile */
+}
+button {
+font-size: 16px;
+padding: 12px 16px;
+width: 100%; /* Full width buttons on mobile */
+margin: 5px 0;
+}
+.video-preview {
+max-width: 100%;
+height: auto;
+}
+.recording-indicator {
+bottom: 8px;
+right: 8px;
+top: auto;
+}
+.connection-status {
+display: none;
+}
+.radio-group label {
+/* Ensure radio labels are easy to tap */
+padding: 12px;
+margin: 4px 0;
+}
+.radio-group input[type=“radio”] {
+/* Even larger on mobile */
+transform: scale(2);
+margin-right: 15px;
+}
+/* Prevent zooming on input focus */
+input, select, textarea {
+font-size: 16px !important;
+}
+}
+
+/* FIXED: Prevent horizontal scroll */
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  overflow-x: hidden;
+}
+
+</style>
 </head>
 <body>
-    <div id="experiment-container">
-        <div class="progress" id="progress"></div>
-        
-        <!-- Data Entry Screen -->
-        <div id="data-entry-screen" class="active">
-            <h2>Spatial Navigation Task</h2>
-            <div class="form-group">
-                <label>Participant ID:</label>
-                <input type="text" id="participant-id" placeholder="Enter ID">
-            </div>
-            <div class="form-group">
-                <label>Age:</label>
-                <input type="number" id="age" min="18" max="100">
-            </div>
-            <div class="form-group">
-                <label>Gender:</label>
-                <select id="gender">
-                    <option value="">Select...</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="non-binary">Non-binary</option>
-                    <option value="prefer-not">Prefer not to say</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Handedness:</label>
-                <select id="handedness">
-                    <option value="">Select...</option>
-                    <option value="right">Right</option>
-                    <option value="left">Left</option>
-                    <option value="ambidextrous">Ambidextrous</option>
-                </select>
-            </div>
-            <button class="button" onclick="startExperiment()">Start Experiment</button>
-        </div>
-        
-        <!-- Instruction Screen -->
-        <div id="instruction-screen">
-            <div id="nav-type-indicator"></div>
-            <div class="instruction-text" id="instruction-text"></div>
-            <button class="button" onclick="startBlock()">Continue</button>
-        </div>
-        
-        <!-- Stimulus Screen -->
-        <div id="stimulus-screen">
-            <img id="stimulus-image" src="" alt="Stimulus">
-            <div class="fixation" id="fixation" style="display:none;">+</div>
-        </div>
-        
-        <!-- Feedback Screen -->
-        <div id="feedback-screen">
-            <div id="feedback-text" style="font-size: 24px; margin: 20px;"></div>
-            <button class="button" id="continue-button" onclick="nextTrial()">Continue</button>
-            <button class="button" id="download-data" onclick="downloadData()">Download Data</button>
-        </div>
+<div class="wrap">
+  <div id="sr-live" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+
+  <!-- Welcome Screen -->
+
+  <div id="screen-welcome" class="card">
+    <h1>WIAT-2 Reading Comprehension Study</h1>
+    <p class="muted">Please enter your information to begin.</p>
+
+```
+<div class="row">
+  <div>
+    <label for="pid">Participant Code</label>
+    <input id="pid" type="text" placeholder="Enter initials" required />
+  </div>
+  <div>
+    <label for="edu">Education Level</label>
+    <select id="edu" required>
+      <option value="">Select...</option>
+      <option value="9">Grade 9</option>
+      <option value="10">Grade 10</option>
+      <option value="11">Grade 11</option>
+      <option value="12">Grade 12</option>
+      <option value="13+">College or higher</option>
+    </select>
+  </div>
+</div>
+
+<div class="group-info">
+  <h3>Participant Group</h3>
+  <div class="radio-group">
+    <label>
+      <input type="radio" name="participant-group" value="deaf-fluent" />
+      <span>Deaf - Fluent ASL signer</span>
+    </label>
+    <label>
+      <input type="radio" name="participant-group" value="hearing-fluent" />
+      <span>Hearing - Fluent ASL signer</span>
+    </label>
+    <label>
+      <input type="radio" name="participant-group" value="deaf-nonfluent" />
+      <span>Deaf - Non-fluent ASL signer</span>
+    </label>
+    <label>
+      <input type="radio" name="participant-group" value="hearing-nonfluent" />
+      <span>Hearing - Non-fluent ASL signer</span>
+    </label>
+    <label>
+      <input type="radio" name="participant-group" value="hearing-nonsigner" />
+      <span>Hearing - Non-signer</span>
+    </label>
+  </div>
+</div>
+
+<div id="modality-selection" class="modality-selection hidden">
+  <h3 style="font-size: 14px; margin: 0 0 10px;">Communication Preference for "Read Aloud" Items</h3>
+  <p class="muted" style="margin: 0 0 10px;">How would you prefer to "read aloud"?</p>
+  <div id="deaf-note" class="accessibility-note hidden">
+    <strong>Note for deaf participants:</strong> You may choose to sign in ASL (video recording) or use spoken language (audio recording) based on your preference and comfort level.
+  </div>
+  <div class="radio-group">
+    <label>
+      <input type="radio" name="read-modality" value="sign" />
+      <span>Sign (ASL) - Video recording</span>
+    </label>
+    <label>
+      <input type="radio" name="read-modality" value="speak" />
+      <span>Speak - Audio recording</span>
+    </label>
+  </div>
+</div>
+```
+
+<div id="config-warning" class="status-box error hidden" role="alert" aria-live="assertive" aria-atomic="true">
+  <div class="status-message">
+    <strong>Setup Required:</strong> Google Drive integration not configured. 
+    Please update GOOGLE_SCRIPT_URL in the code.
+  </div>
+</div>
+
+```
+<div style="margin-top: 20px;">
+  <button id="begin" class="primary" disabled>Continue to Setup</button>
+</div>
+```
+
+  </div>
+
+  <!-- Setup Screen -->
+
+  <div id="screen-setup" class="card hidden">
+    <h2>Recording Setup</h2>
+
+```
+<div id="recording-method-info" class="recording-info">
+  <div class="status-message" id="recording-method-text" role="status" aria-live="polite" aria-atomic="true">
+```
+
+Setting up recording…
+
+</div>
+    </div>
+    <div class="comfort-options">
+  <label style="display:flex;align-items:center;gap:8px;">
+    <input type="checkbox" id="pref-hide-timer" />
+    <span>Hide the reading timer during passages</span>
+  </label>
+  <label id="pref-hide-selfview" class="hidden" style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+    <input type="checkbox" id="toggle-selfview" />
+    <span>Hide my camera preview during recording</span>
+  </label>
+  <p class="muted" style="margin:8px 0 0;">You can change these anytime.</p>
+</div>
+
+```
+<div id="video-setup" class="hidden">
+  <p class="muted">For ASL "read aloud" items, we need to set up video recording.</p>
+  <div class="video-preview-wrapper">
+    <video id="preview" class="video-preview" autoplay muted playsinline></video>
+  </div>
+  <p id="video-status" class="muted center" role="status" aria-live="polite" aria-atomic="true">Requesting camera access...</p>
+
+</div>
+
+<div id="audio-setup" class="hidden">
+  <p class="muted">For spoken "read aloud" items, we need to set up audio recording.</p>
+  <div class="recording-controls">
+    <button id="test-audio-record" class="danger">Test Audio Recording</button>
+    <button id="stop-test-audio" class="hidden">Stop Test</button>
+    <span class="recording-timer hidden" id="test-audio-timer">00:00</span>
+  </div>
+  <audio id="test-audio-playback" controls class="hidden" style="width: 100%; max-width: 400px; margin: 10px auto; display: block;"></audio>
+  <p id="audio-status" class="muted center" role="status" aria-live="polite" aria-atomic="true">Click "Test Audio Recording" to verify your microphone is working.</p>
+</div>
+
+<div id="setup-status" class="status-box" style="margin-top: 20px;">
+```
+
+<div class="status-message" id="setup-status-text" role="status" aria-live="polite" aria-atomic="true">Initializing...</div>
     </div>
 
-    <script>
-        // Experiment configuration
-        const config = {
-            trialsPerBlock: 15,
-            maxResponseTime: 3000, // ms
-            feedbackDuration: 500, // ms
-            fixationDuration: 800, // ms
-            practiceTrials: 4,
-            blocks: [] // Will be populated based on counterbalancing
-        };
+```
+<div style="margin-top: 20px; text-align: center;">
+  <button id="start-study" class="primary" disabled>Start Assessment</button>
+</div>
+```
 
-        // Experiment state
-        let state = {
-            participantInfo: {},
-            currentBlock: 0,
-            currentTrial: 0,
-            blockData: [],
-            allData: [],
-            trialStartTime: null,
-            stimulusOnsetTime: null,
-            isPractice: false
-        };
+  </div>
 
-        
+  <!-- Item Screen -->
 
-        // Load stimulus mapping from CSV
-        async function loadStimulusMapping() {
-            // In a real implementation, you would load your CSV file here
-            // For now, using placeholder data structure
-            // You'll need to implement CSV parsing or convert to JSON
-            
-            // Example structure:
-            for (let i = 1; i <= 26; i++) {
-                stimulusMapping.easy.push({
-                    id: `easy_${i}`,
-                    file: `stimuli/${i}.png`,
-                    egocentric_correct: ['up', 'down', 'left', 'right'][Math.floor(Math.random() * 4)],
-                    allocentric_correct: ['up', 'down', 'left', 'right'][Math.floor(Math.random() * 4)]
-                });
-            }
-            for (let i = 27; i <= 52; i++) {
-                stimulusMapping.hard.push({
-                    id: `hard_${i}`,
-                    file: `stimuli/${i}.png`,
-                    egocentric_correct: ['up', 'down', 'left', 'right'][Math.floor(Math.random() * 4)],
-                    allocentric_correct: ['up', 'down', 'left', 'right'][Math.floor(Math.random() * 4)]
-                });
-            }
-            for (let i = 53; i <= 78; i++) {
-                stimulusMapping.control.push({
-                    id: `control_${i}`,
-                    file: `stimuli/${i}.png`,
-                    egocentric_correct: ['up', 'down', 'left', 'right'][Math.floor(Math.random() * 4)],
-                    allocentric_correct: ['up', 'down', 'left', 'right'][Math.floor(Math.random() * 4)]
-                });
-            }
+  <div id="screen-item" class="card hidden">
+    <div class="recording-indicator hidden" id="rec-indicator">
+      <span class="recording-dot"></span>
+      <span id="rec-type">Recording</span>
+    </div>
+
+```
+<div class="progress-bar">
+  <div class="progress-fill" id="progress" style="width: 0%"></div>
+</div>
+
+<div class="item-header">
+  <div class="item-info">
+    <span id="item-number"></span> | Item <span id="actual-item-number"></span>
+  </div>
+  <div id="timer-container" class="hidden">
+    <span class="timer-display" id="timer">00:00</span>
+  </div>
+</div>
+
+<div id="stim-container" class="center">
+  <img id="stim" class="stim" alt="Reading material" />
+</div>
+
+<div id="instructions" class="muted center" style="margin: 16px 0;">
+  <span id="instruction-text"></span>
+</div>
+
+<!-- Read Aloud Instructions Box -->
+<div id="read-aloud-instructions" class="read-aloud-box hidden">
+  <h4 id="read-aloud-title">Read Aloud Instructions</h4>
+  <p id="read-aloud-text" class="muted" style="margin: 0;"></p>
+</div>
+
+<!-- Recording controls for read-aloud items -->
+<div id="recording-controls" class="recording-controls hidden">
+  <button id="start-recording" class="danger">Start Recording</button>
+  <button id="stop-recording" class="hidden">Stop Recording</button>
+  <span class="recording-timer hidden" id="recording-timer">00:00</span>
+</div>
+
+<!-- Standard reading controls -->
+<div id="reading-controls" class="center hidden" style="margin: 16px 0;">
+  <button id="start-reading" class="primary">Start Reading</button>
+  <button id="done-reading" class="hidden">Done Reading</button>
+</div>
+
+<form id="qa-form" class="hidden">
+  <div id="qa-fields"></div>
+  <div style="margin-top: 16px;">
+    <button type="submit" class="primary">Submit</button>
+    <button type="button" id="skip">Skip</button>
+  </div>
+</form>
+```
+
+  </div>
+
+  <!-- Finish Screen -->
+
+  <div id="screen-finish" class="card hidden">
+    <h2>Assessment Complete</h2>
+<p id="finish-msg" class="muted" role="status" aria-live="polite" aria-atomic="true">Thank you for participating.</p>
+
+```
+<div id="upload-status" class="status-box">
+```
+
+<div class="status-message" id="upload-progress" role="status" aria-live="polite" aria-atomic="true">Saving your data...</div>
+    </div>
+
+```
+<div id="final-stats" class="hidden" style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 4px;">
+  <h3 style="font-size: 14px; margin: 0 0 10px;">Session Summary</h3>
+  <div id="stats-content"></div>
+</div>
+
+<div style="margin-top: 20px; text-align: center;">
+  <button id="retry-upload" class="primary hidden">Retry Upload</button>
+  <button id="download-backup" class="hidden">Download Backup</button>
+</div>
+```
+
+  </div>
+
+  <!-- Admin Panel -->
+
+  <div class="admin-panel">
+    <div>Group: <span id="admin-group">-</span></div>
+    <div>Item: <span id="admin-item">-</span></div>
+    <div>Score: <span id="admin-score">0</span></div>
+    <div>Zeros: <span id="admin-zeros">0</span></div>
+    <div>Status: <span id="admin-status">Active</span></div>
+  </div>
+
+  <!-- Connection Status -->
+
+  <div class="connection-status" id="connection-status">
+<span id="connection-text" role="status" aria-live="polite" aria-atomic="true">Not connected</span>
+  </div>
+
+</div>
+
+<script>
+/* ===========================
+   CONFIGURATION
+   =========================== */
+// IMPORTANT: Replace this with your actual Google Apps Script Web App URL
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyX6yfgjIVSzmL2nL73IxIWPCV4RPbxfjPTDOxB-_Ax6siB2vmKJXnCpwLP4-PUA4MCpQ/exec';
+
+/* ===========================
+   State Management
+   =========================== */
+let state = {
+  // Session info
+  pid: '',
+  edu: '',
+  participantGroup: '', // deaf-fluent, hearing-fluent, deaf-nonfluent, hearing-nonfluent, hearing-nonsigner
+  readModality: '', // sign or speak (for all participants who can choose)
+  sessionStartTime: null,
+  
+  // Progress tracking
+  currentIndex: 0,
+  totalPoints: 0,
+  consecutiveZeros: 0,
+  gateItemsFailed: [],
+
+  // Results storage
+  results: [],
+  sequence: [],
+  
+  // Timers
+  timerInterval: null,
+  readingStartTime: null,
+  itemStartTime: null,
+  recordingTimerInterval: null,
+  
+  // Recording
+  useVideoRecording: false,
+  useAudioRecording: false,
+  mediaRecorder: null,
+  recordedChunks: [],
+  stream: null,
+  
+  // Admin and upload
+  adminMode: false,
+  uploadAttempts: 0,
+  savedData: null,
+  connectionStatus: false,
+
+    reviewQueue: [],
+  scoringMetrics: {
+    highConfidence: 0,
+    mediumConfidence: 0,
+    lowConfidence: 0,
+    manualReviewNeeded: 0
+  },
+};
+
+/* ===========================
+   WIAT-2 Scoring Reference
+   =========================== */
+
+// Replace your entire SCORING_REFERENCE with this:
+const SCORING_REFERENCE = {
+  /* =======================
+     Turtle Brothers (75–80)
+     ======================= */
+  q75: {
+    twoPoint: {
+      patterns: [/great\s+spirit/i, /\bgod\b/i, /deity/i, /creator/i, /divine\s+being/i, /supreme\s+being/i]
+    },
+    onePoint: {
+      patterns: [/spirit\b/i, /supernatural/i]
+    },
+    notes: "Must indicate a divine/supreme being for 2 points."
+  },
+  q76: {
+    twoPoint: { patterns: [/\b7\b/, /\bseven\b/i] },
+    notes: "Must be exactly 7."
+  },
+  q77: {
+    twoPoint: { patterns: [/soil.*turtle/i, /turtle.*soil/i, /earth.*turtle/i] },
+    onePoint: { patterns: [/earth/i, /brush/i, /bush/i] }
+  },
+  q78: {
+    twoPoint: { patterns: [/earthquake/i] },
+    onePoint: { patterns: [/land.*quake/i, /ground.*quiver/i] }
+  },
+  q79: {
+    twoPoint: { patterns: [/california.*back/i, /california.*made/i] },
+    onePoint: { patterns: [/part.*land/i] }
+  },
+  q80: {
+    twoPoint: { patterns: [/think\s+about/i, /form.*plan/i, /ponder/i] },
+    onePoint: { patterns: [/think\s+hard/i, /\bthink\b/i] }
+  },
+
+  /* =======================
+     Avalanche (82–83)
+     ======================= */
+  q82: {
+    twoPoint: { patterns: [/road.*covered.*debris/i, /traffic.*stop/i] },
+    onePoint: { patterns: [/snow.*covered.*road/i, /avalanche.*covered/i] }
+  },
+  q83: {
+    twoPoint: { patterns: [/tree.*branch/i, /\bdirt\b/i, /\brock/i, /\bmud\b/i, /junk/i] },
+    onePoint: { patterns: [/\bsnow\b/i, /rubbish/i] }
+  },
+
+  /* =======================
+     Fancy (85)
+     ======================= */
+  q85: {
+    twoPoint: { patterns: [/like.*better/i, /prefer/i, /\blike\b/i] },
+    onePoint: { patterns: [/adore/i, /enjoy/i] }
+  },
+
+  /* =======================
+     Track Meet (87–88)
+     ======================= */
+  q87: {
+    twoPoint: { patterns: [/bad.*weather.*cancel/i, /weather.*long.*distance/i] },
+    onePoint: { patterns: [/bad.*weather/i, /cancel/i] }
+  },
+  q88: {
+  twoPoint: {
+    patterns: [
+      /\binclement\b/i,                           // echoes the key word
+      /(bad|severe|stormy|harsh|rough|foul|nasty)\s+(weather|storm|conditions)/i,
+      /(unpleasant|poor)\s+weather/i
+    ]
+  },
+  notes: "Full = clearly 'bad/severe/stormy weather'. Partial = mentions weather conditions without stating severity."
+},
+
+
+  /* =======================
+     Yukon Gold (89–93)
+     ======================= */
+  q89: {
+    onePoint: {
+      patterns: [
+        /(cold|freez|blizzard|snowstorm)/i,
+        /(bear|wolf|wolves|animal attack|wildlife)/i,
+        /(starv|hunger|food shortage|lack of food)/i,
+        /(rapid|river|ice.*break|thin ice|avalanche|landslide)/i,
+        /(sick|illness|injur|exhaustion|fatigue)/i
+      ]
+    },
+    notes: "Give 2 if two clear journey dangers are named; 1 for one credible danger. Often needs review."
+  },
+  q90: {
+    twoPoint: {
+      patterns: [
+        /(does\s*not|doesn't|didn't)\s+want.*(go|yukon).*(cold|freez|danger|hard|difficult|long trip)/i,
+        /(reluctant|unwilling|afraid|fear).*go.*(cold|freez|danger|hard|difficult)/i
+      ]
+    },
+    onePoint: { patterns: [/(does\s*not|doesn't|didn't)\s+want.*go/i, /(afraid|fear|scared)/i, /(cold|freez)/i] },
+    notes: "Full credit if his reason is the cold/dangers/hardship noted by Diana."
+  },
+  q91: {
+    onePoint: {
+      patterns: [
+        /(surviv|persever|endure|overcome)/i,
+        /(family|together|teamwork|loyalty)/i,
+        /(courage|brave|risk|adventure)/i
+      ]
+    },
+    notes: "Give 2 for two accurate themes tied to the text; 1 for one plausible theme (review recommended)."
+  },
+  q92: {
+    twoPoint: { patterns: [/(predictabl|hackneyed|clich[eé]|unoriginal|stale|trite)/i, /(same old|formula(ic)?)/i] },
+    onePoint: { patterns: [/(plot|story).*weak|bad/i, /(boring|dull)/i] },
+    notes: "Gary disliked that it was unoriginal/predictable."
+  },
+  q93: {
+    twoPoint: { patterns: [/(overused|trite|clich[eé]|worn[- ]?out|stale|banal|unoriginal)/i] },
+    onePoint: { patterns: [/(commonplace|old|familiar)/i] },
+    notes: "Meaning of 'hackneyed'."
+  },
+
+  /* =======================
+     Words of Wisdom (94–98)
+     ======================= */
+  q94: {
+    twoPoint: { patterns: [/(written|document|recorded|chronicle|account)s?\b/i] },
+    onePoint: { patterns: [/(history|facts|notes|information)/i] },
+    notes: "'Records' = written accounts/documents."
+  },
+  q95: {
+    twoPoint: {
+      patterns: [
+        /(collected|compiled|gathered|borrowed|took)\s+(from\s+)?(others|folk|people|sayings|maxims|aphorisms)/i,
+        /(traditional|folk)\s+(proverb|saying)s?/i
+      ]
+    },
+    onePoint: { patterns: [/(books|almanacs?|newspapers|sources)/i] },
+    notes: "He collected existing proverbs."
+  },
+  q96: {
+    twoPoint: { patterns: [/(rush|haste|hurry).*(mistake|waste|redo|do it again|sloppy|error)/i] },
+    onePoint: { patterns: [/(don'?t|do not)\s+rush/i, /(take your time|be careful)/i] }
+  },
+  q97: {
+    twoPoint: {
+      patterns: [
+        /(short|brief|simple|concise).*(sayings|proverbs)/i,
+        /(easy\s+to\s+remember|memorable)/i,
+        /(wisdom|truth|advice|lesson)/i
+      ]
+    },
+    onePoint: { patterns: [/(people|most).*(like|enjoy).*(proverb|saying)/i] }
+  },
+  q98: {
+    notes: "Selects the proverb that comments on modern technology. Mark for manual review (no scoring patterns here)."
+  },
+
+  /* =======================
+     Mammals vs Saurian (100) & Dust Bowl (102)
+     ======================= */
+  q100: {
+    twoPoint: { patterns: [/(mammal).*(warm[- ]?blood)/i, /(saurian|reptile).*(cold[- ]?blood)/i] },
+    onePoint: { patterns: [/(warm[- ]?blood|cold[- ]?blood)/i, /(mammal|saurian|reptile)/i] }
+  },
+  q102: {
+    twoPoint: { patterns: [/(long|several|many)\s+(years|period).*(no|little)\s+rain/i, /\bdrought\b/i] },
+    onePoint: { patterns: [/(dust\s*storm|sand\s*storm)s?/i] }
+  },
+
+  /* =======================
+     Kristi Yamaguchi (103–107)
+     ======================= */
+  q103: {
+    twoPoint: { patterns: [/(health|medical|therapy|exercise)/i, /(turned[- ]in\s+(hips|feet)|foot\s+problem|hip\s+problem)/i] },
+    onePoint: { patterns: [/(to\s+exercise|for\s+her\s+health)/i] }
+  },
+  q104: {
+    semantic: {
+      full: [
+        ["daily routine", "everyday routine", "habit", "regular schedule", "usual activities", "day-to-day"],
+        ["skating routine", "performance routine", "program", "choreograph", "set sequence", "planned moves"]
+      ],
+      partial: ["daily", "habit", "schedule", "program", "performance", "choreographed"]
+    },
+    notes: "First = everyday schedule; next = choreographed program/performance."
+  },
+  q105: {
+    twoPoint: {
+      patterns: [
+        /(did|skated?)\s+both\s+(pairs|pair)\s+and\s+(singles|single)/i,
+        /(pairs|pair)\s+and\s+(singles|single)\s+at\s+the\s+same\s+time/i
+      ]
+    },
+    onePoint: { patterns: [/(too\s+much\s+work|many\s+events|double\s+workload)/i] }
+  },
+  q106: {
+    twoPoint: { patterns: [/(kristi|yamaguchi).*(rudy|galindo)/i] },
+    notes: "Kristi Yamaguchi & Rudy Galindo."
+  },
+  q107: {
+    twoPoint: { patterns: [/(choreograph(y|ic)|artistry|presentation|style|grace|expression)/i] },
+    onePoint: { patterns: [/(not\s+just\s+jumps|technique|balance|control)/i] },
+    notes: "She compensated with choreography/artistry."
+  },
+
+  /* =======================
+     Humpback Whales (108–112)
+     ======================= */
+  q108: {
+    twoPoint: { patterns: [/(death|dying|end|extinction|downfall|ruin)/i] },
+    onePoint: { patterns: [/(decline|fall|reduce|less)/i] }
+  },
+  q109: {
+    semantic: {
+      full: [
+        ["hunt", "hunted", "whale", "whaling", "killed"],
+        ["net", "fishing net", "entangle", "caught", "bycatch", "pollution", "ship strike"]
+      ],
+      partial: ["hunted", "whaling", "nets", "entangled", "pollution", "bycatch", "ships"]
+    },
+    notes: "Two ways: (1) hunting/whaling; (2) nets/entanglement (pollution/ship strikes may count if text supports)."
+  },
+  q110: {
+    twoPoint: { patterns: [/(we)\s+can\s+(protect|save|help|conserve)/i, /(awareness|understand).*(protect|conserve|laws|action)/i] },
+    onePoint: { patterns: [/(important|know|learn)/i] }
+  },
+  q111: {
+    semantic: {
+      full: [
+        ["drown", "suffocate", "asphyxiate"],
+        ["starve", "starvation"]
+      ],
+      partial: ["drown", "suffocate", "starve"]
+    },
+    notes: "Two things: drown and starve."
+  },
+  q112: {
+    twoPoint: { patterns: [/(become|go)\s+extinct/i, /(die\s+out)/i] },
+    onePoint: { patterns: [/(decline|decrease|fall)\s+in\s+numbers/i, /(endangered|at\s+risk)/i] }
+  },
+
+  /* =======================
+     Peach Prices (114)
+     ======================= */
+  q114: {
+    twoPoint: {
+      patterns: [
+        /(in\s+season|harvest|summer|supply.*high).*price(s)?\s+(low|lower|drop)/i,
+        /(off[- ]season|winter|supply.*low).*price(s)?\s+(rise|higher|increase)/i
+      ]
+    },
+    onePoint: { patterns: [/(supply).*affect(s|ed)?.*price/i, /(season|harvest)/i] },
+    notes: "Seasonal supply explains price changes."
+  },
+
+  /* =======================
+     Zoo Admission (115–119)
+     ======================= */
+  q115: {
+    twoPoint: { patterns: [/\$?\s*3(\.00)?\b/i, /\bthree\s*dollars?\b/i] },
+    onePoint: { patterns: [/(less|cheaper|lower)/i] }
+  },
+  q116: {
+    twoPoint: {
+      patterns: [
+        /(main|primary)\s+reason.*(support|position)/i,
+        /(because|since|as)\s+(costs|expenses|budget|funds|money).*(need|require)/i
+      ]
+    },
+    onePoint: { patterns: [/(money|costs|budget)/i] },
+    notes: "Tom's main reason: costs/finances; raising price covers expenses."
+  },
+  q117: {
+    twoPoint: {
+      patterns: [
+        /(take\s+up\s+the\s+slack)\s*=\s*(compensate|cover|make\s+up|fill\s+in|carry\s+the\s+load)/i,
+        /(compensate|cover|make\s+up).*(for\s+others|shortfall|lack)/i
+      ]
+    },
+    onePoint: { patterns: [/(help\s+out|do\s+more|pick\s+up\s+the\s+slack)/i] }
+  },
+  q118: {
+    twoPoint: {
+      patterns: [
+        /(acquisition|acquisitions)\s*=\s*(purchases|things\s+the\s+zoo\s+buys|new\s+animals|items\s+obtained)/i,
+        /(purchase|buy|obtain)\s+(animals|exhibits|items)/i
+      ]
+    },
+    onePoint: { patterns: [/(new\s+animals|new\s+exhibits|purchases)/i] }
+  },
+  q119: {
+    onePoint: {
+      patterns: [
+        /(fewer|no)\s+(acquisitions|new\s+animals|new\s+exhibits)/i,
+        /(reduce(d)?|cut)\s+(hours|services|staff|care|maintenance)/i,
+        /(close|closure)/i,
+        /(lack\s+of\s+funds|budget\s+shortfall)/i
+      ]
+    },
+    notes: "Give 2 if three stated consequences are listed; 1 for one–two. Often needs review."
+  },
+
+  /* =======================
+     The King (121–122)
+     ======================= */
+  q121: {
+    twoPoint: { patterns: [/(the\s+)?king\s+(has\s+)?(died|is\s+dead|passed\s+away|was\s+assassinated)/i] },
+    onePoint: { patterns: [/(the\s+)?king\s+(is\s+gone|no\s+longer|not\s+alive)/i] }
+  },
+  q122: {
+    twoPoint: { patterns: [/(new\s+king|succession|heir|prince\s+becomes\s+king)/i, /(funeral|mourning|power\s+struggle|war|chaos)/i] },
+    onePoint: { patterns: [/(someone\s+else\s+will\s+rule|change\s+of\s+power)/i] }
+  },
+
+  /* =======================
+     Central Asiatic Expedition (123–127)
+     ======================= */
+  q123: {
+    twoPoint: { patterns: [/(first|initial)\s+discovery.*(skull|skulls)/i, /(flaming\s+cliffs|bayanzag|gobi)/i] },
+    onePoint: { patterns: [/(dinosaur|fossil)/i] }
+  },
+  q124: {
+    onePoint: { patterns: [/(adventure|expedition|voyage|journey|exploration)/i] },
+    notes: "Give 2 if three specific pre-Gobi adventures are correctly named; 1 for one–two (manual review)."
+  },
+  q125: {
+    twoPoint: { patterns: [/(gobi\s+desert|mongolia|flaming\s+cliffs)/i, /(nest|nests|eggs)/i] },
+    onePoint: { patterns: [/(desert|sand|cliffs)/i] }
+  },
+  q126: {
+    twoPoint: { patterns: [/(proved|showed|demonstrated)\s+that\s+dinosaurs?\s+(laid|lay)\s+eggs/i, /(first|new)\s+dinosaur\s+eggs?\s+discovered/i] },
+    onePoint: { patterns: [/(changed|altered)\s+scientific\s+knowledge/i] }
+  },
+  q127: {
+    twoPoint: { patterns: [/(brigands?)\s*=\s*(bandits?|robbers?|thieves?)/i] },
+    onePoint: { patterns: [/(outlaws?|criminals?)/i] }
+  },
+
+  /* =======================
+     Longevity (129–130)
+     ======================= */
+  q129: {
+    twoPoint: { patterns: [/(longevity)\s*=\s*(length\s+of\s+life|life\s*span|how\s+long\s+people\s+live)/i] },
+    onePoint: { patterns: [/(old|older|age)/i] }
+  },
+  q130: {
+    twoPoint: { patterns: [/(life\s+expectancy|longevity)\s+(has\s+)?(risen|increased|gone\s+up|grown)\b/i, /(trend|graph|chart).*(upward|increase|rise)/i] },
+    onePoint: { patterns: [/(people\s+live\s+longer)/i] }
+  },
+
+  /* =======================
+     Life Stages (131–135)
+     ======================= */
+  q131: {
+    twoPoint: { patterns: [/(young|early)\s+adult(hood)?/i, /(begin|start)\s+a\s+career/i] },
+    onePoint: { patterns: [/\badult\b/i] }
+  },
+  q132: {
+    twoPoint: { patterns: [/(reassess|re[- ]?evaluate|reconsider|question).*(goals|career|life|relationships?)/i, /(change|adjust|redirect).*(life|career|path|relationships?)/i] },
+    onePoint: { patterns: [/(mid[- ]?life).*(change|question|reassess)/i] }
+  },
+  q133: {
+    twoPoint: { patterns: [/(mid[- ]?life\s+rebirth)/i] },
+    onePoint: { patterns: [/(mid[- ]?life|reassessment)/i] }
+  },
+  q134: {
+    twoPoint: { patterns: [/(lack|missing|fail(ed)?\s+to\s+develop).*(independence|self[- ]?reliance)/i, /(remain|stay)\s+(dependent|immature|tied)/i] },
+    onePoint: { patterns: [/(problems|issues)\s+with\s+(independence|identity)/i] }
+  },
+  q135: {
+    twoPoint: { patterns: [/(mentor|guide|teach|advise|give\s+back)/i, /(reflect|wisdom|insight|legacy|purpose|meaning)/i] },
+    onePoint: { patterns: [/(help\s+others|share\s+experience|reflection)/i] }
+  },
+
+  /* =======================
+     The Rock (136–140)
+     ======================= */
+  q136: {
+    twoPoint: { patterns: [/(fissure)\s*=\s*(narrow|thin)\s+(crack|split|opening)\s+in\s+rock/i] },
+    onePoint: { patterns: [/(crack|split|opening)/i] }
+  },
+  q137: {
+    twoPoint: { patterns: [/(sheer|vertical)\s+(wall|face|escarpment)/i, /(sudden(ly)?)\s+(steep|drop|cliff)/i] },
+    onePoint: { patterns: [/(harder|difficult|steeper)/i] }
+  },
+  q138: {
+    twoPoint: { patterns: [/(fatigue|exhaustion|very\s+tired)/i] },
+    onePoint: { patterns: [/(fear|scared|mental|mindset|discouraged)/i] }
+  },
+  q139: {
+    twoPoint: { patterns: [/(determination|willpower|resolve|too\s+far\s+to\s+quit|couldn'?t\s+turn\s+back)/i] },
+    onePoint: { patterns: [/(close\s+to\s+the\s+top|almost\s+there|came\s+so\s+far)/i] }
+  },
+  q140: {
+    twoPoint: { patterns: [/(focus(ed)?\s+on\s+herself|needed\s+to\s+concentrate|had\s+to\s+get\s+herself\s+to\s+the\s+top)/i] },
+    onePoint: { patterns: [/(afraid|fear|if\s+she\s+looked\s+down|discouraged|didn'?t\s+want\s+to\s+look\s+back)/i] }
+  }
+};
+
+/* ===========================
+   TRIALS Configuration - COMPLETE
+   =========================== */
+const TRIALS = [
+  // Turtle Brothers passage
+  {
+    item: 75,
+    image: "1.jpeg",
+    type: "passage",
+    instruction: "Read the passage. Click 'Start Reading' when ready.",
+    questions: [{
+      id: "q75",
+      text: "Who is Kwawar?",
+      scoringKey: "q75"
+    }]
+  },
+  {
+    item: 76,
+    image: "1.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q76",
+      text: "In all, how many Turtle Brothers were needed to fulfill Kwawar's request?",
+      scoringKey: "q76"
+    }]
+  },
+  {
+    item: 77,
+    image: "1.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q77",
+      text: "What caused the mountains to arise?",
+      scoringKey: "q77"
+    }]
+  },
+  {
+    item: 78,
+    image: "1.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q78",
+      text: "What natural event does the Turtle Brothers' quarreling explain?",
+      scoringKey: "q78"
+    }]
+  },
+  {
+    item: 79,
+    image: "1.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q79",
+      text: "What great gift did Kwawr give the Turtle Brothers?",
+      scoringKey: "q79"
+    }]
+  },
+  {
+    item: 80,
+    image: "1.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q80",
+      text: "What is the meaning of contemplated in the story?",
+      scoringKey: "q80"
+    }]
+  },
+  
+  // Avalanche passage (read aloud)
+  {
+    item: 81,
+    image: "2.jpeg",
+    type: "read-aloud",
+    readAloud: true,
+    instruction: "Read this aloud.",
+    skipScoring: true
+  },
+  {
+    item: 82,
+    image: "2.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q82",
+      text: "Tell me in your own words, what has happened as a result of the avalanche?",
+      scoringKey: "q82"
+    }]
+  },
+  {
+    item: 83,
+    image: "2.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q83",
+      text: "What does the word debris mean in this sentence?",
+      scoringKey: "q83"
+    }]
+  },
+  
+  // Fancy passage (read aloud)
+  {
+    item: 84,
+    image: "3.jpeg",
+    type: "read-aloud",
+    readAloud: true,
+    instruction: "Read this aloud.",
+    skipScoring: true
+  },
+  {
+    item: 85,
+    image: "3.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q85",
+      text: "What does the word fancy mean in this sentence?",
+      scoringKey: "q85"
+    }]
+  },
+  
+  // Track meet passage (read aloud)
+  {
+    item: 86,
+    image: "4.jpeg",
+    type: "read-aloud",
+    readAloud: true,
+    instruction: "Read this aloud.",
+    skipScoring: true
+  },
+  {
+    item: 87,
+    image: "4.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q87",
+      text: "Why did the track meet end earlier than expected?",
+      scoringKey: "q87"
+    }]
+  },
+  {
+    item: 88,
+    image: "4.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q88",
+      text: "What does the word inclement mean in this sentence?",
+      scoringKey: "q88"
+    }]
+  },
+  
+  // Yukon Gold passage
+  {
+    item: 89,
+    image: "5.jpeg",
+    type: "passage",
+    instruction: "Read the passage. Click 'Start Reading' when ready.",
+    questions: [{
+      id: "q89",
+      text: "What were two dangers encountered by the family on their journey?",
+      scoringKey: "q89"
+    }]
+  },
+  {
+    item: 90,
+    image: "5.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q90",
+      text: "According to Diana, why doesn't Charlie want to go to Yukon?",
+      scoringKey: "q90"
+    }]
+  },
+  {
+    item: 91,
+    image: "5.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q91",
+      text: "According to the reviewers, what are two main themes or ideas in Yukon Gold?",
+      scoringKey: "q91"
+    }]
+  },
+  {
+    item: 92,
+    image: "5.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q92",
+      text: "Diana gave Yukon Gold four stars although Gary gave it two. What did Gary dislike about the movie?",
+      scoringKey: "q92"
+    }]
+  },
+  {
+    item: 93,
+    image: "5.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q93",
+      text: "What is the meaning of the word hackneyed in Gary's review?",
+      scoringKey: "q93"
+    }]
+  },
+  
+  // Words of Wisdom (Grades 9-12 Start)
+  {
+    item: 94,
+    image: "6.jpeg",
+    type: "passage",
+    instruction: "Read the passage. Click 'Start Reading' when ready.",
+    questions: [{
+      id: "q94",
+      text: "What is the meaning of the word records in the first paragraph?",
+      scoringKey: "q94"
+    }]
+  },
+  {
+    item: 95,
+    image: "6.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q95",
+      text: "Where do you think Ben Franklin found the proverbs he included in the Poor Richard's Almanack?",
+      scoringKey: "q95"
+    }]
+  },
+  {
+    item: 96,
+    image: "6.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q96",
+      text: "What do you think 'Haste makes waste' might mean?",
+      scoringKey: "q96"
+    }]
+  },
+  {
+    item: 97,
+    image: "6.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q97",
+      text: "Why do you think most people like proverbs?",
+      scoringKey: "q97"
+    }]
+  },
+  {
+    item: 98,
+    image: "6.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q98",
+      text: "Which of the proverbs mentioned in the passage is a comment on modern technology?",
+      scoringKey: "q98"
+    }]
+  },
+  
+  // Mammals vs Saurian (read aloud)
+  {
+    item: 99,
+    image: "7.jpeg",
+    type: "read-aloud",
+    readAloud: true,
+    instruction: "Read this aloud.",
+    skipScoring: true
+  },
+  {
+    item: 100,
+    image: "7.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q100",
+      text: "How are mammals and saurian different?",
+      scoringKey: "q100"
+    }]
+  },
+  
+  // Dust Bowl (read aloud)
+  {
+    item: 101,
+    image: "8.jpeg",
+    type: "read-aloud",
+    readAloud: true,
+    instruction: "Read this aloud.",
+    skipScoring: true
+  },
+  {
+    item: 102,
+    image: "8.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q102",
+      text: "What does the sentence tell you that the great Dust Bowl was?",
+      scoringKey: "q102"
+    }]
+  },
+  
+  // Kristi Yamaguchi passage
+  {
+    item: 103,
+    image: "9.jpeg",
+    type: "passage",
+    instruction: "Read the passage. Click 'Start Reading' when ready.",
+    questions: [{
+      id: "q103",
+      text: "For what primary reason did Kristi's mother want her daughter to skate?",
+      scoringKey: "q103"
+    }]
+  },
+  {
+    item: 104,
+    image: "9.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q104",
+      text: "How does the definition of routine in the first paragraph differ from that in the next paragraph?",
+      scoringKey: "q104"
+    }]
+  },
+  {
+    item: 105,
+    image: "9.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q105",
+      text: "Why was Kristi's workload double that of other skaters?",
+      scoringKey: "q105"
+    }]
+  },
+  {
+    item: 106,
+    image: "9.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q106",
+      text: "Who won the pairs gold medal at the 1990 Nationals?",
+      scoringKey: "q106"
+    }]
+  },
+  {
+    item: 107,
+    image: "9.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q107",
+      text: "How was Kristi able to compensate for her athletic limitations?",
+      scoringKey: "q107"
+    }]
+  },
+  
+  // Humpback whales passage
+  {
+    item: 108,
+    image: "10.jpeg",
+    type: "passage",
+    instruction: "Read the passage. Click 'Start Reading' when ready.",
+    questions: [{
+      id: "q108",
+      text: "What is the meaning of the word demise in this story?",
+      scoringKey: "q108"
+    }]
+  },
+  {
+    item: 109,
+    image: "10.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q109",
+      text: "In what two ways have people been the primary reason for the whales' demise?",
+      scoringKey: "q109"
+    }]
+  },
+  {
+    item: 110,
+    image: "10.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q110",
+      text: "Why is it important for us to know about the struggles of the humpback whales?",
+      scoringKey: "q110"
+    }]
+  },
+  {
+    item: 111,
+    image: "10.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q111",
+      text: "What two things might happen if a whale is caught in a fishing net?",
+      scoringKey: "q111"
+    }]
+  },
+  {
+    item: 112,
+    image: "10.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q112",
+      text: "According to current studies, what is likely to happen to the humpback whale in the future?",
+      scoringKey: "q112"
+    }]
+  },
+  
+  // Peach prices (read aloud)
+  {
+    item: 113,
+    image: "11.jpeg",
+    type: "read-aloud",
+    readAloud: true,
+    instruction: "Read this aloud.",
+    skipScoring: true
+  },
+  {
+    item: 114,
+    image: "11.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q114",
+      text: "What is the most likely reason for the changes in the peach prices during the year?",
+      scoringKey: "q114"
+    }]
+  },
+  
+  // Zoo admission passage
+  {
+    item: 115,
+    image: "12.jpeg",
+    type: "passage",
+    instruction: "Read the passage. Click 'Start Reading' when ready.",
+    questions: [{
+      id: "q115",
+      text: "If today's zoo admission is $4.00, what was zoo admission in January 1993?",
+      scoringKey: "q115"
+    }]
+  },
+  {
+    item: 116,
+    image: "12.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q116",
+      text: "What is the main reason Tom gives to support his position?",
+      scoringKey: "q116"
+    }]
+  },
+  {
+    item: 117,
+    image: "12.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q117",
+      text: "When he says 'take up the slack' in his sentence, what does Tom mean?",
+      scoringKey: "q117"
+    }]
+  },
+  {
+    item: 118,
+    image: "12.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q118",
+      text: "Tanisha uses the word 'acquisitions' in her letter. What does it mean?",
+      scoringKey: "q118"
+    }]
+  },
+  {
+    item: 119,
+    image: "12.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q119",
+      text: "According to Tanisha, what three things might happen if zoo prices are not raised?",
+      scoringKey: "q119"
+    }]
+  },
+  
+  // King passage (read aloud)
+  {
+    item: 120,
+    image: "13.jpeg",
+    type: "read-aloud",
+    readAloud: true,
+    instruction: "Read this aloud.",
+    skipScoring: true
+  },
+  {
+    item: 121,
+    image: "13.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q121",
+      text: "What has happened to the king?",
+      scoringKey: "q121"
+    }]
+  },
+  {
+    item: 122,
+    image: "13.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q122",
+      text: "What would you predict might happen as a result of the event described?",
+      scoringKey: "q122"
+    }]
+  },
+  
+  // Central Asiatic Expedition passage
+  {
+    item: 123,
+    image: "14.jpeg",
+    type: "passage",
+    instruction: "Read the passage. Click 'Start Reading' when ready.",
+    questions: [{
+      id: "q123",
+      text: "What was the first discovery of the Central Asiatic Expedition?",
+      scoringKey: "q123"
+    }]
+  },
+  {
+    item: 124,
+    image: "14.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q124",
+      text: "Tell three adventures Andrews had experienced before going to the Gobi desert.",
+      scoringKey: "q124"
+    }]
+  },
+  {
+    item: 125,
+    image: "14.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q125",
+      text: "Where did the scientists discover the dinosaur eggs?",
+      scoringKey: "q125"
+    }]
+  },
+  {
+    item: 126,
+    image: "14.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q126",
+      text: "How did Andrew's expedition alter scientific knowledge?",
+      scoringKey: "q126"
+    }]
+  },
+  {
+    item: 127,
+    image: "14.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q127",
+      text: "What is the meaning of the word brigands as used in the passage?",
+      scoringKey: "q127"
+    }]
+  },
+  
+  // Longevity (read aloud)
+  {
+    item: 128,
+    image: "15.jpeg",
+    type: "read-aloud",
+    readAloud: true,
+    instruction: "Read this aloud.",
+    skipScoring: true
+  },
+  {
+    item: 129,
+    image: "15.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q129",
+      text: "What is the meaning of the word longevity in this sentence?",
+      scoringKey: "q129"
+    }]
+  },
+  {
+    item: 130,
+    image: "15.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q130",
+      text: "Describe the trend reported in this sentence",
+      scoringKey: "q130"
+    }]
+  },
+  
+  // Life stages passage
+  {
+    item: 131,
+    image: "16.jpeg",
+    type: "passage",
+    instruction: "Read the passage. Click 'Start Reading' when ready.",
+    questions: [{
+      id: "q131",
+      text: "At what life stage is a person likely to begin a career?",
+      scoringKey: "q131"
+    }]
+  },
+  {
+    item: 132,
+    image: "16.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q132",
+      text: "What is the main theme of the 'Mid-life Rebirth' developmental tasks?",
+      scoringKey: "q132"
+    }]
+  },
+  {
+    item: 133,
+    image: "16.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q133",
+      text: "Although Rachel was recently promoted to manager of her office, she is questioning her choice of careers and regrets that she never pursued her dream of composing music. At the same time, she is reluctant to quit her job because she recently bought a new home. What developmental stage is Rachel probably in?",
+      scoringKey: "q133"
+    }]
+  },
+  {
+    item: 134,
+    image: "16.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q134",
+      text: "What might happen if a person did not accomplish the developmental tasks of the 'Breaking Loose' stage?",
+      scoringKey: "q134"
+    }]
+  },
+  {
+    item: 135,
+    image: "16.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q135",
+      text: "If the last life stage called 'Deepening Wisdom' were added to the chart, what would you predict two of the developmental tasks would be?",
+      scoringKey: "q135"
+    }]
+  },
+  
+  // The Rock passage
+  {
+    item: 136,
+    image: "17.jpeg",
+    type: "passage",
+    instruction: "Read the passage. Click 'Start Reading' when ready.",
+    questions: [{
+      id: "q136",
+      text: "What is the fissure as described in the passage?",
+      scoringKey: "q136"
+    }]
+  },
+  {
+    item: 137,
+    image: "17.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q137",
+      text: "What suddenly made this rock climb so difficult?",
+      scoringKey: "q137"
+    }]
+  },
+  {
+    item: 138,
+    image: "17.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q138",
+      text: "What was the most important thing the women had to overcome in order to scale the rock?",
+      scoringKey: "q138"
+    }]
+  },
+  {
+    item: 139,
+    image: "17.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q139",
+      text: "What kept the women from turning back when they saw the sheer surface of the rock?",
+      scoringKey: "q139"
+    }]
+  },
+  {
+    item: 140,
+    image: "17.jpeg",
+    type: "question",
+    skipReading: true,
+    questions: [{
+      id: "q140",
+      text: "Why did Angela refuse to look at Sherry as she approached the summit?",
+      scoringKey: "q140"
+    }]
+  }
+];
+
+/* ===========================
+   Participant Group Configuration
+   =========================== */
+function determineRecordingNeeds() {
+  const group = state.participantGroup;
+  const modality = state.readModality;
+  
+  // All participants can choose their modality
+  if (modality === 'sign') {
+    state.useVideoRecording = true;
+    state.useAudioRecording = false;
+    return 'video';
+  } else {
+    state.useVideoRecording = false;
+    state.useAudioRecording = true;
+    return 'audio';
+  }
+}
+
+// FIXED: Single, clean function
+function checkWelcomeReady() {
+  console.log('Checking welcome ready...'); // DEBUG
+  const hasPid = document.getElementById('pid').value.trim().length > 0;
+  const hasEdu = !!document.getElementById('edu').value;
+  const hasGroup = !!state.participantGroup;
+  const hasModality = !!state.readModality;
+  
+  console.log('Validation:', { hasPid, hasEdu, hasGroup, hasModality }); // DEBUG
+  
+  const isReady = hasPid && hasEdu && hasGroup && hasModality;
+  document.getElementById('begin').disabled = !isReady;
+
+  console.log('Button disabled:', !isReady); // DEBUG
+}
+
+// Bind welcome screen inputs so the Continue button can enable
+document.getElementById('pid').addEventListener('input', (e) => {
+  state.pid = e.target.value.trim();
+  checkWelcomeReady();
+});
+
+document.getElementById('edu').addEventListener('change', (e) => {
+  state.edu = e.target.value;
+  checkWelcomeReady();
+});
+
+document.querySelectorAll('input[name="participant-group"]').forEach((radio) => {
+  radio.addEventListener('change', (e) => {
+    state.participantGroup = e.target.value;
+    // Reveal modality options and deaf note if applicable
+    document.getElementById('modality-selection').classList.remove('hidden');
+    const deafNote = document.getElementById('deaf-note');
+    if (e.target.value.startsWith('deaf')) deafNote.classList.remove('hidden');
+    else deafNote.classList.add('hidden');
+    checkWelcomeReady();
+  });
+});
+
+document.querySelectorAll('input[name="read-modality"]').forEach((radio) => {
+  radio.addEventListener('change', (e) => {
+    state.readModality = e.target.value;
+    checkWelcomeReady();
+  });
+});
+
+// Move from welcome to setup once all fields are ready
+document.getElementById('begin').addEventListener('click', () => {
+  if (document.getElementById('begin').disabled) return;
+  document.getElementById('screen-welcome').classList.add('hidden');
+  document.getElementById('screen-setup').classList.remove('hidden');
+});
+
+function getReadAloudInstructions() {
+  const modality = state.readModality;
+  
+  if (modality === 'sign') {
+    return {
+      title: "Sign This Passage",
+      text: "Please sign this passage in ASL. Click 'Start Recording' when ready to begin signing.",
+      buttonText: "Start Signing"
+    };
+  } else {
+    return {
+      title: "Read This Aloud",
+      text: "Please read this passage aloud. Click 'Start Recording' when ready to begin speaking.",
+      buttonText: "Start Speaking"
+    };
+  }
+}
+
+/* ===========================
+   Google Apps Script Communication
+   =========================== */
+async function sendToGoogle(action, data) {
+  try {
+    const payload = {
+      action: action,
+      ...data,
+      participantGroup: state.participantGroup,
+      readModality: state.readModality,
+      timestamp: new Date().toISOString()
+    };
+    
+    console.log('Sending to Google:', action, payload);
+    
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    updateConnectionStatus(true);
+    return { status: 'success' };
+    
+  } catch (error) {
+    console.error('Google Apps Script error:', error);
+    updateConnectionStatus(false);
+    throw error;
+  }
+}
+
+function updateConnectionStatus(connected) {
+  state.connectionStatus = connected;
+  const box = document.getElementById('connection-status');
+  const live = document.getElementById('connection-text');
+
+  box.classList.toggle('connected', connected);
+  box.classList.toggle('error', !connected);
+
+  live.setAttribute('role', connected ? 'status' : 'alert');
+  live.setAttribute('aria-live', connected ? 'polite' : 'assertive');
+  live.textContent = connected ? 'Connected' : 'Not connected';
+}
+
+
+/* ===========================
+   Recording Functions
+   =========================== */
+async function setupVideoRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+      audio: false
+    });
+    state.stream = stream;
+    const preview = document.getElementById('preview');
+    preview.srcObject = stream;
+
+    const mime = pickMime('video');        // ← choose best supported
+    state.recordMime = mime || 'video/webm';
+    state.mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
+    state.recordedChunks = [];
+    state.mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) state.recordedChunks.push(e.data); };
+
+    document.getElementById('video-status').textContent = 'Camera ready. You can see yourself above.';
+    return true;
+  } catch (err) {
+    console.error('Video setup error:', err);
+    document.getElementById('video-status').textContent = 'Error: Could not access camera. Please check permissions.';
+    return false;
+  }
+}
+
+async function setupAudioRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true }
+    });
+    state.stream = stream;
+
+    const mime = pickMime('audio');        // ← choose best supported
+    state.recordMime = mime || 'audio/webm';
+    state.mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
+    state.recordedChunks = [];
+    state.mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) state.recordedChunks.push(e.data); };
+
+    document.getElementById('audio-status').textContent = 'Microphone ready. Test your audio above.';
+    return true;
+  } catch (err) {
+    console.error('Audio setup error:', err);
+    document.getElementById('audio-status').textContent = 'Error: Could not access microphone. Please check permissions.';
+    return false;
+  }
+}
+
+function startRecording() {
+  if (state.mediaRecorder && state.mediaRecorder.state === 'inactive') {
+    state.recordedChunks = [];
+    state.mediaRecorder.start();
+
+    document.getElementById('sr-live').textContent = state.useVideoRecording
+  ? 'Recording video started'
+  : 'Recording audio started';
+
+    // Start recording timer
+    let seconds = 0;
+    const timerEl = document.getElementById('recording-timer');
+    timerEl.classList.remove('hidden');
+    
+    state.recordingTimerInterval = setInterval(() => {
+      seconds++;
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      timerEl.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }, 1000);
+    
+    // Show recording indicator
+    document.getElementById('rec-indicator').classList.remove('hidden');
+    document.getElementById('rec-type').textContent = state.useVideoRecording ? 'Recording Video' : 'Recording Audio';
+  }
+}
+
+      
+   function stopRecording() {
+  return new Promise((resolve) => {
+    if (!state.mediaRecorder || state.mediaRecorder.state !== 'recording') {
+      resolve(null);
+      return;
+    }
+
+    state.mediaRecorder.onstop = () => {
+      const blob = new Blob(
+        state.recordedChunks,
+        { type: state.recordMime || (state.useVideoRecording ? 'video/webm' : 'audio/webm') }
+      );
+      resolve(blob);
+    };
+
+    state.mediaRecorder.stop();
+    document.getElementById('sr-live').textContent = 'Recording stopped';
+
+    if (state.recordingTimerInterval) {
+      clearInterval(state.recordingTimerInterval);
+      state.recordingTimerInterval = null;
+    }
+    document.getElementById('recording-timer').classList.add('hidden');
+    document.getElementById('rec-indicator').classList.add('hidden');
+  });
+}
+
+/* ===========================
+   Core Functions
+   =========================== */
+function buildSequence() {
+  const gradeNum = state.edu === "13+" ? 13 : parseInt(state.edu);
+  
+  const sortedTrials = TRIALS.slice().sort((a, b) => a.item - b.item);
+  
+  if (gradeNum >= 9) {
+    const startIdx = sortedTrials.findIndex(t => t.item === 94);
+    if (startIdx >= 0) {
+      state.sequence = sortedTrials.slice(startIdx);
+    } else {
+      state.sequence = sortedTrials;
+    }
+  } else {
+    state.sequence = sortedTrials;
+  }
+  
+  console.log(`Built sequence with ${state.sequence.length} items for grade ${state.edu}`);
+}
+
+async function showItem() {
+  if (state.currentIndex >= state.sequence.length) {
+    finishAssessment();
+    return;
+  }
+  
+  // WIAT-2 discontinue rule
+  if (state.consecutiveZeros >= 6) {
+    finishAssessment();
+    return;
+  }
+  
+  const trial = state.sequence[state.currentIndex];
+  
+  // Send item started event to Google
+  await sendToGoogle('item_started', {
+    pid: state.pid,
+    itemNumber: trial.item,
+    imageFile: trial.image,
+    questionText: trial.questions ? trial.questions[0].text : '',
+    itemType: trial.type
+  });
+  
+  showScreen('item');
+  updateProgress();
+  updateAdminPanel();
+  
+  document.getElementById('item-number').textContent = `Item ${state.currentIndex + 1} of ${state.sequence.length}`;
+  document.getElementById('actual-item-number').textContent = trial.item;
+  document.getElementById('stim').src = `stimuli/${trial.image}`;
+  
+  // Reset form
+  document.getElementById('qa-form').classList.add('hidden');
+  document.getElementById('qa-fields').innerHTML = '';
+  document.getElementById('timer').textContent = '00:00';
+  
+  // Hide all controls initially
+  document.getElementById('recording-controls').classList.add('hidden');
+  document.getElementById('reading-controls').classList.add('hidden');
+  document.getElementById('read-aloud-instructions').classList.add('hidden');
+  
+  const instruction = trial.instruction || '';
+  document.getElementById('instruction-text').textContent = instruction;
+  
+  // Handle different item types
+  if (trial.readAloud) {
+    // This is a read-aloud item
+    const instructions = getReadAloudInstructions();
+    document.getElementById('read-aloud-title').textContent = instructions.title;
+    document.getElementById('read-aloud-text').textContent = instructions.text;
+    document.getElementById('read-aloud-instructions').classList.remove('hidden');
+    document.getElementById('recording-controls').classList.remove('hidden');
+    document.getElementById('start-recording').textContent = instructions.buttonText;
+    
+    if (!trial.skipScoring) {
+      // Will show questions after recording
+      showQuestions(0);
+    }
+  } else if (trial.skipScoring) {
+    // Non-recording read item (shouldn't happen often)
+    document.getElementById('reading-controls').classList.remove('hidden');
+    document.getElementById('start-reading').classList.add('hidden');
+    document.getElementById('done-reading').classList.remove('hidden');
+    document.getElementById('done-reading').textContent = 'Continue';
+  } else if (trial.skipReading) {
+    // Question only, no reading
+    showQuestions(0);
+  } else {
+    // Standard silent reading passage
+    document.getElementById('reading-controls').classList.remove('hidden');
+    document.getElementById('start-reading').classList.remove('hidden');
+    document.getElementById('done-reading').classList.add('hidden');
+    document.getElementById('done-reading').textContent = 'Done Reading';
+  }
+  
+  state.itemStartTime = Date.now();
+}
+// Helper to pick a recorder mime type the browser actually supports
+function pickMime(kind) {
+  const candidates = kind === 'video'
+    ? ['video/mp4;codecs=h264', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4']
+    : ['audio/mp4', 'audio/aac', 'audio/webm', 'audio/ogg'];
+  return candidates.find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || '';
+}
+
+
+function showQuestions(readingTime) {
+  const trial = state.sequence[state.currentIndex];
+  if (trial.skipScoring) {
+    state.currentIndex++;
+    showItem();
+    return;
+  }
+
+  const form = document.getElementById('qa-form');
+  const fields = document.getElementById('qa-fields');
+  form.classList.remove('hidden');
+  document.getElementById('reading-controls').classList.add('hidden');
+  document.getElementById('recording-controls').classList.add('hidden');
+  document.getElementById('read-aloud-instructions').classList.add('hidden');
+
+  // Clear existing
+  fields.innerHTML = '';
+
+  // Add a participant-friendly tip only once per item
+  const tip = document.createElement('div');
+  tip.className = 'tip-box';
+  tip.id = 'answer-tips';
+  tip.innerHTML = `
+    <div><strong>Answer tips</strong></div>
+    <ul>
+      <li>Type in your own words. <em>Spelling and grammar don't matter.</em></li>
+      <li>Short answers are okay (a sentence or two).</li>
+      <li>If you're unsure, write your best guess.</li>
+      <li>You can use ASL gloss if that's easier.</li>
+      <li>You can skip any question.</li>
+      <li><span class="kbd">Ctrl/⌘ + Enter</span> = Submit, <span class="kbd">Alt + S</span> = Skip</li>
+    </ul>
+  `;
+  fields.appendChild(tip);
+
+  // Build question fields
+  trial.questions.forEach(q => {
+    const qDiv = document.createElement('div');
+    qDiv.className = 'q-block';
+
+    const label = document.createElement('label');
+    label.textContent = q.text;
+    label.setAttribute('for', q.id);
+
+    const textarea = document.createElement('textarea');
+    textarea.id = q.id;
+    textarea.name = q.id;
+    textarea.required = true;
+    // Participant-friendly typing settings
+    textarea.placeholder = 'Type your answer here (short is fine)';
+    textarea.setAttribute('spellcheck', 'false');
+    textarea.setAttribute('autocapitalize', 'off');
+    textarea.setAttribute('autocorrect', 'off');
+    textarea.setAttribute('aria-describedby', 'answer-tips');
+
+    // Optional tiny word count (non-judgmental)
+    const wc = document.createElement('div');
+    wc.className = 'muted';
+    wc.style.marginTop = '6px';
+    wc.textContent = 'Word count: 0 (no minimum)';
+    textarea.addEventListener('input', () => {
+      const n = textarea.value.trim() ? textarea.value.trim().split(/\s+/).length : 0;
+      wc.textContent = `Word count: ${n} (no minimum)`;
+    });
+
+    qDiv.appendChild(label);
+    qDiv.appendChild(textarea);
+    qDiv.appendChild(wc);
+    fields.appendChild(qDiv);
+  });
+
+  // Friendlier skip label each time this view shows
+  const skipBtn = document.getElementById('skip');
+  if (skipBtn) skipBtn.textContent = 'Skip question';
+
+  // Keyboard shortcuts
+  form.onkeydown = (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      form.requestSubmit();
+    } else if (e.altKey && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      document.getElementById('skip').click();
+    }
+  };
+}
+
+
+  /* ===========================
+   Semantic scoring helpers - universal
+   =========================== */
+const STOPWORDS = new Set(['a','an','the','of','to','in','on','for','with','and','or','but','is','are','was','were','be','been','being','as','by','from','that','this','those','these','it','its','at','which','who','whom','what','why','how','do','does','did','so','very','really','just','about','into','over','under','up','down','out','off','than','then','there','their','them','they','you','your']);
+
+const NUMBER_WORDS = new Map([
+  ['zero','0'], ['one','1'], ['two','2'], ['three','3'], ['four','4'],
+  ['five','5'], ['six','6'], ['seven','7'], ['eight','8'], ['nine','9'],
+  ['ten','10'], ['eleven','11'], ['twelve','12']
+]);
+
+// REPLACE normalizeText with this merged version
+function normalizeText(t) {
+  t = String(t || '').toLowerCase();
+  // unify quotes
+  t = t.replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"');
+
+  // expand only true contractions (avoid turning possessives into "is")
+  t = t
+    .replace(/\bwon't\b/g, 'will not')
+    .replace(/\bcan't\b/g, 'cannot')
+    .replace(/n't\b/g, ' not')
+    .replace(/\bI'm\b/gi, 'I am')
+    .replace(/\byou're\b/gi, 'you are')
+    .replace(/\bwe're\b/gi, 'we are')
+    .replace(/\bthey're\b/gi, 'they are')
+    .replace(/\bI've\b/gi, 'I have')
+    .replace(/\bwe've\b/gi, 'we have')
+    .replace(/\bthey've\b/gi, 'they have')
+    .replace(/\bI'll\b/gi, 'I will')
+    .replace(/\byou'll\b/gi, 'you will')
+    .replace(/\bwe'll\b/gi, 'we will')
+    .replace(/\bthey'll\b/gi, 'they will');
+
+  // strip punctuation (keep digits/letters/spaces)
+  t = t.replace(/[.,!?;:"`']/g, ' ').replace(/\s+/g, ' ').trim();
+  return t;
+}
+
+function simpleStem(w) {
+  if (!w) return w;
+  // light stem rules; do NOT eat short words like "is"
+  if (w.length > 3) {
+    if (w.endsWith('ies')) return w.slice(0, -3) + 'y';
+    if (/(ing|ed|ly|ers|er|est)$/.test(w)) return w.replace(/(ing|ed|ly|ers|er|est)$/,'');
+    if (w.endsWith('s') && !w.endsWith('ss')) return w.slice(0, -1);
+  }
+  return w;
+}
+
+function tokenize(t) {
+  const norm = normalizeText(t);
+  const raw = norm.split(' ').map(w => NUMBER_WORDS.get(w) || w);
+  const filtered = raw.filter(w => w && !STOPWORDS.has(w));
+  const stemmed = filtered.map(simpleStem);
+  return { tokens: stemmed, joined: ' ' + stemmed.join(' ') + ' ' };
+}
+
+function patternToTokenSet(pat) {
+  const src = pat instanceof RegExp ? pat.source : String(pat || '');
+  // strip common regex meta so alternations like (foo|bar) become tokens
+  const deRegex = src.replace(/[\\^$.*+?()[\]{}|]/g, ' ');
+  const parts = normalizeText(deRegex).split(' ');
+  const toks = parts.map(simpleStem).filter(Boolean);
+  return new Set(toks);
+}
+
+function tokenSetSatisfied(respTokens, tokenSet) {
+  if (!tokenSet || tokenSet.size === 0) return { hits: 0, need: 0 };
+  let hits = 0;
+  for (const tok of tokenSet) if (respTokens.includes(tok)) hits++;
+  return { hits, need: tokenSet.size };
+}
+
+
+  // --- Simple response quality + review helpers (used in submitAnswers) ---
+function checkKeywords(response, scoringKey) {
+  // Heuristic: does the response hit some tokens from any pattern in SCORING_REFERENCE?
+  const scoring = SCORING_REFERENCE[scoringKey];
+  if (!scoring) return false;
+  const { tokens } = tokenize(response);
+
+  const sets = [];
+  const addSets = (bucket) => {
+    if (bucket && Array.isArray(bucket.patterns)) {
+      bucket.patterns.forEach(p => sets.push(patternToTokenSet(p)));
+    }
+  };
+  addSets(scoring.twoPoint);
+  addSets(scoring.onePoint);
+
+  return sets.some(set => {
+    let hits = 0;
+    set.forEach(tok => { if (tokens.includes(tok)) hits++; });
+    return hits >= Math.max(1, Math.ceil(set.size * 0.4)); // ~40% overlap counts as "has relevant keywords"
+  });
+}
+
+function detectASLGloss(response) {
+  const raw = String(response || '');
+  const words = raw.trim().split(/\s+/);
+  const upperFrac = words.length ? words.filter(w => /^[A-Z0-9-]{2,}$/.test(w)).length / words.length : 0;
+  return upperFrac > 0.3; // Return true if >30% of words look like ASL gloss
+}
+
+/* ===========================
+   Form Submission & Scoring
+   =========================== */
+async function submitAnswers(e) {
+  e.preventDefault();
+  
+  const trial = state.sequence[state.currentIndex];
+  const itemResult = {
+    item: trial.item,
+    image: trial.image,
+    type: trial.type,
+    readingTime: state.readingStartTime ? Date.now() - state.readingStartTime : 0,
+    responses: {},
+    scores: {},
+    totalScore: 0,
+    timestamp: new Date().toISOString()
+  };
+  
+  // Collect responses and score them
+  let itemScore = 0;
+  for (const q of trial.questions) {
+    const response = document.getElementById(q.id).value.trim();
+    itemResult.responses[q.id] = response;
+    
+    // Auto-score if scoring key exists
+    if (q.scoringKey && SCORING_REFERENCE[q.scoringKey]) {
+      const score = scoreResponse(response, q.scoringKey);
+      itemResult.scores[q.id] = score;
+      itemScore = Math.max(itemScore, score); // Take highest score for item
+    }
+  }
+  
+  itemResult.totalScore = itemScore;
+  state.results.push(itemResult);
+  
+  // Update scoring state
+  state.totalPoints += itemScore;
+  if (itemScore === 0) {
+    state.consecutiveZeros++;
+  } else {
+    state.consecutiveZeros = 0;
+  }
+  
+  // Send to Google
+  await sendToGoogle('item_completed', {
+    pid: state.pid,
+    ...itemResult
+  });
+  
+  // Move to next item
+  state.currentIndex++;
+  showItem();
+}
+
+function scoreResponse(response, scoringKey) {
+  if (!response || !response.trim()) return 0;
+  
+  const scoring = SCORING_REFERENCE[scoringKey];
+  if (!scoring) return 0;
+  
+  const norm = normalizeText(response);
+  
+  // Check 2-point patterns
+  if (scoring.twoPoint && scoring.twoPoint.patterns) {
+    for (const pattern of scoring.twoPoint.patterns) {
+      if (pattern.test(norm)) return 2;
+    }
+  }
+  
+  // Check 1-point patterns
+  if (scoring.onePoint && scoring.onePoint.patterns) {
+    for (const pattern of scoring.onePoint.patterns) {
+      if (pattern.test(norm)) return 1;
+    }
+  }
+  
+  // Check semantic scoring if available
+  if (scoring.semantic) {
+    const { tokens } = tokenize(response);
+    
+    // Check full credit
+    if (scoring.semantic.full) {
+      let matches = 0;
+      for (const conceptGroup of scoring.semantic.full) {
+        const concepts = Array.isArray(conceptGroup) ? conceptGroup : [conceptGroup];
+        if (concepts.some(concept => {
+          const conceptTokens = tokenize(concept).tokens;
+          return conceptTokens.every(t => tokens.includes(t));
+        })) {
+          matches++;
         }
+      }
+      if (matches >= (scoring.semantic.full.length === 2 ? 2 : 1)) return 2;
+      if (matches >= 1) return 1;
+    }
+    
+    // Check partial credit
+    if (scoring.semantic.partial) {
+      if (scoring.semantic.partial.some(term => tokens.includes(simpleStem(term)))) {
+        return 1;
+      }
+    }
+  }
+  
+  return 0;
+}
 
-        // Generate block sequence based on counterbalancing
-        function generateBlockSequence(participantId) {
-            // Simple counterbalancing based on participant ID
-            const cb = (parseInt(participantId) || 0) % 4 + 1;
-            
-            const latinSquare = [
-                [['egocentric', 'easy'], ['egocentric', 'hard'], ['allocentric', 'easy'], ['allocentric', 'hard']],
-                [['egocentric', 'hard'], ['allocentric', 'hard'], ['egocentric', 'easy'], ['allocentric', 'easy']],
-                [['allocentric', 'easy'], ['egocentric', 'easy'], ['allocentric', 'hard'], ['egocentric', 'hard']],
-                [['allocentric', 'hard'], ['allocentric', 'easy'], ['egocentric', 'hard'], ['egocentric', 'easy']]
-            ];
-            
-            const sequence = latinSquare[cb - 1];
-            const blocks = [];
-            
-            // Add each condition twice (as per original with 2 repetitions)
-            sequence.forEach(([navType, difficulty]) => {
-                blocks.push({ navType, difficulty });
-                blocks.push({ navType, difficulty });
-            });
-            
-            // Add control block
-            blocks.splice(4, 0, { navType: 'control', difficulty: 'control' });
-            
-            return blocks;
-        }
+/* ===========================
+   UI Functions
+   =========================== */
+function showScreen(screen) {
+  document.querySelectorAll('.card').forEach(el => el.classList.add('hidden'));
+  document.getElementById(`screen-${screen}`).classList.remove('hidden');
+}
 
-        // Start experiment
-        function startExperiment() {
-            // Collect participant info
-            state.participantInfo = {
-                id: document.getElementById('participant-id').value || 'test',
-                age: document.getElementById('age').value,
-                gender: document.getElementById('gender').value,
-                handedness: document.getElementById('handedness').value,
-                timestamp: new Date().toISOString()
-            };
-            
-            // Generate block sequence
-            config.blocks = generateBlockSequence(state.participantInfo.id);
-            
-            // Load stimuli and start
-            loadStimulusMapping().then(() => {
-                // Start with practice
-                state.isPractice = true;
-                showPracticeInstructions();
-            });
-            
-            document.getElementById('data-entry-screen').classList.remove('active');
-        }
+function updateProgress() {
+  const percent = (state.currentIndex / state.sequence.length) * 100;
+  document.getElementById('progress').style.width = `${percent}%`;
+}
 
-        // Show practice instructions
-        function showPracticeInstructions() {
-            const instructionScreen = document.getElementById('instruction-screen');
-            const instructionText = document.getElementById('instruction-text');
-            
-            instructionText.innerHTML = `
-                <h3>Practice Phase</h3>
-                <p>You will now practice the two navigation types:</p>
-                <p><strong>PLAYER VIEW:</strong> Navigate as if you are the player<br>
-                UP = forward, DOWN = backward, LEFT/RIGHT = turn</p>
-                <p><strong>MAP VIEW:</strong> Navigate using map directions<br>
-                UP = north, DOWN = south, LEFT = west, RIGHT = east</p>
-                <p>Press Continue to start practice trials.</p>
-            `;
-            
-            instructionScreen.classList.add('active');
-        }
+function updateAdminPanel() {
+  if (!state.adminMode) return;
+  document.getElementById('admin-group').textContent = state.participantGroup || '-';
+  document.getElementById('admin-item').textContent = state.sequence[state.currentIndex]?.item || '-';
+  document.getElementById('admin-score').textContent = state.totalPoints;
+  document.getElementById('admin-zeros').textContent = state.consecutiveZeros;
+  document.getElementById('admin-status').textContent = state.consecutiveZeros >= 6 ? 'Discontinue' : 'Active';
+}
 
-        // Show instructions for current block
-        function showBlockInstructions() {
-            const block = config.blocks[state.currentBlock];
-            const instructionScreen = document.getElementById('instruction-screen');
-            const instructionText = document.getElementById('instruction-text');
-            const navIndicator = document.getElementById('nav-type-indicator');
-            
-            // Set navigation type header
-            navIndicator.className = `nav-type-header ${block.navType}-header`;
-            navIndicator.textContent = block.navType === 'egocentric' ? 'PLAYER VIEW' : 
-                                      block.navType === 'allocentric' ? 'MAP VIEW' : 'ARROW FOLLOWING';
-            
-            // Set instruction text
-            const instructions = {
-                egocentric: `Navigate from the gray player to the red stop sign.<br><br>
-                            Use arrow keys as if YOU are the player:<br>
-                            UP = Move forward<br>
-                            DOWN = Move backward<br>
-                            LEFT = Turn left<br>
-                            RIGHT = Turn right`,
-                allocentric: `Navigate from the gray player to the red stop sign.<br><br>
-                             Use arrow keys for map directions:<br>
-                             UP = Move north (top of screen)<br>
-                             DOWN = Move south (bottom)<br>
-                             LEFT = Move west (left side)<br>
-                             RIGHT = Move east (right side)`,
-                control: `Follow the arrows shown.<br><br>
-                         Press the arrow key matching the FIRST arrow from the player.`
-            };
-            
-            instructionText.innerHTML = instructions[block.navType];
-            instructionScreen.classList.add('active');
-            
-            // Update progress
-            updateProgress();
-        }
+/* ===========================
+   Timer Functions
+   =========================== */
+function startTimer() {
+  state.readingStartTime = Date.now();
+  let seconds = 0;
+  const timerEl = document.getElementById('timer');
+  const container = document.getElementById('timer-container');
+  
+  // Show timer unless user preference hides it
+  if (!document.getElementById('pref-hide-timer').checked) {
+    container.classList.remove('hidden');
+  }
+  
+  state.timerInterval = setInterval(() => {
+    seconds++;
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    timerEl.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }, 1000);
+}
 
-        // Start current block
-        function startBlock() {
-            document.getElementById('instruction-screen').classList.remove('active');
-            
-            if (state.isPractice) {
-                // Start practice trials
-                state.currentTrial = 0;
-                state.blockData = [];
-                runPracticeTrial();
-            } else {
-                // Start main experiment block
-                state.currentTrial = 0;
-                state.blockData = [];
-                nextTrial();
-            }
-        }
+function stopTimer() {
+  if (state.timerInterval) {
+    clearInterval(state.timerInterval);
+    state.timerInterval = null;
+  }
+}
 
-        // Run practice trial
-        function runPracticeTrial() {
-            if (state.currentTrial >= config.practiceTrials) {
-                // Practice complete
-                state.isPractice = false;
-                state.currentBlock = 0;
-                showBlockInstructions();
-                return;
-            }
-            
-            // Alternate between egocentric and allocentric for practice
-            const navType = state.currentTrial < 2 ? 'egocentric' : 'allocentric';
-            const stimuli = stimulusMapping.easy;
-            const stimulus = stimuli[state.currentTrial % stimuli.length];
-            
-            presentStimulus(stimulus, navType, 'practice');
-        }
+/* ===========================
+   Assessment Flow
+   =========================== */
+async function startAssessment() {
+  state.sessionStartTime = Date.now();
+  buildSequence();
+  
+  // Send session start to Google
+  await sendToGoogle('session_started', {
+    pid: state.pid,
+    edu: state.edu,
+    participantGroup: state.participantGroup,
+    readModality: state.readModality,
+    totalItems: state.sequence.length
+  });
+  
+  state.currentIndex = 0;
+  showItem();
+}
 
-        // Present stimulus
-        function presentStimulus(stimulus, navType, difficulty) {
-            const stimulusScreen = document.getElementById('stimulus-screen');
-            const stimulusImage = document.getElementById('stimulus-image');
-            const fixation = document.getElementById('fixation');
-            
-            // Show fixation first
-            fixation.style.display = 'block';
-            stimulusImage.style.display = 'none';
-            stimulusScreen.classList.add('active');
-            
-            setTimeout(() => {
-                // Show stimulus
-                fixation.style.display = 'none';
-                stimulusImage.style.display = 'block';
-                stimulusImage.src = stimulus.file;
-                
-                state.stimulusOnsetTime = Date.now();
-                state.trialStartTime = Date.now();
-                
-                // Set up response handling
-                document.addEventListener('keydown', handleResponse);
-                
-                // Timeout for no response
-                state.responseTimeout = setTimeout(() => {
-                    handleResponse({ key: 'timeout' });
-                }, config.maxResponseTime);
-                
-            }, config.fixationDuration);
-        }
+async function finishAssessment() {
+  showScreen('finish');
+  
+  const sessionData = {
+    pid: state.pid,
+    edu: state.edu,
+    participantGroup: state.participantGroup,
+    readModality: state.readModality,
+    sessionStartTime: state.sessionStartTime,
+    sessionEndTime: Date.now(),
+    totalPoints: state.totalPoints,
+    itemsCompleted: state.results.length,
+    consecutiveZeros: state.consecutiveZeros,
+    results: state.results
+  };
+  
+  // Save locally first
+  state.savedData = sessionData;
+  localStorage.setItem(`wiat2_${state.pid}_${Date.now()}`, JSON.stringify(sessionData));
+  
+  // Try to upload
+  document.getElementById('upload-progress').textContent = 'Uploading your results...';
+  
+  try {
+    await sendToGoogle('session_completed', sessionData);
+    document.getElementById('upload-status').className = 'status-box success';
+    document.getElementById('upload-progress').textContent = 'Results uploaded successfully!';
+    
+    // Show stats
+    document.getElementById('final-stats').classList.remove('hidden');
+    document.getElementById('stats-content').innerHTML = `
+      <p>Items completed: ${state.results.length}</p>
+      <p>Total score: ${state.totalPoints}</p>
+      <p>Session duration: ${Math.round((sessionData.sessionEndTime - sessionData.sessionStartTime) / 60000)} minutes</p>
+    `;
+  } catch (error) {
+    console.error('Upload failed:', error);
+    document.getElementById('upload-status').className = 'status-box error';
+    document.getElementById('upload-progress').textContent = 'Upload failed. Your data is saved locally.';
+    document.getElementById('retry-upload').classList.remove('hidden');
+    document.getElementById('download-backup').classList.remove('hidden');
+  }
+}
 
-        // Handle keyboard response
-        function handleResponse(event) {
-            // Only process arrow keys and timeout
-            const validKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'timeout'];
-            
-            let responseKey = event.key || event;
-            if (!validKeys.includes(responseKey)) return;
-            
-            // Clear timeout
-            clearTimeout(state.responseTimeout);
-            
-            // Remove event listener
-            document.removeEventListener('keydown', handleResponse);
-            
-            // Calculate RT
-            const rt = responseKey === 'timeout' ? null : Date.now() - state.stimulusOnsetTime;
-            
-            // Map response
-            const responseMap = {
-                'ArrowUp': 'up',
-                'ArrowDown': 'down',
-                'ArrowLeft': 'left',
-                'ArrowRight': 'right',
-                'timeout': 'none'
-            };
-            const response = responseMap[responseKey];
-            
-            // Determine correct response and accuracy
-            let correct, accuracy;
-            if (state.isPractice) {
-                const navType = state.currentTrial < 2 ? 'egocentric' : 'allocentric';
-                const stimuli = stimulusMapping.easy;
-                const stimulus = stimuli[state.currentTrial % stimuli.length];
-                correct = navType === 'egocentric' ? stimulus.egocentric_correct : stimulus.allocentric_correct;
-            } else {
-                const block = config.blocks[state.currentBlock];
-                const stimuli = stimulusMapping[block.difficulty];
-                const stimulus = stimuli[state.currentTrial % stimuli.length];
-                correct = block.navType === 'egocentric' ? stimulus.egocentric_correct : stimulus.allocentric_correct;
-            }
-            
-            accuracy = response === correct ? 1 : 0;
-            
-            // Record trial data
-            const trialData = {
-                participant_id: state.participantInfo.id,
-                block: state.currentBlock,
-                trial: state.currentTrial + 1,
-                navigation_type: state.isPractice ? (state.currentTrial < 2 ? 'egocentric' : 'allocentric') : 
-                                config.blocks[state.currentBlock].navType,
-                difficulty: state.isPractice ? 'practice' : config.blocks[state.currentBlock].difficulty,
-                response: response,
-                correct_response: correct,
-                accuracy: accuracy,
-                rt: rt,
-                timestamp: new Date().toISOString()
-            };
-            
-            state.blockData.push(trialData);
-            
-            // Show feedback
-            showFeedback(accuracy);
-        }
+/* ===========================
+   Event Listeners
+   =========================== */
 
-        // Show feedback
-        function showFeedback(accuracy) {
-            document.getElementById('stimulus-screen').classList.remove('active');
-            
-            if (state.isPractice) {
-                // Show detailed feedback for practice
-                const feedbackScreen = document.getElementById('feedback-screen');
-                const feedbackText = document.getElementById('feedback-text');
-                
-                feedbackText.textContent = accuracy ? 'Correct!' : 'Incorrect';
-                feedbackText.style.color = accuracy ? 'green' : 'red';
-                
-                feedbackScreen.classList.add('active');
-                
-                setTimeout(() => {
-                    feedbackScreen.classList.remove('active');
-                    state.currentTrial++;
-                    runPracticeTrial();
-                }, 1500);
-            } else {
-                // Brief or no feedback for main experiment
-                setTimeout(() => {
-                    nextTrial();
-                }, config.feedbackDuration);
-            }
-        }
+// Setup screen
+document.getElementById('start-study').addEventListener('click', startAssessment);
 
-        // Next trial
-        function nextTrial() {
-            state.currentTrial++;
-            
-            if (state.currentTrial >= config.trialsPerBlock) {
-                // Block complete
-                state.allData = state.allData.concat(state.blockData);
-                state.currentBlock++;
-                
-                if (state.currentBlock >= config.blocks.length) {
-                    // Experiment complete
-                    showCompletion();
-                } else {
-                    // Next block
-                    showBlockInstructions();
-                }
-            } else {
-                // Next trial in current block
-                const block = config.blocks[state.currentBlock];
-                const stimuli = stimulusMapping[block.difficulty];
-                const stimulus = stimuli[state.currentTrial % stimuli.length];
-                
-                presentStimulus(stimulus, block.navType, block.difficulty);
-            }
-        }
+// Recording setup
+window.addEventListener('DOMContentLoaded', async () => {
+  // Check configuration
+  if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
+    document.getElementById('config-warning').classList.remove('hidden');
+    // Still allow the study to proceed for testing
+  }
+  
+  // Setup recording based on selection
+  document.getElementById('begin').addEventListener('click', async () => {
+    const recordingType = determineRecordingNeeds();
+    
+    document.getElementById('recording-method-text').textContent = 
+      recordingType === 'video' 
+        ? 'Setting up video recording for ASL...' 
+        : 'Setting up audio recording for spoken responses...';
+    
+    let setupSuccess = false;
+    
+    if (recordingType === 'video') {
+      document.getElementById('video-setup').classList.remove('hidden');
+      document.getElementById('pref-hide-selfview').classList.remove('hidden');
+      setupSuccess = await setupVideoRecording();
+    } else {
+      document.getElementById('audio-setup').classList.remove('hidden');
+      setupSuccess = await setupAudioRecording();
+    }
+    
+    if (setupSuccess) {
+      document.getElementById('setup-status').className = 'status-box success';
+      document.getElementById('setup-status-text').textContent = 'Setup complete! Ready to begin.';
+      document.getElementById('start-study').disabled = false;
+    } else {
+      document.getElementById('setup-status').className = 'status-box error';
+      document.getElementById('setup-status-text').textContent = 'Setup failed. Please check permissions and refresh.';
+    }
+  });
+});
 
-        // Update progress display
-        function updateProgress() {
-            const progress = document.getElementById('progress');
-            const totalTrials = config.blocks.length * config.trialsPerBlock;
-            const completedTrials = state.currentBlock * config.trialsPerBlock + state.currentTrial;
-            
-            progress.textContent = `Block ${state.currentBlock + 1}/${config.blocks.length} | Trial ${state.currentTrial}/${config.trialsPerBlock}`;
-        }
+// Test audio recording
+document.getElementById('test-audio-record').addEventListener('click', () => {
+  document.getElementById('test-audio-record').classList.add('hidden');
+  document.getElementById('stop-test-audio').classList.remove('hidden');
+  document.getElementById('test-audio-timer').classList.remove('hidden');
+  
+  startRecording();
+  
+  // Auto-stop after 10 seconds
+  setTimeout(() => {
+    if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
+      document.getElementById('stop-test-audio').click();
+    }
+  }, 10000);
+});
 
-        // Show completion screen
-        function showCompletion() {
-            const feedbackScreen = document.getElementById('feedback-screen');
-            const feedbackText = document.getElementById('feedback-text');
-            const continueButton = document.getElementById('continue-button');
-            const downloadButton = document.getElementById('download-data');
-            
-            // Calculate overall accuracy
-            const totalCorrect = state.allData.filter(d => d.accuracy === 1).length;
-            const accuracy = (totalCorrect / state.allData.length * 100).toFixed(1);
-            
-            feedbackText.innerHTML = `
-                <h2>Experiment Complete!</h2>
-                <p>Thank you for participating.</p>
-                <p>Overall accuracy: ${accuracy}%</p>
-                <p>Click below to download your data.</p>
-            `;
-            feedbackText.style.color = '#333';
-            
-            continueButton.style.display = 'none';
-            downloadButton.style.display = 'inline-block';
-            feedbackScreen.classList.add('active');
-        }
+document.getElementById('stop-test-audio').addEventListener('click', async () => {
+  const blob = await stopRecording();
+  
+  document.getElementById('test-audio-record').classList.remove('hidden');
+  document.getElementById('stop-test-audio').classList.add('hidden');
+  document.getElementById('test-audio-timer').classList.add('hidden');
+  
+  if (blob) {
+    const url = URL.createObjectURL(blob);
+    const audio = document.getElementById('test-audio-playback');
+    audio.src = url;
+    audio.classList.remove('hidden');
+    document.getElementById('audio-status').textContent = 'Test complete! Play back your recording above to verify quality.';
+  }
+});
 
-        // Download data as CSV
-        function downloadData() {
-            // Convert data to CSV
-            const headers = Object.keys(state.allData[0]);
-            const csvContent = [
-                headers.join(','),
-                ...state.allData.map(row => 
-                    headers.map(header => row[header]).join(',')
-                )
-            ].join('\n');
-            
-            // Create download link
-            const blob = new Blob([csvContent], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `spatial_nav_${state.participantInfo.id}_${Date.now()}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        }
-    </script>
+// Reading controls
+document.getElementById('start-reading').addEventListener('click', () => {
+  startTimer();
+  document.getElementById('start-reading').classList.add('hidden');
+  document.getElementById('done-reading').classList.remove('hidden');
+});
+
+document.getElementById('done-reading').addEventListener('click', () => {
+  stopTimer();
+  const readingTime = state.readingStartTime ? Date.now() - state.readingStartTime : 0;
+  showQuestions(readingTime);
+});
+
+// Recording controls for items
+document.getElementById('start-recording').addEventListener('click', () => {
+  startRecording();
+  document.getElementById('start-recording').classList.add('hidden');
+  document.getElementById('stop-recording').classList.remove('hidden');
+});
+
+document.getElementById('stop-recording').addEventListener('click', async () => {
+  const blob = await stopRecording();
+  
+  document.getElementById('start-recording').classList.remove('hidden');
+  document.getElementById('stop-recording').classList.add('hidden');
+  
+  // Upload recording
+  if (blob) {
+    const trial = state.sequence[state.currentIndex];
+    const formData = new FormData();
+    formData.append('recording', blob, `${state.pid}_item${trial.item}_${Date.now()}.${state.useVideoRecording ? 'webm' : 'webm'}`);
+    
+    // For read-aloud items, move to next item
+    if (trial.readAloud && trial.skipScoring) {
+      state.currentIndex++;
+      showItem();
+    } else {
+      // Show questions after recording
+      showQuestions(0);
+    }
+  }
+});
+
+// Form submission
+document.getElementById('qa-form').addEventListener('submit', submitAnswers);
+
+document.getElementById('skip').addEventListener('click', () => {
+  const trial = state.sequence[state.currentIndex];
+  
+  // Record skip
+  state.results.push({
+    item: trial.item,
+    skipped: true,
+    totalScore: 0,
+    timestamp: new Date().toISOString()
+  });
+  
+  state.consecutiveZeros++;
+  state.currentIndex++;
+  showItem();
+});
+
+// Preferences
+document.getElementById('toggle-selfview').addEventListener('change', (e) => {
+  const preview = document.getElementById('preview');
+  if (e.target.checked) {
+    preview.classList.add('hidden-selfview');
+  } else {
+    preview.classList.remove('hidden-selfview');
+  }
+});
+
+// Retry upload
+document.getElementById('retry-upload').addEventListener('click', async () => {
+  if (state.savedData) {
+    try {
+      await sendToGoogle('session_completed', state.savedData);
+      document.getElementById('upload-status').className = 'status-box success';
+      document.getElementById('upload-progress').textContent = 'Results uploaded successfully!';
+      document.getElementById('retry-upload').classList.add('hidden');
+    } catch (error) {
+      document.getElementById('upload-progress').textContent = 'Upload failed again. Please download backup.';
+    }
+  }
+});
+
+// Download backup
+document.getElementById('download-backup').addEventListener('click', () => {
+  if (state.savedData) {
+    const blob = new Blob([JSON.stringify(state.savedData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `wiat2_${state.pid}_${Date.now()}.json`;
+    a.click();
+  }
+});
+
+// Admin mode toggle (Ctrl+Shift+A)
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+    state.adminMode = !state.adminMode;
+    document.body.classList.toggle('admin-mode', state.adminMode);
+  }
+});
+
+</script>
 </body>
 </html>
