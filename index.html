@@ -448,6 +448,18 @@ margin-right: 15px;
 input, select, textarea {
 font-size: 16px !important;
 }
+
+/* Prevent zoom on double-tap */
+* {
+touch-action: manipulation;
+}
+
+/* Ensure buttons are large enough for touch */
+button,
+input[type="radio"] {
+min-height: 44px;
+min-width: 44px;
+}
 }
 
 /* FIXED: Prevent horizontal scroll */
@@ -474,7 +486,15 @@ html, body {
     <div class="row">
       <div>
         <label for="pid">Participant Code</label>
-        <input id="pid" type="text" placeholder="Enter initials" required />
+        <!-- Enforce format and length in HTML -->
+        <input id="pid" type="text" placeholder="Enter initials" required
+               maxlength="20"
+               pattern="[A-Za-z0-9_-]{1,20}"
+               title="Use letters, numbers, underscores, and hyphens only (max 20)"
+               inputmode="latin"
+               autocomplete="off"
+               autocapitalize="off"
+               spellcheck="false" />
       </div>
       <div>
         <label for="edu">Education Level</label>
@@ -631,9 +651,10 @@ html, body {
 
     <!-- Recording controls for read-aloud items -->
     <div id="recording-controls" class="recording-controls hidden">
-      <button id="start-recording" class="danger">Start Recording</button>
+      <button id="start-recording" class="danger" aria-describedby="recording-help">Start Recording</button>
       <button id="stop-recording" class="hidden">Stop Recording</button>
       <span class="recording-timer hidden" id="recording-timer">00:00</span>
+      <div id="recording-help" class="sr-only">Click to begin recording your response</div>
     </div>
 
     <!-- Standard reading controls -->
@@ -695,6 +716,16 @@ html, body {
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyX6yfgjIVSzmL2nL73IxIWPCV4RPbxfjPTDOxB-_Ax6siB2vmKJXnCpwLP4-PUA4MCpQ/exec';
 
 /* ===========================
+   Debug helper (conditional console logging)
+   =========================== */
+function debugLog(message, data = null) {
+  if (window.location.hostname === 'localhost' || window.location.search.includes('debug=1')) {
+    if (data !== null) console.log(message, data);
+    else console.log(message);
+  }
+}
+
+/* ===========================
    State Management
    =========================== */
 let state = {
@@ -716,10 +747,13 @@ let state = {
   sequence: [],
   
   // Timers
-  timerInterval: null,
+  timers: {
+    reading: null,
+    recording: null,
+    test: null
+  },
   readingStartTime: null,
   itemStartTime: null,
-  recordingTimerInterval: null,
   
   // Recording
   useVideoRecording: false,
@@ -743,6 +777,9 @@ let state = {
     manualReviewNeeded: 0
   }
 };
+
+// Test recording timer variables (global scope to prevent memory leaks)
+let testTimerSeconds = 0;
 
 /* ===========================
    WIAT-2 Scoring Reference
@@ -1918,7 +1955,10 @@ function checkWelcomeReady() {
 
 // Bind welcome screen inputs so the Continue button can enable
 document.getElementById('pid').addEventListener('input', (e) => {
-  state.pid = e.target.value.trim();
+  // Sanitize input - remove special characters, limit length
+  let value = e.target.value.replace(/[^a-zA-Z0-9_-]/g, '').substring(0, 20);
+  e.target.value = value;
+  state.pid = value.trim();
   checkWelcomeReady();
 });
 
@@ -1948,82 +1988,72 @@ document.querySelectorAll('input[name="read-modality"]').forEach((radio) => {
 
 // Move from welcome to setup once all fields are ready
 document.getElementById('begin').addEventListener('click', async () => {
-  if (document.getElementById('begin').disabled) return;
+  const beginBtn = document.getElementById('begin');
+  if (beginBtn.disabled) return;
   
-  // Hide welcome, show setup
-  document.getElementById('screen-welcome').classList.add('hidden');
-  document.getElementById('screen-setup').classList.remove('hidden');
-});
-
-function getReadAloudInstructions() {
-  const modality = state.readModality;
-  
-  if (modality === 'sign') {
-    return {
-      title: "Sign This Passage",
-      text: "Please sign this passage in ASL. Click 'Start Recording' when ready to begin signing.",
-      buttonText: "Start Signing"
-    };
-  } else {
-    return {
-      title: "Read This Aloud",
-      text: "Please read this passage aloud. Click 'Start Recording' when ready to begin speaking.",
-      buttonText: "Start Speaking"
-    };
-  }
-}
-
-/* ===========================
-   Google Apps Script Communication
-   =========================== */
-async function sendToGoogle(action, data) {
-  // Skip if no URL configured to reduce console spam
-  if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
-    return { status: 'skipped' };
-  }
+  // Prevent double-clicks
+  beginBtn.disabled = true;
   
   try {
-    const payload = {
-      action: action,
-      ...data,
-      participantGroup: state.participantGroup,
-      readModality: state.readModality,
-      timestamp: new Date().toISOString()
-    };
+    // Hide welcome, show setup
+    document.getElementById('screen-welcome').classList.add('hidden');
+    document.getElementById('screen-setup').classList.remove('hidden');
     
-    // Remove verbose logging in production
-    if (window.location.hostname === 'localhost') {
-      console.log('Sending to Google:', action);
+    // Setup recording based on choices
+    const recordingType = determineRecordingNeeds();
+    
+    document.getElementById('recording-method-text').textContent = 
+      recordingType === 'video' 
+        ? 'Setting up video recording for ASL...' 
+        : 'Setting up audio recording for spoken responses...';
+    
+    let setupSuccess = false;
+    
+    if (recordingType === 'video') {
+      document.getElementById('video-setup').classList.remove('hidden');
+      document.getElementById('pref-hide-selfview').classList.remove('hidden');
+      setupSuccess = await setupVideoRecording();
+    } else {
+      document.getElementById('audio-setup').classList.remove('hidden');
+      setupSuccess = await setupAudioRecording();
     }
     
-    const response = await fetch(GOOGLE_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload)
-    });
-    
-    updateConnectionStatus(true);
-    return { status: 'success' };
-    
+    if (setupSuccess) {
+      document.getElementById('setup-status').className = 'status-box success';
+      document.getElementById('setup-status-text').textContent = 'Setup complete! Ready to begin.';
+      document.getElementById('start-study').disabled = false;
+    } else {
+      document.getElementById('setup-status').className = 'status-box error';
+      document.getElementById('setup-status-text').textContent = 'Setup failed. Please check permissions and refresh.';
+    }
   } catch (error) {
-    console.error('Google Apps Script error:', error);
-    updateConnectionStatus(false);
-    throw error;
+    console.error('Setup error:', error);
+    document.getElementById('setup-status').className = 'status-box error';
+    document.getElementById('setup-status-text').textContent = 'Setup failed. Please check permissions and refresh.';
+  } finally {
+    // Don't re-enable begin button after navigation
+    // Only re-enable if there was an error and user is still on welcome screen
+    if (!document.getElementById('screen-welcome').classList.contains('hidden')) {
+      beginBtn.disabled = false;
+    }
   }
-}
+});
 
+// FIXED: Recording setup functions now have button state management
 /* ===========================
    Recording Functions - OPTIMIZED
    =========================== */
 async function setupVideoRecording() {
+  // Disable buttons during setup to prevent race conditions
+  const startButton = document.getElementById('start-study');
+  const beginButton = document.getElementById('begin');
+  const originalStartState = startButton.disabled;
+  
+  startButton.disabled = true;
+  beginButton.disabled = true;
+  
   try {
-      
-      
-      
-       // Clean up any existing stream
+    // Clean up any existing stream
     if (state.stream) {
       state.stream.getTracks().forEach(track => track.stop());
     }
@@ -2050,10 +2080,24 @@ async function setupVideoRecording() {
     console.error('Video setup error:', err);
     document.getElementById('video-status').textContent = 'Error: Could not access camera. Please check permissions.';
     return false;
+  } finally {
+    // Re-enable buttons after setup completes
+    startButton.disabled = originalStartState;
+    beginButton.disabled = false;
   }
 }
 
 async function setupAudioRecording() {
+  // Disable buttons during setup to prevent race conditions
+  const startButton = document.getElementById('start-study');
+  const beginButton = document.getElementById('begin');
+  const testRecordButton = document.getElementById('test-audio-record');
+  const originalStartState = startButton.disabled;
+  
+  startButton.disabled = true;
+  beginButton.disabled = true;
+  testRecordButton.disabled = true;
+  
   try {
     // Clean up any existing stream
     if (state.stream) {
@@ -2079,58 +2123,88 @@ async function setupAudioRecording() {
     console.error('Audio setup error:', err);
     document.getElementById('audio-status').textContent = 'Error: Could not access microphone. Please check permissions.';
     return false;
+  } finally {
+    // Re-enable buttons after setup completes
+    startButton.disabled = originalStartState;
+    beginButton.disabled = false;
+    testRecordButton.disabled = false;
   }
 }
 
 function startRecording() {
   if (state.mediaRecorder && state.mediaRecorder.state === 'inactive') {
+    // Prevent multiple recording starts
+    const startRecBtn = document.getElementById('start-recording');
+    const testRecBtn = document.getElementById('test-audio-record');
+    
+    if (startRecBtn) startRecBtn.disabled = true;
+    if (testRecBtn) testRecBtn.disabled = true;
+    
     state.recordedChunks = [];
     state.mediaRecorder.start();
 
     document.getElementById('sr-live').textContent = state.useVideoRecording
-  ? 'Recording video started'
-  : 'Recording audio started';
+      ? 'Recording video started'
+      : 'Recording audio started';
 
     // Start recording timer
     let seconds = 0;
     const timerEl = document.getElementById('recording-timer');
     timerEl.classList.remove('hidden');
-    
-    state.recordingTimerInterval = setInterval(() => {
+
+    state.timers.recording = setInterval(() => {
       seconds++;
       const mins = Math.floor(seconds / 60);
       const secs = seconds % 60;
       timerEl.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }, 1000);
-    
+
     // Show recording indicator
     document.getElementById('rec-indicator').classList.remove('hidden');
     document.getElementById('rec-type').textContent = state.useVideoRecording ? 'Recording Video' : 'Recording Audio';
+    
+    // Re-enable buttons after a short delay to prevent accidental double-clicks
+    setTimeout(() => {
+      if (startRecBtn) startRecBtn.disabled = false;
+      if (testRecBtn) testRecBtn.disabled = false;
+    }, 500);
   }
 }
 
-      
-   function stopRecording() {
+function stopRecording() {
   return new Promise((resolve) => {
     if (!state.mediaRecorder || state.mediaRecorder.state !== 'recording') {
       resolve(null);
       return;
     }
+    
+    // Disable stop buttons to prevent multiple stops
+    const stopRecBtn = document.getElementById('stop-recording');
+    const stopTestBtn = document.getElementById('stop-test-audio');
+    
+    if (stopRecBtn) stopRecBtn.disabled = true;
+    if (stopTestBtn) stopTestBtn.disabled = true;
 
     state.mediaRecorder.onstop = () => {
       const blob = new Blob(
         state.recordedChunks,
         { type: state.recordMime || (state.useVideoRecording ? 'video/webm' : 'audio/webm') }
       );
+      
+      // Re-enable buttons after processing
+      if (stopRecBtn) stopRecBtn.disabled = false;
+      if (stopTestBtn) stopTestBtn.disabled = false;
+      
       resolve(blob);
     };
 
     state.mediaRecorder.stop();
     document.getElementById('sr-live').textContent = 'Recording stopped';
 
-    if (state.recordingTimerInterval) {
-      clearInterval(state.recordingTimerInterval);
-      state.recordingTimerInterval = null;
+    // Centralized recording timer cleanup
+    if (state.timers.recording) {
+      clearInterval(state.timers.recording);
+      state.timers.recording = null;
     }
     document.getElementById('recording-timer').classList.add('hidden');
     document.getElementById('rec-indicator').classList.add('hidden');
@@ -2156,7 +2230,7 @@ function buildSequence() {
     state.sequence = sortedTrials;
   }
   
-  console.log(`Built sequence with ${state.sequence.length} items for grade ${state.edu}`);
+  debugLog(`Built sequence with ${state.sequence.length} items for grade ${state.edu}`);
 }
 
 async function showItem() {
@@ -2174,7 +2248,7 @@ async function showItem() {
   const trial = state.sequence[state.currentIndex];
   
   // Send item started event to Google
-  await sendToGoogle('item_started', {
+  await sendToGoogleWithRetry('item_started', {
     pid: state.pid,
     itemNumber: trial.item,
     imageFile: trial.image,
@@ -2190,18 +2264,28 @@ async function showItem() {
   document.getElementById('actual-item-number').textContent = trial.item;
   document.getElementById('stim').src = `stimuli/${trial.image}`;
   
-  // Reset form
+  // Reset form and controls
   document.getElementById('qa-form').classList.add('hidden');
   document.getElementById('qa-fields').innerHTML = '';
   document.getElementById('timer').textContent = '00:00';
+  document.getElementById('timer-container').classList.add('hidden');
   
   // Hide all controls initially
   document.getElementById('recording-controls').classList.add('hidden');
   document.getElementById('reading-controls').classList.add('hidden');
   document.getElementById('read-aloud-instructions').classList.add('hidden');
   
+  // Reset button states
+  document.getElementById('start-reading').classList.remove('hidden');
+  document.getElementById('done-reading').classList.add('hidden');
+  document.getElementById('start-recording').classList.remove('hidden');
+  document.getElementById('stop-recording').classList.add('hidden');
+  
   const instruction = trial.instruction || '';
   document.getElementById('instruction-text').textContent = instruction;
+  
+  // Clear any existing timers
+  clearAllTimers();
   
   // Handle different item types
   if (trial.readAloud) {
@@ -2212,26 +2296,14 @@ async function showItem() {
     document.getElementById('read-aloud-instructions').classList.remove('hidden');
     document.getElementById('recording-controls').classList.remove('hidden');
     document.getElementById('start-recording').textContent = instructions.buttonText;
-    
-    if (!trial.skipScoring) {
-      // Will show questions after recording
-      showQuestions(0);
-    }
-  } else if (trial.skipScoring) {
-    // Non-recording read item (shouldn't happen often)
-    document.getElementById('reading-controls').classList.remove('hidden');
-    document.getElementById('start-reading').classList.add('hidden');
-    document.getElementById('done-reading').classList.remove('hidden');
-    document.getElementById('done-reading').textContent = 'Continue';
   } else if (trial.skipReading) {
-    // Question only, no reading
+    // Question only, no reading needed
     showQuestions(0);
   } else {
     // Standard silent reading passage
     document.getElementById('reading-controls').classList.remove('hidden');
     document.getElementById('start-reading').classList.remove('hidden');
     document.getElementById('done-reading').classList.add('hidden');
-    document.getElementById('done-reading').textContent = 'Done Reading';
   }
   
   state.itemStartTime = Date.now();
@@ -2473,7 +2545,7 @@ async function submitAnswers(e) {
   itemResult.totalScore = itemScore;
   state.results.push(itemResult);
   
-  // Update scoring state
+  // Always update local state first
   state.totalPoints += itemScore;
   if (itemScore === 0) {
     state.consecutiveZeros++;
@@ -2481,13 +2553,21 @@ async function submitAnswers(e) {
     state.consecutiveZeros = 0;
   }
   
-  // Send to Google
-  await sendToGoogle('item_completed', {
-    pid: state.pid,
-    ...itemResult
-  });
+  // Try to send to Google, but don't block on failure
+  try {
+    await sendToGoogleWithRetry('item_completed', {
+      pid: state.pid,
+      ...itemResult
+    });
+    updateConnectionStatus(true);
+  } catch (error) {
+    console.warn('Failed to send item to Google, continuing locally:', error);
+    updateConnectionStatus(false);
+    const live = document.getElementById('sr-live');
+    if (live) live.textContent = 'Network issue: response saved locally. You can continue.';
+  }
   
-  // Move to next item
+  // Always move to next item
   state.currentIndex++;
   showItem();
 }
@@ -2570,18 +2650,27 @@ function updateAdminPanel() {
 /* ===========================
    Timer Functions
    =========================== */
+function clearAllTimers() {
+  Object.keys(state.timers).forEach((key) => {
+    if (state.timers[key]) {
+      clearInterval(state.timers[key]);
+      state.timers[key] = null;
+    }
+  });
+}
+
 function startTimer() {
   state.readingStartTime = Date.now();
   let seconds = 0;
   const timerEl = document.getElementById('timer');
   const container = document.getElementById('timer-container');
-  
-  // Show timer unless user preference hides it
+
   if (!document.getElementById('pref-hide-timer').checked) {
     container.classList.remove('hidden');
   }
-  
-  state.timerInterval = setInterval(() => {
+
+  // Use centralized reading timer
+  state.timers.reading = setInterval(() => {
     seconds++;
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -2590,9 +2679,9 @@ function startTimer() {
 }
 
 function stopTimer() {
-  if (state.timerInterval) {
-    clearInterval(state.timerInterval);
-    state.timerInterval = null;
+  if (state.timers.reading) {
+    clearInterval(state.timers.reading);
+    state.timers.reading = null;
   }
 }
 
@@ -2604,7 +2693,7 @@ async function startAssessment() {
   buildSequence();
   
   // Send session start to Google
-  await sendToGoogle('session_started', {
+  await sendToGoogleWithRetry('session_started', {
     pid: state.pid,
     edu: state.edu,
     participantGroup: state.participantGroup,
@@ -2643,7 +2732,7 @@ async function finishAssessment() {
   document.getElementById('upload-progress').textContent = 'Uploading your results...';
   
   try {
-    await sendToGoogle('session_completed', sessionData);
+    await sendToGoogleWithRetry('session_completed', sessionData);
     document.getElementById('upload-status').className = 'status-box success';
     document.getElementById('upload-progress').textContent = 'Results uploaded successfully!';
     
@@ -2677,81 +2766,71 @@ window.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('config-warning').classList.remove('hidden');
   }
   
-  // FIXED: Setup button handler only once after DOM is ready
-  document.getElementById('begin').addEventListener('click', async () => {
-    const recordingType = determineRecordingNeeds();
-    
-    document.getElementById('recording-method-text').textContent = 
-      recordingType === 'video' 
-        ? 'Setting up video recording for ASL...' 
-        : 'Setting up audio recording for spoken responses...';
-    
-    let setupSuccess = false;
-    
-    if (recordingType === 'video') {
-      document.getElementById('video-setup').classList.remove('hidden');
-      document.getElementById('pref-hide-selfview').classList.remove('hidden');
-      setupSuccess = await setupVideoRecording();
-    } else {
-      document.getElementById('audio-setup').classList.remove('hidden');
-      setupSuccess = await setupAudioRecording();
-    }
-    
-    if (setupSuccess) {
-      document.getElementById('setup-status').className = 'status-box success';
-      document.getElementById('setup-status-text').textContent = 'Setup complete! Ready to begin.';
-      document.getElementById('start-study').disabled = false;
-    } else {
-      document.getElementById('setup-status').className = 'status-box error';
-      document.getElementById('setup-status-text').textContent = 'Setup failed. Please check permissions and refresh.';
-    }
-  });
+  // NOTE: The begin button handler is already set up above, no need to duplicate it here
 });
 
-// Test audio recording - FIXED: Add timer cleanup
-let testTimerInterval = null;
-let testTimerSeconds = 0;
-
+// Test audio recording - Timer variables now use state.timers.test
 document.getElementById('test-audio-record').addEventListener('click', () => {
-  document.getElementById('test-audio-record').classList.add('hidden');
-  document.getElementById('stop-test-audio').classList.remove('hidden');
+  const testRecBtn = document.getElementById('test-audio-record');
+  const stopTestBtn = document.getElementById('stop-test-audio');
+  
+  // Prevent double-clicks
+  if (testRecBtn.disabled) return;
+  testRecBtn.disabled = true;
+  
+  testRecBtn.classList.add('hidden');
+  stopTestBtn.classList.remove('hidden');
   const timerEl = document.getElementById('test-audio-timer');
   timerEl.classList.remove('hidden');
   
   // Clear any existing timer
-  if (testTimerInterval) {
-    clearInterval(testTimerInterval);
+  if (state.timers.test) {
+    clearInterval(state.timers.test);
+    state.timers.test = null;
   }
   
   testTimerSeconds = 0;
-  testTimerInterval = setInterval(() => {
+  state.timers.test = setInterval(() => {
     testTimerSeconds++;
     const mins = Math.floor(testTimerSeconds / 60);
     const secs = testTimerSeconds % 60;
-    timerEl.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    document.getElementById('test-audio-timer').textContent =
+      `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }, 1000);
   
   startRecording();
   
+  // Re-enable after a short delay
+  setTimeout(() => {
+    testRecBtn.disabled = false;
+  }, 500);
+  
   // Auto-stop after 10 seconds
   setTimeout(() => {
     if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
-      document.getElementById('stop-test-audio').click();
+      stopTestBtn.click();
     }
   }, 10000);
 });
 
 document.getElementById('stop-test-audio').addEventListener('click', async () => {
+  const stopTestBtn = document.getElementById('stop-test-audio');
+  const testRecBtn = document.getElementById('test-audio-record');
+  
+  // Prevent double-clicks
+  if (stopTestBtn.disabled) return;
+  stopTestBtn.disabled = true;
+  
   // Clear test timer
-  if (testTimerInterval) {
-    clearInterval(testTimerInterval);
-    testTimerInterval = null;
+  if (state.timers.test) {
+    clearInterval(state.timers.test);
+    state.timers.test = null;
   }
   
   const blob = await stopRecording();
-  
-  document.getElementById('test-audio-record').classList.remove('hidden');
-  document.getElementById('stop-test-audio').classList.add('hidden');
+
+  testRecBtn.classList.remove('hidden');
+  stopTestBtn.classList.add('hidden');
   document.getElementById('test-audio-timer').classList.add('hidden');
   
   if (blob) {
@@ -2765,20 +2844,35 @@ document.getElementById('stop-test-audio').addEventListener('click', async () =>
     audio.classList.remove('hidden');
     document.getElementById('audio-status').textContent = 'Test complete! Play back your recording above to verify quality.';
   }
+  
+  // Re-enable button
+  stopTestBtn.disabled = false;
 });
 
 // Recording controls for items
 document.getElementById('start-recording').addEventListener('click', () => {
+  const startRecBtn = document.getElementById('start-recording');
+  const stopRecBtn = document.getElementById('stop-recording');
+  
+  // Prevent double-clicks
+  if (startRecBtn.disabled) return;
+  
   startRecording();
-  document.getElementById('start-recording').classList.add('hidden');
-  document.getElementById('stop-recording').classList.remove('hidden');
+  startRecBtn.classList.add('hidden');
+  stopRecBtn.classList.remove('hidden');
 });
 
 document.getElementById('stop-recording').addEventListener('click', async () => {
+  const startRecBtn = document.getElementById('start-recording');
+  const stopRecBtn = document.getElementById('stop-recording');
+  
+  // Prevent double-clicks
+  if (stopRecBtn.disabled) return;
+  
   const blob = await stopRecording();
   
-  document.getElementById('start-recording').classList.remove('hidden');
-  document.getElementById('stop-recording').classList.add('hidden');
+  startRecBtn.classList.remove('hidden');
+  stopRecBtn.classList.add('hidden');
   
   // Upload recording
   if (blob) {
@@ -2843,7 +2937,7 @@ document.getElementById('toggle-selfview').addEventListener('change', (e) => {
 document.getElementById('retry-upload').addEventListener('click', async () => {
   if (state.savedData) {
     try {
-      await sendToGoogle('session_completed', state.savedData);
+      await sendToGoogleWithRetry('session_completed', state.savedData);
       document.getElementById('upload-status').className = 'status-box success';
       document.getElementById('upload-progress').textContent = 'Results uploaded successfully!';
       document.getElementById('retry-upload').classList.add('hidden');
@@ -2880,32 +2974,44 @@ window.addEventListener('beforeunload', () => {
 
 // FIXED: Add cleanupResources function
 function cleanupResources() {
-  // Stop all timers
-  if (state.timerInterval) {
-    clearInterval(state.timerInterval);
-    state.timerInterval = null;
-  }
-  if (state.recordingTimerInterval) {
-    clearInterval(state.recordingTimerInterval);
-    state.recordingTimerInterval = null;
-  }
-  if (typeof testTimerInterval !== 'undefined' && testTimerInterval) {
-    clearInterval(testTimerInterval);
-    testTimerInterval = null;
-  }
-  
+  // Stop all timers centrally
+  clearAllTimers();
+
   // Stop media streams
   if (state.stream) {
     state.stream.getTracks().forEach(track => track.stop());
     state.stream = null;
   }
-  
+
   // Clean up media recorder
   if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
     state.mediaRecorder.stop();
   }
   state.mediaRecorder = null;
   state.recordedChunks = [];
+
+  // Clean up blob URLs to prevent memory leaks
+  const testAudio = document.getElementById('test-audio-playback');
+  if (testAudio && testAudio.src && testAudio.src.startsWith('blob:')) {
+    URL.revokeObjectURL(testAudio.src);
+    testAudio.src = '';
+  }
+
+  document.querySelectorAll('audio, video').forEach(media => {
+    if (media.src && media.src.startsWith('blob:')) {
+      URL.revokeObjectURL(media.src);
+      media.src = '';
+    }
+  });
+
+  // Clean up video preview
+  const preview = document.getElementById('preview');
+  if (preview && preview.srcObject) {
+    if (preview.srcObject instanceof MediaStream) {
+      preview.srcObject.getTracks().forEach(track => track.stop());
+    }
+    preview.srcObject = null;
+  }
 }
 
 // FIXED: Add updateConnectionStatus function
