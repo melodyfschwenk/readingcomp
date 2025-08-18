@@ -1947,8 +1947,10 @@ document.querySelectorAll('input[name="read-modality"]').forEach((radio) => {
 });
 
 // Move from welcome to setup once all fields are ready
-document.getElementById('begin').addEventListener('click', () => {
+document.getElementById('begin').addEventListener('click', async () => {
   if (document.getElementById('begin').disabled) return;
+  
+  // Hide welcome, show setup
   document.getElementById('screen-welcome').classList.add('hidden');
   document.getElementById('screen-setup').classList.remove('hidden');
 });
@@ -2018,6 +2020,7 @@ async function sendToGoogle(action, data) {
    =========================== */
 async function setupVideoRecording() {
   try {
+      
       
       
        // Clean up any existing stream
@@ -2792,6 +2795,19 @@ document.getElementById('stop-recording').addEventListener('click', async () => 
       showQuestions(0);
     }
   }
+});
+
+// FIXED: Add missing reading controls event listeners
+document.getElementById('start-reading').addEventListener('click', () => {
+  document.getElementById('start-reading').classList.add('hidden');
+  document.getElementById('done-reading').classList.remove('hidden');
+  startTimer();
+});
+
+document.getElementById('done-reading').addEventListener('click', () => {
+  stopTimer();
+  const readingTime = state.readingStartTime ? Date.now() - state.readingStartTime : 0;
+  showQuestions(readingTime);
 });
 
 // Form submission
