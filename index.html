@@ -369,6 +369,24 @@
     margin: 10px 0;
     font-size: 13px;
   }
+  .tip-box{
+  background:#eef7ff;
+  border:1px solid #cfe2ff;
+  border-radius:4px;
+  padding:12px;
+  margin:12px 0;
+  font-size:14px;
+}
+.tip-box ul{ margin:8px 0 0 18px; }
+.kbd{
+  border:1px solid #ced4da; border-bottom-width:2px;
+  padding:2px 6px; border-radius:3px; font-family:monospace; font-size:12px;
+}
+.comfort-options{
+  background:#f8f9fa; border:1px solid #e9ecef; border-radius:4px; padding:12px; margin:12px 0;
+}
+.video-preview.hidden-selfview{ visibility:hidden; }
+
 </style>
 </head>
 <body>
@@ -443,12 +461,13 @@
       </div>
     </div>
     
-    <div id="config-warning" class="status-box error hidden">
-      <div class="status-message">
-        <strong>Setup Required:</strong> Google Drive integration not configured. 
-        Please update GOOGLE_SCRIPT_URL in the code.
-      </div>
-    </div>
+<div id="config-warning" class="status-box error hidden" role="alert" aria-live="assertive" aria-atomic="true">
+  <div class="status-message">
+    <strong>Setup Required:</strong> Google Drive integration not configured. 
+    Please update GOOGLE_SCRIPT_URL in the code.
+  </div>
+</div>
+
     
     <div style="margin-top: 20px;">
       <button id="begin" class="primary" disabled>Continue to Setup</button>
@@ -464,7 +483,18 @@
   Setting up recording...
 </div>
     </div>
-    
+    <div class="comfort-options">
+  <label style="display:flex;align-items:center;gap:8px;">
+    <input type="checkbox" id="pref-hide-timer" />
+    <span>Hide the reading timer during passages</span>
+  </label>
+  <label id="pref-hide-selfview" class="hidden" style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+    <input type="checkbox" id="toggle-selfview" />
+    <span>Hide my camera preview during recording</span>
+  </label>
+  <p class="muted" style="margin:8px 0 0;">You can change these anytime.</p>
+</div>
+
     <div id="video-setup" class="hidden">
       <p class="muted">For ASL "read aloud" items, we need to set up video recording.</p>
       <div class="video-preview-wrapper">
@@ -482,11 +512,11 @@
         <span class="recording-timer hidden" id="test-audio-timer">00:00</span>
       </div>
       <audio id="test-audio-playback" controls class="hidden" style="width: 100%; max-width: 400px; margin: 10px auto; display: block;"></audio>
-      <p id="audio-status" class="muted center">Click "Test Audio Recording" to verify your microphone is working.</p>
+      <p id="audio-status" class="muted center" role="status" aria-live="polite" aria-atomic="true">Click "Test Audio Recording" to verify your microphone is working.</p>
     </div>
     
     <div id="setup-status" class="status-box" style="margin-top: 20px;">
-      <div class="status-message" id="setup-status-text">Initializing...</div>
+<div class="status-message" id="setup-status-text" role="status" aria-live="polite" aria-atomic="true">Initializing...</div>
     </div>
     
     <div style="margin-top: 20px; text-align: center;">
@@ -553,10 +583,10 @@
   <!-- Finish Screen -->
   <div id="screen-finish" class="card hidden">
     <h2>Assessment Complete</h2>
-    <p id="finish-msg" class="muted">Thank you for participating.</p>
+<p id="finish-msg" class="muted" role="status" aria-live="polite" aria-atomic="true">Thank you for participating.</p>
     
     <div id="upload-status" class="status-box">
-      <div class="status-message" id="upload-progress">Saving your data...</div>
+<div class="status-message" id="upload-progress" role="status" aria-live="polite" aria-atomic="true">Saving your data...</div>
     </div>
     
     <div id="final-stats" class="hidden" style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 4px;">
@@ -581,7 +611,7 @@
 
   <!-- Connection Status -->
   <div class="connection-status" id="connection-status">
-    <span id="connection-text">Not connected</span>
+<span id="connection-text" role="status" aria-live="polite" aria-atomic="true">Not connected</span>
   </div>
 
 </div>
@@ -609,7 +639,7 @@ let state = {
   totalPoints: 0,
   consecutiveZeros: 0,
   gateItemsFailed: [],
-  
+
   // Results storage
   results: [],
   sequence: [],
@@ -1858,18 +1888,17 @@ async function sendToGoogle(action, data) {
 
 function updateConnectionStatus(connected) {
   state.connectionStatus = connected;
-  const statusEl = document.getElementById('connection-status');
-  const textEl = document.getElementById('connection-text');
-
+  const box = document.getElementById('connection-status');
   const live = document.getElementById('connection-text');
-if (connected) {
-  live.setAttribute('role','status');
-  live.setAttribute('aria-live','polite');
-} else {
-  live.setAttribute('role','alert');
-  live.setAttribute('aria-live','assertive');
+
+  box.classList.toggle('connected', connected);
+  box.classList.toggle('error', !connected);
+
+  live.setAttribute('role', connected ? 'status' : 'alert');
+  live.setAttribute('aria-live', connected ? 'polite' : 'assertive');
+  live.textContent = connected ? 'Connected' : 'Not connected';
 }
-}
+
 
 /* ===========================
    Recording Functions
@@ -2040,6 +2069,7 @@ document.querySelectorAll('input[name="participant-group"]').forEach(radio => {
   });
 });
 
+  
 // Modality selection
 document.querySelectorAll('input[name="read-modality"]').forEach(radio => {
   radio.addEventListener('change', (e) => {
@@ -2384,37 +2414,91 @@ async function showItem() {
 
 function showQuestions(readingTime) {
   const trial = state.sequence[state.currentIndex];
-  
   if (trial.skipScoring) {
-    // Just move to next item
     state.currentIndex++;
     showItem();
     return;
   }
-  
-  document.getElementById('qa-form').classList.remove('hidden');
+
+  const form = document.getElementById('qa-form');
+  const fields = document.getElementById('qa-fields');
+  form.classList.remove('hidden');
   document.getElementById('reading-controls').classList.add('hidden');
   document.getElementById('recording-controls').classList.add('hidden');
   document.getElementById('read-aloud-instructions').classList.add('hidden');
-  
+
+  // Clear existing
+  fields.innerHTML = '';
+
+  // Add a participant-friendly tip only once per item
+  const tip = document.createElement('div');
+  tip.className = 'tip-box';
+  tip.id = 'answer-tips';
+  tip.innerHTML = `
+    <div><strong>Answer tips</strong></div>
+    <ul>
+      <li>Type in your own words. <em>Spelling and grammar don’t matter.</em></li>
+      <li>Short answers are okay (a sentence or two).</li>
+      <li>If you’re unsure, write your best guess.</li>
+      <li>You can use ASL gloss if that’s easier.</li>
+      <li>You can skip any question.</li>
+      <li><span class="kbd">Ctrl/⌘ + Enter</span> = Submit, <span class="kbd">Alt + S</span> = Skip</li>
+    </ul>
+  `;
+  fields.appendChild(tip);
+
+  // Build question fields
   trial.questions.forEach(q => {
     const qDiv = document.createElement('div');
     qDiv.className = 'q-block';
-    
+
     const label = document.createElement('label');
     label.textContent = q.text;
     label.setAttribute('for', q.id);
-    
+
     const textarea = document.createElement('textarea');
     textarea.id = q.id;
     textarea.name = q.id;
     textarea.required = true;
-    
+    // Participant-friendly typing settings
+    textarea.placeholder = 'Type your answer here (short is fine)';
+    textarea.setAttribute('spellcheck', 'false');
+    textarea.setAttribute('autocapitalize', 'off');
+    textarea.setAttribute('autocorrect', 'off');
+    textarea.setAttribute('aria-describedby', 'answer-tips');
+
+    // Optional tiny word count (non-judgmental)
+    const wc = document.createElement('div');
+    wc.className = 'muted';
+    wc.style.marginTop = '6px';
+    wc.textContent = 'Word count: 0 (no minimum)';
+    textarea.addEventListener('input', () => {
+      const n = textarea.value.trim() ? textarea.value.trim().split(/\s+/).length : 0;
+      wc.textContent = `Word count: ${n} (no minimum)`;
+    });
+
     qDiv.appendChild(label);
     qDiv.appendChild(textarea);
-    document.getElementById('qa-fields').appendChild(qDiv);
+    qDiv.appendChild(wc);
+    fields.appendChild(qDiv);
   });
+
+  // Friendlier skip label each time this view shows
+  const skipBtn = document.getElementById('skip');
+  if (skipBtn) skipBtn.textContent = 'Skip question';
+
+  // Keyboard shortcuts
+  form.onkeydown = (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      form.requestSubmit();
+    } else if (e.altKey && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      document.getElementById('skip').click();
+    }
+  };
 }
+
 
   /* ===========================
    Semantic scoring helpers - universal
@@ -2859,40 +2943,38 @@ function updateAdminPanel() {
 
 async function finishAssessment() {
   showScreen('finish');
-  
-  const duration = (Date.now() - state.sessionStartTime) / 1000 / 60; // minutes
-  let msg = 'Thank you for participating.';
-  let discontinued = false;
-  
-  if (state.consecutiveZeros >= 6) {
-    msg = `Assessment discontinued after ${state.consecutiveZeros} consecutive zero-point responses.`;
-    discontinued = true;
+
+  const durationMin = (Date.now() - state.sessionStartTime) / 1000 / 60;
+  const discontinued = state.consecutiveZeros >= 6;
+
+  // kinder, non-judgmental language for participants
+  let msg;
+  if (discontinued) {
+    msg = 'Thanks! We’re all set for now.'; // no mention of why it ended
   } else if (state.currentIndex >= state.sequence.length) {
-    msg = `Completed all ${state.sequence.length} items. Thank you for participating!`;
+    msg = `All done — thank you for your time.`;
+  } else {
+    msg = `Thanks for your time today.`;
   }
-  
   document.getElementById('finish-msg').textContent = msg;
-  
-  // Stop any streams
+
+  // stop any active media tracks
   if (state.stream) {
     state.stream.getTracks().forEach(track => track.stop());
   }
-  
-  // Send session complete event
+
+  // still log the research-relevant discontinue flag & counters to Google
   await sendToGoogle('session_complete', {
     pid: state.pid,
-    duration: duration,
+    duration: durationMin,
     itemsCompleted: state.results.length,
     totalScore: state.totalPoints,
     consecutiveZeros: state.consecutiveZeros,
     discontinued: discontinued,
     gateItemsFailed: state.gateItemsFailed.join(',')
   });
-  
-  // Show summary
+
   showSummary();
-  
-  // Save backup
   saveLocalBackup();
 }
 
@@ -2900,29 +2982,33 @@ function showSummary() {
   const statsDiv = document.getElementById('final-stats');
   const content = document.getElementById('stats-content');
 
-  const itemsReviewed = state.results.filter(r => r.needsReview).length;
-  const avgScore = state.results.length > 0
-    ? (state.totalPoints / state.results.length).toFixed(2)
-    : 0;
+  const minutes = Math.max(1, Math.round((Date.now() - state.sessionStartTime) / 1000 / 60));
 
-  // base stats
+  // participant-friendly view (no scores, no review/zero details)
   let html = `
     <div>Participant Group: ${state.participantGroup}</div>
     <div>Communication Mode: ${state.readModality === 'sign' ? 'ASL' : 'Spoken'}</div>
-    <div>Total Items Completed: ${state.results.length}</div>
-    <div>Total Auto-Score: ${state.totalPoints}</div>
-    <div>Average Score: ${avgScore}</div>
-    <div>Items Needing Review: ${itemsReviewed}</div>
-    <div>Session Duration: ${Math.round((Date.now() - state.sessionStartTime) / 1000 / 60)} minutes</div>
+    <div>Items Completed: ${state.results.length}</div>
+    <div>Approximate Session Time: ${minutes} minute${minutes === 1 ? '' : 's'}</div>
   `;
 
-  // metrics (only if present)
-  if (state.scoringMetrics) {
+  // show research metrics only in admin mode
+  if (state.adminMode) {
+    const avgScore = state.results.length > 0
+      ? (state.totalPoints / state.results.length).toFixed(2)
+      : 0;
+    const itemsReviewed = state.results.filter(r => r.needsReview).length;
+
     html += `
-      <div>High confidence auto-scores: ${state.scoringMetrics.highConfidence}</div>
-      <div>Medium confidence auto-scores: ${state.scoringMetrics.mediumConfidence}</div>
-      <div>Low confidence auto-scores: ${state.scoringMetrics.lowConfidence}</div>
-      <div>Flagged for manual review: ${state.scoringMetrics.manualReviewNeeded}</div>
+      <hr style="margin:10px 0;border:none;border-top:1px solid #e9ecef;">
+      <div><strong>Research Metrics (Admin)</strong></div>
+      <div>Total Auto-Score: ${state.totalPoints}</div>
+      <div>Average Auto-Score: ${avgScore}</div>
+      <div>Items Flagged for Review: ${itemsReviewed}</div>
+      <div>High confidence: ${state.scoringMetrics.highConfidence}</div>
+      <div>Medium confidence: ${state.scoringMetrics.mediumConfidence}</div>
+      <div>Low confidence: ${state.scoringMetrics.lowConfidence}</div>
+      <div>Manual review needed: ${state.scoringMetrics.manualReviewNeeded}</div>
       <div>Review queue length: ${state.reviewQueue.length}</div>
     `;
   }
@@ -2930,9 +3016,11 @@ function showSummary() {
   content.innerHTML = html;
   statsDiv.classList.remove('hidden');
 
-  updateUploadStatus('✓ All data saved to Google Sheets', 'success');
+  // gentler success message
+  updateUploadStatus('✓ Your responses have been saved.', 'success');
   document.getElementById('download-backup').classList.remove('hidden');
 }
+
 
 
 async function uploadRecordingToGoogle(blob, itemNumber) {
@@ -2945,11 +3033,12 @@ async function uploadRecordingToGoogle(blob, itemNumber) {
       const fileType = state.useVideoRecording ? 'video' : 'audio';
       
       await sendToGoogle('video_upload', {
-        pid: state.pid,
-        videoData: base64data,
-        sessionDate: new Date().toISOString().split('T')[0],
-        itemNumber: `${fileType}_item_${itemNumber}`
-      });
+  pid: state.pid,
+  fileType, // 'video' or 'audio'
+  videoData: base64data,
+  sessionDate: new Date().toISOString().split('T')[0],
+  itemNumber: `${fileType}_item_${itemNumber}`
+});
     };
     reader.readAsDataURL(blob);
   } catch (error) {
@@ -2975,7 +3064,17 @@ function updateUploadStatus(message, type = '') {
 
 async function retryUpload() {
   state.uploadAttempts++;
-  updateUploadStatus(`Retrying upload (attempt ${state.uploadAttempts + 1})...`);
+  // was: attempt ${state.uploadAttempts + 1}
+  updateUploadStatus(`Retrying upload (attempt ${state.uploadAttempts})...`);
+
+  await sendToGoogle('save_backup', {
+    pid: state.pid,
+    allData: state.results
+  });
+  
+  updateUploadStatus('✓ Retry successful', 'success');
+}
+
   
   await sendToGoogle('save_backup', {
     pid: state.pid,
@@ -3088,6 +3187,7 @@ function showScreen(name) {
 /* ===========================
    Initialization
    =========================== */
+
 document.addEventListener('DOMContentLoaded', () => {
   showScreen('welcome');
   
