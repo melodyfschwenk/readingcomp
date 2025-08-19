@@ -438,7 +438,7 @@
                maxlength="20"
                pattern="[A-Za-z0-9_-]{1,20}"
                title="Use letters, numbers, underscores, and hyphens only (max 20)"
-               inputmode="latin"
+               inputmode="text"
                autocomplete="off"
                autocapitalize="off"
                spellcheck="false" />
@@ -1807,7 +1807,7 @@ const TRIALS = [
     skipReading: true,
     questions: [{
       id: "q124",
-      text: "Tell three adventures Andrew's had experienced before going to the Gobi desert.",
+      text: "Tell three adventures Andrews had experienced before going to the Gobi desert.",
       scoringKey: "q124"
     }]
   },
@@ -2219,6 +2219,15 @@ function renderTrial(trial) {
 
   // Instruction text
   document.getElementById('instruction-text').textContent = trial.instruction || '';
+// 🔹 TRIAL-BY-TRIAL: item_started
+gsPost('item_started', {
+  pid: state.pid,
+  itemNumber: trial.item,
+  imageFile: '', // text-only now
+  questionText: (trial.questions && trial.questions[0]) ? trial.questions[0].text : '',
+  itemType: trial.type || (trial.readAloud ? 'read-aloud' : 'question'),
+  timestamp: new Date().toISOString()
+});
 
   // Read aloud item
   if (trial.type === 'read-aloud' || trial.readAloud) {
@@ -2275,7 +2284,21 @@ function handleReadingDone() {
   document.getElementById('reading-controls').classList.add('hidden');
 
   const trial = currentTrial();
-  // If the passage trial itself has questions, show them now
+  const dur = Math.round((Date.now() - (state.readingStartTime || Date.now())) / 1000);
+  const text = (document.getElementById('passage-container')?.innerText || '').trim();
+  const wc = text ? text.split(/\s+/).filter(Boolean).length : 0;
+
+  gsPost('reading_time', {
+    pid: state.pid,
+    itemNumber: trial.item,
+    imageFile: '',
+    readingType: 'silent',
+    startTime: new Date(state.readingStartTime || Date.now()).toISOString(),
+    endTime: new Date().toISOString(),
+    duration: dur,
+    wordCount: wc
+  });
+
   if (trial.questions && trial.questions.length) {
     renderQAFields(trial);
     document.getElementById('qa-form').classList.remove('hidden');
@@ -2283,6 +2306,7 @@ function handleReadingDone() {
     goNextOrFinish();
   }
 }
+
 
 function handleStartRecording() {
   const recBox = document.getElementById('recording-controls');
@@ -2317,37 +2341,29 @@ function handleStopRecording() {
   if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
     state.mediaRecorder.stop();
   }
-  goNextOrFinish();
-}
 
-function handleQASubmit(ev) {
-  ev.preventDefault();
+  // 🔹 TRIAL-BY-TRIAL: item_completed (read-aloud)
   const trial = currentTrial();
-  const answers = [];
-  let trialPoints = 0;
+  const durText = (document.getElementById('recording-timer').textContent || '00:00').trim();
+  const durSec = durText.split(':').reduce((m, s) => m * 60 + (+s || 0), 0);
 
-  document.querySelectorAll('#qa-fields textarea').forEach(tx => {
-    const key = tx.dataset.scoringKey || '';
-    const val = tx.value || '';
-    const scored = scoreAnswer(key, val);
-    answers.push({ key, answer: val, points: scored.points, note: scored.note });
-    trialPoints += scored.points || 0;
-  });
+    gsPost('item_completed', {
+  pid: state.pid,
+  itemNumber: trial.item,
+  endTime: new Date().toISOString(),
+  duration: durSec,
+  response: '[read-aloud]',
+  explanation: '',
+  autoScore: '',
+  scoreConfidence: '',
+  needsReview: false,
+  scoringNotes: 'read-aloud',
+  finalScore: '',
+  itemType: 'read-aloud'
+});
 
-  // Track zeros to support discontinue rule
-  if (trialPoints === 0) state.consecutiveZeros += 1;
-  else state.consecutiveZeros = 0;
 
-  state.totalPoints += trialPoints;
-  state.results.push({
-    item: trial.item,
-    type: 'qa',
-    passageId: trial.passageId,
-    answers,
-    points: trialPoints
-  });
-
-  // Apply discontinue rule if configured
+  // Discontinue rule
   if (DISCONTINUE_AFTER_ZEROS > 0 && state.consecutiveZeros >= DISCONTINUE_AFTER_ZEROS) {
     announceToScreenReader('Assessment will end early due to repeated zero scores.', 'assertive');
     finishAssessment('Stopped early due to scoring rule.');
@@ -2357,8 +2373,9 @@ function handleQASubmit(ev) {
   goNextOrFinish();
 }
 
-function handleQASkip() {
+        function handleQASkip() {
   const trial = currentTrial();
+
   state.consecutiveZeros += 1;
   state.results.push({
     item: trial.item,
@@ -2368,6 +2385,16 @@ function handleQASkip() {
     points: 0,
     skipped: true
   });
+
+  gsPost('item_skipped', {
+    pid: state.pid,
+    itemNumber: trial.item,
+    timestamp: new Date().toISOString(),
+    itemType: 'question',
+    reason: 'User choice',
+    consecutiveZeros: state.consecutiveZeros
+  });
+
   if (DISCONTINUE_AFTER_ZEROS > 0 && state.consecutiveZeros >= DISCONTINUE_AFTER_ZEROS) {
     finishAssessment('Stopped early due to scoring rule.');
     return;
@@ -2389,6 +2416,13 @@ function postWithTimeout(url, data, timeoutMs) {
     mode: url.includes('script.google.com') ? 'no-cors' : 'cors'
   }).finally(() => clearTimeout(t));
 }
+
+function gsPost(action, payload) {
+  // Uses your existing GOOGLE_SCRIPT_URL and postWithTimeout
+  return postWithTimeout(GOOGLE_SCRIPT_URL, { action, ...payload }, GOOGLE_TIMEOUT_MS)
+    .catch(() => {}); // don't block the UI if Apps Script is slow
+}
+
 
 async function uploadAll() {
   const payload = {
@@ -2418,6 +2452,7 @@ async function uploadAll() {
   }
   if (ok) {
     setConnectionStatus(true);
+
     document.getElementById('upload-progress').textContent = 'Saved to Google successfully.';
     return true;
   }
@@ -2436,6 +2471,10 @@ async function uploadAll() {
     return true;
   } catch (e) {
     setConnectionStatus(false);
+            const looksConfigured = /^https:\/\/script\.google\.com\/macros\/s\//.test(GOOGLE_SCRIPT_URL);
+if (!looksConfigured) {
+  document.getElementById('config-warning').classList.remove('hidden');
+}
     document.getElementById('upload-progress').textContent = 'Upload failed. You can retry or download a local backup file.';
     document.getElementById('retry-upload').classList.remove('hidden');
     document.getElementById('download-backup').classList.remove('hidden');
@@ -2501,7 +2540,18 @@ async function finishAssessment(reason = '') {
   // Attempt upload
   document.getElementById('upload-progress').textContent = 'Saving your data...';
   await uploadAll();
-}
+    // 🔹 TRIAL-BY-TRIAL: session_complete
+gsPost('session_complete', {
+  pid: state.pid,
+  timestamp: new Date().toISOString(),
+  duration: Math.round((Date.now() - (state.sessionStartTime || Date.now())) / 60000),
+  itemsCompleted: state.results.length,
+  totalScore: state.totalPoints,
+  consecutiveZeros: state.consecutiveZeros,
+  discontinued: !!reason && /stopp?ed/i.test(reason),
+  gateItemsFailed: (state.gateItemsFailed || []).join(', ')
+});
+    }
 
 /* ===========================
    Setup screen logic
@@ -2535,6 +2585,69 @@ async function enterSetup() {
   document.getElementById('setup-status-text').textContent = 'Ready. You can start the assessment.';
   document.getElementById('start-study').disabled = false;
 }
+
+    function handleQASubmit(e) {
+  e.preventDefault();
+  const trial = currentTrial();
+
+  let answers = [];
+  let trialPoints = 0;
+
+  document.querySelectorAll('#qa-fields textarea').forEach(tx => {
+    const key = tx.dataset.scoringKey || '';
+    const val = tx.value || '';
+    const scored = scoreAnswer(key, val);
+    answers.push({ key, answer: val, points: scored.points, note: scored.note });
+    trialPoints += Number(scored.points || 0);
+  });
+
+  // update zero streak and totals
+  if (trialPoints === 0) state.consecutiveZeros += 1;
+  else state.consecutiveZeros = 0;
+  state.totalPoints += trialPoints;
+
+  // save result
+  state.results.push({
+    item: trial.item,
+    type: 'qa',
+    passageId: trial.passageId,
+    answers,
+    points: trialPoints
+  });
+
+  // telemetry
+  const qText = (trial.questions || []).map(q => q.text).join(' | ');
+  const responseJoined = answers.map(a => a.answer).join(' | ');
+  const notesJoined = answers.map(a => a.note || '').join(', ');
+  const conf = trialPoints >= 2 ? 'High' : (trialPoints > 0 ? 'Medium' : 'Low');
+
+  gsPost('item_completed', {
+    pid: state.pid,
+    itemNumber: trial.item,
+    endTime: new Date().toISOString(),
+    duration: '',
+    response: responseJoined,
+    explanation: '',
+    autoScore: trialPoints,
+    scoreConfidence: conf,
+    needsReview: /review/i.test(notesJoined),
+    scoringNotes: notesJoined,
+    finalScore: trialPoints,
+    consecutiveZeros: state.consecutiveZeros,
+    questionText: qText,
+    itemType: 'question'
+  });
+
+  // discontinue rule
+  if (DISCONTINUE_AFTER_ZEROS > 0 && state.consecutiveZeros >= DISCONTINUE_AFTER_ZEROS) {
+    announceToScreenReader('Assessment will end early due to repeated zero scores.', 'assertive');
+    finishAssessment('Stopped early due to scoring rule.');
+    return;
+  }
+
+  goNextOrFinish();
+}
+
 
 /* ===========================
    Wire up DOM events
@@ -2594,14 +2707,26 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Start study
-  document.getElementById('start-study').addEventListener('click', () => {
-    state.sequence = TRIALS.slice();
-    state.currentIndex = 0;
-    state.totalPoints = 0;
-    state.consecutiveZeros = 0;
-    showScreen('screen-item');
-    renderTrial(currentTrial());
+document.getElementById('start-study').addEventListener('click', () => {
+  state.sequence = TRIALS.slice();
+  state.currentIndex = 0;
+  state.totalPoints = 0;
+  state.consecutiveZeros = 0;
+
+  // 🔹 TRIAL-BY-TRIAL: session_start
+  gsPost('session_start', {
+    pid: state.pid,
+    education: state.edu,
+    timestamp: new Date().toISOString(),
+    adminMode: !!state.adminMode,
+    hasRecording: !!(state.useVideoRecording || state.useAudioRecording),
+    userAgent: navigator.userAgent
   });
+
+  showScreen('screen-item');
+  renderTrial(currentTrial());
+});
+
 
   // Read controls
   document.getElementById('start-reading').addEventListener('click', handleReadingStart);
