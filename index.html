@@ -526,6 +526,12 @@
         min-height: 100px;
         resize: vertical;
       }
+
+      /* Ensure stimulus images scale on small screens */
+      #stim {
+        max-width: 100%;
+        height: auto;
+      }
       
       /* Admin panel */
       .admin-panel {
@@ -662,6 +668,16 @@
           right: 10px;
           padding: 8px 15px;
           font-size: 0.9em;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .card {
+          padding: 20px;
+        }
+
+        h1 {
+          font-size: 1.5em;
         }
       }
       
