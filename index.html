@@ -1070,7 +1070,7 @@ let state = {
   mediaRecorder: null,
   recordedChunks: [],
   stream: null,
-  recordMime: '', // FIXED: Add missing property
+  recordMime: '',
   adminMode: false,
   uploadAttempts: 0,
   savedData: null,
@@ -1086,7 +1086,7 @@ let state = {
 };
 
 // Test recording timer variables (global scope to prevent memory leaks)
-let testTimerSeconds = 0;  // FIXED: Changed from testTimerSeconds to match usage
+let testTimerSec = 0;
 
 /* ===========================
    WIAT-2 Scoring Reference
@@ -2264,7 +2264,7 @@ function determineRecordingNeeds() {
   }
 }
 
-// FIXED: Single, clean function
+// Check whether all welcome fields are completed
 function checkWelcomeReady() {
   const hasPid = document.getElementById('pid').value.trim().length > 0;
   const hasEdu = !!document.getElementById('edu').value;
@@ -2745,7 +2745,7 @@ function simpleStem(w) {
     if (w.endsWith('ies')) return w.slice(0, -3) + 'y';
     if (/(ing|ed|ly|ers|er|est)$/.test(w)) return w.replace(/(ing|ed|ly|ers|er|est)$/,'');
 
-    // FIXED: Also handle plural "s" correctly
+    // Also handle plural "s" correctly
     if (w.endsWith('s') && !w.endsWith('ss') && !w.endsWith('us')) return w.slice(0, -1);
   }
   return w;
@@ -3236,7 +3236,7 @@ async function postWithTimeout(url, body, timeoutMs, asForm=false) {
   try {
     console.log(`POST request to: ${url}`);
     
-    // FIXED: Add no-cors mode for Google Apps Script if needed
+    // Add no-cors mode for Google Apps Script if needed
     const fetchOptions = {
       method: 'POST',
       mode: url.includes('script.google.com') ? 'no-cors' : 'cors',
@@ -3248,7 +3248,7 @@ async function postWithTimeout(url, body, timeoutMs, asForm=false) {
     const res = await fetch(url, fetchOptions);
     clearTimeout(t);
     
-    // FIXED: Handle no-cors mode (Google Apps Script returns opaque response)
+    // Handle no-cors mode (Google Apps Script returns opaque response)
     if (fetchOptions.mode === 'no-cors') {
       console.log('Google Apps Script request sent (no-cors mode, response opaque)');
       return {}; // Can't read response in no-cors mode, assume success
@@ -3371,24 +3371,8 @@ async function sendEventSafely(kind, payload) {
 }
 
 
-    // FIXED: Handle no-cors mode (Google Apps Script returns opaque response)
-    if (fetchOptions.mode === 'no-cors') {
-      console.log('Google Apps Script request sent (no-cors mode, response opaque)');
-      return {}; // Can't read response in no-cors mode, assume success
-    }
-    
-    if (!res.ok) throw new Error('bad status ' + res.status);
-    return await res.json().catch(() => ({}));
-  } catch (error) {
-    clearTimeout(t);
-    if (error.name === 'AbortError') {
-      throw new Error(`Request timeout after ${timeoutMs}ms`);
-    }
-    throw error;
-  }
-}
 
-// FIXED: Add connection test on page load
+// Add connection test on page load
 window.addEventListener('DOMContentLoaded', async () => {
   // Test connection to Google Apps Script
   console.log('Testing connection to Google Apps Script...');
@@ -3536,12 +3520,12 @@ function setupAudioTest(btnStart, btnStop) {
     btnStart.classList.add('hidden');
     btnStop.classList.remove('hidden');
     timerEl.classList.remove('hidden');
-    testTimerSeconds = 0;  // FIXED: Now using the correct variable name
+    testTimerSec = 0;
     timerEl.textContent = '00:00';
     state.timers.test = setInterval(() => {
-      testTimerSeconds++;  // FIXED: Now using the correct variable name
-      const m = String(Math.floor(testTimerSeconds/60)).padStart(2,'0');
-      const s = String(testTimerSeconds%60).padStart(2,'0');
+      testTimerSec++;
+      const m = String(Math.floor(testTimerSec/60)).padStart(2,'0');
+      const s = String(testTimerSec%60).padStart(2,'0');
       timerEl.textContent = `${m}:${s}`;
     }, 1000);
   });
