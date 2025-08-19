@@ -3370,26 +3370,7 @@ async function sendEventSafely(kind, payload) {
   }
 }
 
-// FIXED: Enhanced postWithTimeout with better error handling
-async function postWithTimeout(url, body, timeoutMs, asForm=false) {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), timeoutMs);
-  
-  try {
-    console.log(`POST request to: ${url}`);
-    
-    // FIXED: Add no-cors mode for Google Apps Script if needed
-    const fetchOptions = {
-      method: 'POST',
-      mode: url.includes('script.google.com') ? 'no-cors' : 'cors',
-      headers: asForm ? {} : { 'Content-Type': 'application/json' },
-      body: asForm ? body : JSON.stringify(body),
-      signal: ctrl.signal
-    };
-    
-    const res = await fetch(url, fetchOptions);
-    clearTimeout(t);
-    
+
     // FIXED: Handle no-cors mode (Google Apps Script returns opaque response)
     if (fetchOptions.mode === 'no-cors') {
       console.log('Google Apps Script request sent (no-cors mode, response opaque)');
