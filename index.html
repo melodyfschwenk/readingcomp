@@ -2028,7 +2028,6 @@ function determineRecordingNeeds() {
 }
 
 function checkWelcomeReady() {
-    function checkWelcomeReady() {
   const hasPid = document.getElementById('pid').value.trim().length > 0;
   const hasEdu = document.getElementById('edu').value.trim().length > 0;
   const group = document.querySelector('input[name="participant-group"]:checked');
@@ -2095,7 +2094,7 @@ const Timers = {
    =========================== */
 async function setupVideo() {
   try {
-    state.stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    state.stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: state.useAudioRecording });
     const v = document.getElementById('preview');
     v.srcObject = state.stream;
     document.getElementById('video-status').textContent = 'Camera is ready. You can proceed.';
@@ -2634,5 +2633,3 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
-
-  const hasPid = document.getElementById('pi
