@@ -693,7 +693,8 @@ let state = {
   },
   readingStartTime: null,
   itemStartTime: null,
-  
+  lastStartPromise: null,
+
   // Recording
   useVideoRecording: false,
   useAudioRecording: false,
@@ -2155,8 +2156,8 @@ async function showItem() {
   
   const trial = state.sequence[state.currentIndex];
 
-  // Fire-and-forget to prevent blocking UI on slow networks
-  sendEventSafely('item_started', {
+  // Start sending item start event and keep reference
+  state.lastStartPromise = sendEventSafely('item_started', {
     sessionId: SESSION_ID,
     pid: state.pid,
     edu: state.edu,
@@ -2166,7 +2167,9 @@ async function showItem() {
     imageFile: trial.image,
     questionText: trial.questions ? trial.questions[0].text : '',
     itemType: trial.type
-  }).catch(() => {});
+  }).catch(err => {
+    console.warn('Failed to record item start', err);
+  });
 
   // Immediately render the item
   showScreen('item');
@@ -2500,9 +2503,13 @@ async function submitAnswers(e) {
     endTime: new Date().toISOString(),
     consecutiveZeros: state.consecutiveZeros
   };
-  
+
   // Try to send to Google
   try {
+    // Ensure start event finished before completing item
+    if (state.lastStartPromise) {
+      try { await state.lastStartPromise; } catch (e) { console.warn('Item start failed:', e); }
+    }
     await sendEventSafely('item_completed', gasData);
     updateConnectionStatus(true);
   } catch (error) {
