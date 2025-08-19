@@ -556,7 +556,7 @@
       <p class="muted">For spoken "read aloud" items, we need to set up audio recording.</p>
       <div class="recording-controls">
         <button id="test-audio-record" class="danger">Test Audio Recording</button>
-        <button id="stop-test-audio" class="hidden">Stop Test</button>
+        <button id="stop-test-audio" class="hidden" type="button">Stop Test</button>
         <span class="recording-timer hidden" id="test-audio-timer">00:00</span>
       </div>
       <audio id="test-audio-playback" controls class="hidden" style="width: 100%; max-width: 400px; margin: 10px auto; display: block;"></audio>
@@ -864,7 +864,7 @@ function announceToScreenReader(message, priority = 'polite') {
         
         setTimeout(() => {
             liveRegion.textContent = '';
-        }, 1000);
+        }, 4000);
     }
 }
 
@@ -914,6 +914,26 @@ let state = {
 };
 
 let testTimerSec = 0;
+
+    function saveLocal() {
+  try {
+    const snapshot = {
+      state: {
+        ...state,
+        stream: null,          // don't try to serialize MediaStream
+        mediaRecorder: null,   // don't serialize
+        recordedChunks: []     // discard in-memory chunks here
+      }
+    };
+    localStorage.setItem('wiat2_session', JSON.stringify(snapshot));
+  } catch {}
+}
+function loadLocal() {
+  try {
+    const s = JSON.parse(localStorage.getItem('wiat2_session'));
+    if (s?.state) Object.assign(state, s.state);
+  } catch {}
+}
 
 /* ===========================
    WIAT-2 Scoring Reference (same as original)
@@ -1135,15 +1155,21 @@ const SCORING_REFERENCE = {
     onePoint: { patterns: [/(less|cheaper|lower)/i] }
   },
   q116: {
-    twoPoint: {
-      patterns: [
-        /(main|primary)\s+reason.*(support|position)/i,
-        /(because|since|as)\s+(costs|expenses|budget|funds|money).*(need|require)/i
-      ]
-    },
-    onePoint: { patterns: [/(money|costs|budget)/i] },
-    notes: "Tom's main reason: costs/finances; raising price covers expenses."
+  twoPoint: {
+    patterns: [
+      /(attendance|visits|visitation).*(fell|drop(ped)?|declined)/i,
+      /(price|admission).*increase.*(led|caused).*decline/i
+    ]
   },
+  onePoint: {
+    patterns: [
+      /(fewer|less)\s+people\s+(went|visited)/i,
+      /(raising|higher)\s+(price|admission)\s+is\s+bad/i
+    ]
+  },
+  notes: "Tom’s main reason: the last price increase caused a decline in attendance that never rebounded."
+},
+
   q117: {
     twoPoint: {
       patterns: [
@@ -2056,8 +2082,14 @@ function showScreen(id) {
   for (const el of document.querySelectorAll('#screen-welcome, #screen-setup, #screen-item, #screen-finish')) {
     el.classList.add('hidden');
   }
-  document.getElementById(id).classList.remove('hidden');
+  const target = document.getElementById(id);
+  target.classList.remove('hidden');
+
+  const h = target.querySelector('h1, h2, [role="heading"]');
+  if (h) { h.setAttribute('tabindex','-1'); h.focus(); }
+  announceToScreenReader(h?.textContent || 'Screen changed', 'polite');
 }
+
 
 function formatMMSS(sec) {
   const m = String(Math.floor(sec / 60)).padStart(2, '0');
@@ -2092,48 +2124,112 @@ const Timers = {
 /* ===========================
    Media setup and recording
    =========================== */
+    function stopMedia() {
+  try {
+    if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
+      state.mediaRecorder.stop();
+    }
+  } catch {}
+  if (state.stream) {
+    try { state.stream.getTracks().forEach(tr => tr.stop()); } catch {}
+    state.stream = null;
+  }
+}
+
+    function pickMime() {
+  const candidates = state.useVideoRecording
+    ? ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm']
+    : ['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/ogg'];
+  return (MediaRecorder.isTypeSupported
+    ? candidates.find(m => MediaRecorder.isTypeSupported(m))
+    : null) || '';
+}
+
+async function blobToBase64(blob){
+  const arr = new Uint8Array(await blob.arrayBuffer());
+  let s = '';
+  for (let i=0; i<arr.length; i++) s += String.fromCharCode(arr[i]);
+  return btoa(s);
+}
+
+async function uploadBlob(kind, blob, meta = {}) {
+  try {
+    const data = await blobToBase64(blob);
+    return postWithTimeout(GOOGLE_SCRIPT_URL, {
+      action: 'upload_blob',
+      sessionId: SESSION_ID,
+      pid: state.pid,
+      itemNumber: currentTrial()?.item,
+      kind, mime: blob.type, data,
+      ...meta
+    }, GOOGLE_TIMEOUT_MS);
+  } catch (e) {
+    // If this fails silently (CORS), you'll still have the session JSON backup.
+  }
+}
+
 async function setupVideo() {
+  const status = document.getElementById('video-status');
   try {
     state.stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: state.useAudioRecording });
     const v = document.getElementById('preview');
     v.srcObject = state.stream;
-    document.getElementById('video-status').textContent = 'Camera is ready. You can proceed.';
+    status.textContent = 'Camera is ready. You can proceed.';
     document.getElementById('pref-hide-selfview').classList.remove('hidden');
+    document.getElementById('start-study').disabled = false;
     return true;
   } catch (e) {
-    document.getElementById('video-status').textContent = 'Could not access camera. Please allow permissions and retry.';
+    const msg = /NotAllowed|Permission/i.test(e.name + e.message)
+      ? 'Permission denied. Click the lock icon in your browser’s address bar to allow camera/microphone, then retry.'
+      : 'Could not access camera. Ensure no other app is using it and retry.';
+    status.textContent = msg;
+    document.getElementById('start-study').disabled = true;
     return false;
   }
 }
 
+
 async function setupAudio() {
+  const status = document.getElementById('audio-status');
   try {
     state.stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-    document.getElementById('audio-status').textContent = 'Microphone is ready. You can proceed.';
+    status.textContent = 'Microphone is ready. You can proceed.';
+    document.getElementById('start-study').disabled = false;
     return true;
   } catch (e) {
-    document.getElementById('audio-status').textContent = 'Could not access microphone. Please allow permissions and retry.';
+    const msg = /NotAllowed|Permission/i.test(e.name + e.message)
+      ? 'Permission denied. Click the lock icon in your browser’s address bar to allow the microphone, then retry.'
+      : 'Could not access microphone. Ensure no other app is using it and retry.';
+    status.textContent = msg;
+    document.getElementById('start-study').disabled = true;
     return false;
   }
 }
+
 
 function startMediaRecorder(onStop) {
   if (!state.stream) return null;
   try {
     state.recordedChunks = [];
-    const mr = new MediaRecorder(state.stream);
+    const mime = pickMime();
+    state.recordMime = mime;
+    const mr = mime ? new MediaRecorder(state.stream, { mimeType: mime }) : new MediaRecorder(state.stream);
     state.mediaRecorder = mr;
+
     mr.ondataavailable = e => { if (e.data && e.data.size > 0) state.recordedChunks.push(e.data); };
-    mr.onstop = () => {
-      try { if (typeof onStop === 'function') onStop(new Blob(state.recordedChunks)); }
-      catch {}
+    mr.onstop = async () => {
+      const blob = new Blob(state.recordedChunks, { type: state.recordMime || (state.useVideoRecording ? 'video/webm' : 'audio/webm') });
+      try { if (typeof onStop === 'function') onStop(blob); } catch {}
+      // Upload the blob “best effort”
+      uploadBlob(state.useVideoRecording ? 'video' : 'audio', blob).catch(()=>{});
     };
-    mr.start(10);
+    mr.start(10000);
     return mr;
   } catch (e) {
     return null;
   }
 }
+
 
 /* ===========================
    Rendering helpers
@@ -2169,11 +2265,39 @@ function renderQAFields(trial) {
 /* ===========================
    Scoring
    =========================== */
+    function scoreTwoDistinct(text, groups){
+  let hits = 0;
+  for (const g of groups) if (g.some(rx => rx.test(text))) hits += 1;
+  return hits >= 2 ? 2 : hits === 1 ? 1 : 0;
+}
+const MANUAL_REVIEW = new Set(['q98']); // technology proverb (manual)
+
 function scoreAnswer(scoringKey, text) {
   const val = (text || '').trim();
   if (!scoringKey || !SCORING_REFERENCE[scoringKey]) return { points: 0, note: 'no-key' };
   const ref = SCORING_REFERENCE[scoringKey];
   const t = val.toLowerCase();
+// Multi-category items: score based on distinct hazards/themes mentioned
+if (scoringKey === 'q89') {
+  // 2 dangers on the journey
+  const points = scoreTwoDistinct(val, [
+    [/(cold|freez|blizzard|storm|inclement)/i],
+    [/(bear|wolf|wildlife|animal\s+attack)/i],
+    [/(starv|hunger|lack of food)/i],
+    [/(river|rapid|ice|avalanche|landslide)/i],
+    [/(sick(ness)?|illness|injur|exhaust|fatigue)/i]
+  ]);
+  return { points, note: 'multi-cat' };
+}
+if (scoringKey === 'q119') {
+  // 3 consequences if prices not raised
+  let hits = 0;
+  if (/(fewer|no)\s+(acquisitions|new\s+animals|new\s+exhibits)/i.test(val)) hits++;
+  if (/(reduce(d)?|cut)\s+(hours|services|staff|care|maintenance)/i.test(val)) hits++;
+  if (/(close|closure)/i.test(val)) hits++;
+  if (/(lack\s+of\s+funds|budget\s+shortfall)/i.test(val)) hits++;
+  return { points: hits >= 3 ? 2 : hits >= 1 ? 1 : 0, note: 'multi-count' };
+}
 
   // semantic blocks
   if (ref.semantic) {
@@ -2234,10 +2358,20 @@ gsPost('item_started', {
     const info = getReadAloudInstructions();
     document.getElementById('read-aloud-title').textContent = info.title;
     document.getElementById('read-aloud-text').textContent = info.text;
-    document.getElementById('read-aloud-instructions').classList.remove('hidden');
-    document.getElementById('recording-controls').classList.remove('hidden');
-    document.getElementById('start-recording').textContent = info.buttonText;
-    return;
+   document.getElementById('read-aloud-instructions').classList.remove('hidden');
+document.getElementById('recording-controls').classList.remove('hidden');
+document.getElementById('start-recording').textContent = info.buttonText;
+
+// reset controls for this trial
+const startBtn = document.getElementById('start-recording');
+const stopBtn = document.getElementById('stop-recording');
+const timerEl = document.getElementById('recording-timer');
+startBtn.classList.remove('hidden');
+stopBtn.classList.add('hidden');
+timerEl.classList.add('hidden');
+document.getElementById('rec-indicator').classList.add('hidden');
+
+return;
   }
 
   // Passage that requires timed reading first
@@ -2285,7 +2419,7 @@ function handleReadingDone() {
 
   const trial = currentTrial();
   const dur = Math.round((Date.now() - (state.readingStartTime || Date.now())) / 1000);
-  const text = (document.getElementById('passage-container')?.innerText || '').trim();
+  const text = document.querySelector('#passage-container .q-block')?.innerText?.trim() || '';
   const wc = text ? text.split(/\s+/).filter(Boolean).length : 0;
 
   gsPost('reading_time', {
@@ -2308,21 +2442,68 @@ function handleReadingDone() {
 }
 
 
-function handleStartRecording() {
-  const recBox = document.getElementById('recording-controls');
+async function handleStartRecording() {
+  // If there is no stream (permissions denied earlier), try again now
+  if (!state.stream) {
+    const mode = state.useVideoRecording ? 'video' : 'audio';
+    const ok = mode === 'video' ? await setupVideo() : await setupAudio();
+    if (!ok) {
+  announceToScreenReader('Recording not available. Continuing without a recording.', 'assertive');
+  alert('Recording not available. This item will be marked without a recording and we will continue.');
+
+  const trial = currentTrial();
+  state.results.push({
+    item: trial.item,
+    type: 'read-aloud',
+    passageId: trial.passageId,
+    durationSec: 0,
+    mediaPresent: false
+  });
+
+  // Log and continue
+  gsPost('item_completed', {
+    pid: state.pid,
+    itemNumber: trial.item,
+    endTime: new Date().toISOString(),
+    duration: 0,
+    response: '[read-aloud: no media]',
+    explanation: '',
+    autoScore: '',
+    scoreConfidence: '',
+    needsReview: false,
+    scoringNotes: 'read-aloud: permissions denied',
+    finalScore: '',
+    itemType: 'read-aloud'
+  });
+
+  // honor discontinue rule (unchanged)
+  if (DISCONTINUE_AFTER_ZEROS > 0 && state.consecutiveZeros >= DISCONTINUE_AFTER_ZEROS) {
+    announceToScreenReader('Assessment will end early due to repeated zero scores.', 'assertive');
+    finishAssessment('Stopped early due to scoring rule.');
+    return;
+  }
+
+  goNextOrFinish();
+  return;
+}
+  }
+
   const startBtn = document.getElementById('start-recording');
   const stopBtn = document.getElementById('stop-recording');
   const timerEl = document.getElementById('recording-timer');
+
   startBtn.classList.add('hidden');
   stopBtn.classList.remove('hidden');
   timerEl.classList.remove('hidden');
   timerEl.textContent = '00:00';
 
+  document.getElementById('rec-indicator').classList.remove('hidden');
+  document.getElementById('rec-type').textContent = state.useVideoRecording ? 'Recording video' : 'Recording audio';
+
   let sec = 0;
   Timers.start('recording', t => { sec = t; document.getElementById('recording-timer').textContent = formatMMSS(t); });
 
   startMediaRecorder(blob => {
-    // Store a small handle so uploads can use it later
     const trial = currentTrial();
     state.results.push({
       item: trial.item,
@@ -2338,6 +2519,8 @@ function handleStopRecording() {
   document.getElementById('stop-recording').classList.add('hidden');
   document.getElementById('recording-timer').classList.add('hidden');
   Timers.stop('recording');
+    document.getElementById('rec-indicator').classList.add('hidden');
+
   if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
     state.mediaRecorder.stop();
   }
@@ -2412,10 +2595,11 @@ function postWithTimeout(url, data, timeoutMs) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
-    signal: ctrl.signal,
-    mode: url.includes('script.google.com') ? 'no-cors' : 'cors'
+    signal: ctrl.signal
+    // NOTE: remove mode:'no-cors' so you get a readable response if CORS is enabled.
   }).finally(() => clearTimeout(t));
 }
+
 
 function gsPost(action, payload) {
   // Uses your existing GOOGLE_SCRIPT_URL and postWithTimeout
@@ -2441,46 +2625,48 @@ async function uploadAll() {
     results: state.results
   };
 
-  // Try Google first
-  let ok = false;
+  let googleOk = false;
   try {
     const r = await postWithTimeout(GOOGLE_SCRIPT_URL, payload, GOOGLE_TIMEOUT_MS);
-    // no-cors returns opaque; assume success if no network error
-    ok = true;
-  } catch (e) {
-    ok = false;
-  }
-  if (ok) {
-    setConnectionStatus(true);
+    // Treat as success ONLY if we actually get an OK response.
+    googleOk = !!(r && r.ok);
+  } catch {}
 
-    document.getElementById('upload-progress').textContent = 'Saved to Google successfully.';
+  // Always try backup as a second leg if Google didn't clearly OK
+  let backupOk = false;
+  if (!googleOk) {
+    try {
+      const b = await postWithTimeout(GITHUB_BACKUP_URL, {
+        owner: BACKUP_REPO_OWNER,
+        repo: BACKUP_REPO_NAME,
+        dirHint: BACKUP_DIR_HINT,
+        fileHint: `session_${SESSION_ID}.json`,
+        payload
+      }, BACKUP_TIMEOUT_MS);
+      backupOk = !!(b && b.ok);
+    } catch {}
+  }
+
+  if (googleOk || backupOk) {
+    setConnectionStatus(true);
+    document.getElementById('upload-progress').textContent =
+      googleOk && backupOk ? 'Saved to Google and backup.' :
+      googleOk ? 'Saved to Google successfully.' :
+      'Saved to backup endpoint successfully.';
     return true;
   }
 
-  // Fallback: serverless backup if configured
-  try {
-    const b = await postWithTimeout(GITHUB_BACKUP_URL, {
-      owner: BACKUP_REPO_OWNER,
-      repo: BACKUP_REPO_NAME,
-      dirHint: BACKUP_DIR_HINT,
-      fileHint: `session_${SESSION_ID}.json`,
-      payload
-    }, BACKUP_TIMEOUT_MS);
-    setConnectionStatus(true);
-    document.getElementById('upload-progress').textContent = 'Saved to backup endpoint successfully.';
-    return true;
-  } catch (e) {
-    setConnectionStatus(false);
-            const looksConfigured = /^https:\/\/script\.google\.com\/macros\/s\//.test(GOOGLE_SCRIPT_URL);
-if (!looksConfigured) {
-  document.getElementById('config-warning').classList.remove('hidden');
+  setConnectionStatus(false);
+  const looksConfigured = /^https:\/\/script\.google\.com\/macros\/s\//.test(GOOGLE_SCRIPT_URL);
+  if (!looksConfigured) document.getElementById('config-warning').classList.remove('hidden');
+
+  document.getElementById('upload-progress').textContent =
+    'Upload failed. You can retry or download a local backup file.';
+  document.getElementById('retry-upload').classList.remove('hidden');
+  document.getElementById('download-backup').classList.remove('hidden');
+  return false;
 }
-    document.getElementById('upload-progress').textContent = 'Upload failed. You can retry or download a local backup file.';
-    document.getElementById('retry-upload').classList.remove('hidden');
-    document.getElementById('download-backup').classList.remove('hidden');
-    return false;
-  }
-}
+
 
 function downloadLocalBackup() {
   const data = {
@@ -2523,6 +2709,9 @@ function setConnectionStatus(connected) {
    Finish
    =========================== */
 async function finishAssessment(reason = '') {
+    stopMedia();
+Timers.stopAll();
+
   showScreen('screen-finish');
   const msg = document.getElementById('finish-msg');
   msg.textContent = reason ? `Thank you. ${reason}` : 'Thank you for participating.';
@@ -2569,30 +2758,47 @@ async function enterSetup() {
   determineReadModalityFromUI();
   const mode = determineRecordingNeeds();
 
-  // Toggle setup panels
+  // Show which method we're setting up
+  const methodEl = document.getElementById('recording-method-text');
+  if (methodEl) {
+    methodEl.textContent = mode === 'video'
+      ? 'Setting up camera (video recording)…'
+      : 'Setting up microphone (audio recording)…';
+  }
+
+  // Try to get media, but do NOT block progress if it fails
   const vs = document.getElementById('video-setup');
   const as = document.getElementById('audio-setup');
+  let ok = false;
+
   if (mode === 'video') {
     vs.classList.remove('hidden');
     as.classList.add('hidden');
-    await setupVideo();
+    ok = await setupVideo();
   } else {
     vs.classList.add('hidden');
     as.classList.remove('hidden');
-    await setupAudio();
+    ok = await setupAudio();
   }
 
-  document.getElementById('setup-status-text').textContent = 'Ready. You can start the assessment.';
+  document.getElementById('setup-status-text').textContent =
+    ok
+      ? 'Ready. You can start the assessment.'
+      : 'Recording setup failed. You can still continue; read-aloud recordings will be unavailable until you allow access.';
+
+  // ALWAYS allow proceeding, even if setup failed
   document.getElementById('start-study').disabled = false;
 }
 
-    function handleQASubmit(e) {
+
+function handleQASubmit(e) {
   e.preventDefault();
   const trial = currentTrial();
 
   let answers = [];
   let trialPoints = 0;
 
+  // Collect answers and score
   document.querySelectorAll('#qa-fields textarea').forEach(tx => {
     const key = tx.dataset.scoringKey || '';
     const val = tx.value || '';
@@ -2601,9 +2807,14 @@ async function enterSetup() {
     trialPoints += Number(scored.points || 0);
   });
 
-  // update zero streak and totals
-  if (trialPoints === 0) state.consecutiveZeros += 1;
-  else state.consecutiveZeros = 0;
+  // NOW that answers exist, decide if all are manual-review items
+  const allManual = answers.length > 0 && answers.every(a => MANUAL_REVIEW.has(a.key));
+
+  // update zero streak and totals (manual-review items shouldn't penalize)
+  if (!allManual) {
+    if (trialPoints === 0) state.consecutiveZeros += 1;
+    else state.consecutiveZeros = 0;
+  }
   state.totalPoints += trialPoints;
 
   // save result
@@ -2630,7 +2841,7 @@ async function enterSetup() {
     explanation: '',
     autoScore: trialPoints,
     scoreConfidence: conf,
-    needsReview: /review/i.test(notesJoined),
+    needsReview: allManual || /review/i.test(notesJoined),
     scoringNotes: notesJoined,
     finalScore: trialPoints,
     consecutiveZeros: state.consecutiveZeros,
@@ -2648,6 +2859,19 @@ async function enterSetup() {
   goNextOrFinish();
 }
 
+
+(function(){
+  const orig = handleQASubmit;
+  handleQASubmit = function() { const r = orig.apply(this, arguments); saveLocal(); return r; };
+})();
+(function(){
+  const orig = handleStopRecording;
+  handleStopRecording = function() { const r = orig.apply(this, arguments); saveLocal(); return r; };
+})();
+(function(){
+  const orig = goNextOrFinish;
+  goNextOrFinish = function() { const r = orig.apply(this, arguments); saveLocal(); return r; };
+})();
 
 /* ===========================
    Wire up DOM events
@@ -2668,9 +2892,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Begin -> Setup
   document.getElementById('begin').addEventListener('click', () => {
-    state.sessionStartTime = Date.now();
-    enterSetup();
-  });
+  state.sessionStartTime = Date.now();
+  enterSetup();
+});
 
   // Test audio on setup
   const testBtn = document.getElementById('test-audio-record');
@@ -2754,6 +2978,9 @@ document.getElementById('start-study').addEventListener('click', () => {
   // Initial
   checkWelcomeReady();
   setConnectionStatus(false);
+    loadLocal();
+window.addEventListener('beforeunload', () => { saveLocal(); stopMedia(); });
+
 });
 </script>
 </body>
