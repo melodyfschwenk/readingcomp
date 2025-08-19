@@ -2947,7 +2947,7 @@ function showScreen(screen) {
 function updateAdminPanel() {
   if (!state.adminMode) return;
   document.getElementById('admin-group').textContent = state.participantGroup || '-';
-  document.getElementById('admin-item').textContent = state.sequence[state.currentIndex]?.item || '-';
+  document.getElementById('admin-item').textContent = (state.sequence[state.currentIndex] && state.sequence[state.currentIndex].item) || '-';
   document.getElementById('admin-score').textContent = state.totalPoints;
   document.getElementById('admin-zeros').textContent = state.consecutiveZeros;
   document.getElementById('admin-status').textContent =
@@ -3167,7 +3167,7 @@ document.addEventListener('DOMContentLoaded', () => {
       sendEventSafely('item_skipped', {
         itemNumber: state.sequence[state.currentIndex].item,
         imageFile: state.sequence[state.currentIndex].image,
-        questionText: state.sequence[state.currentIndex].questions?.[0]?.text || '',
+        questionText: (state.sequence[state.currentIndex].questions && state.sequence[state.currentIndex].questions[0] && state.sequence[state.currentIndex].questions[0].text) || '',
         itemType: state.sequence[state.currentIndex].type,
         reason: 'User choice',
         consecutiveZeros: state.consecutiveZeros + 1
@@ -3465,7 +3465,7 @@ function startRecording() {
 }
 
 async function stopRecording() {
-  try { if (state.mediaRecorder?.state === 'recording') state.mediaRecorder.stop(); } catch (_) {}
+  try { if (state.mediaRecorder && state.mediaRecorder.state === 'recording') state.mediaRecorder.stop(); } catch (_) {}
   if (state.timers.recording) { clearInterval(state.timers.recording); state.timers.recording = null; }
 
   // UI
@@ -3547,7 +3547,7 @@ function setupAudioTest(btnStart, btnStop) {
   });
 
   btnStop.addEventListener('click', () => {
-    try { if (testRecorder?.state === 'recording') testRecorder.stop(); } catch (_) {}
+    try { if (testRecorder && testRecorder.state === 'recording') testRecorder.stop(); } catch (_) {}
     if (state.timers.test) { clearInterval(state.timers.test); state.timers.test = null; }
     btnStop.classList.add('hidden');
     btnStart.classList.remove('hidden');
