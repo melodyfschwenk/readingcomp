@@ -2881,7 +2881,11 @@ async function submitAnswers(e) {
     explanation: '',
     autoScore: itemScore,
     scoreConfidence: itemScore > 0 ? 'High' : 'Low',
-    needsReview: itemScore === 0 && response.length > 10,
+    // Flag for manual review if no points were awarded but at least one response
+    // contains more than 10 characters. This helps catch potentially valid
+    // answers that our heuristic auto-scorer missed.
+    needsReview: itemScore === 0 &&
+                 Object.values(itemResult.responses).some(r => r.length > 10),
     scoringNotes: `Auto-scored: ${itemScore}`,
     finalScore: itemScore,
     duration: Math.round((Date.now() - state.itemStartTime) / 1000),
