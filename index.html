@@ -558,6 +558,9 @@
         <button id="test-audio-record" class="danger">Test Audio Recording</button>
         <button id="stop-test-audio" class="hidden" type="button">Stop Test</button>
         <span class="recording-timer hidden" id="test-audio-timer">00:00</span>
+            <!-- NEW -->
+  <button id="skip-recording" class="secondary hidden" type="button">Skip Recording</button>
+
       </div>
       <audio id="test-audio-playback" controls class="hidden" style="width: 100%; max-width: 400px; margin: 10px auto; display: block;"></audio>
       <p id="audio-status" class="muted center" role="status" aria-live="polite" aria-atomic="true">Click "Test Audio Recording" to verify your microphone is working.</p>
@@ -606,11 +609,21 @@
     <!-- Recording controls for read-aloud items -->
     <div id="recording-controls" class="recording-controls hidden">
       <button id="start-recording" class="danger" aria-describedby="recording-help">Start Recording</button>
-      <button id="stop-recording" class="hidden">Stop Recording</button>
-      <span class="recording-timer hidden" id="recording-timer">00:00</span>
-      <div id="recording-help" class="sr-only">Click to begin recording your response</div>
-    </div>
+        <button id="stop-recording" class="hidden" type="button">Stop Recording</button>
 
+      <span class="recording-timer hidden" id="recording-timer">00:00</span>
+  
+
+  <div id="recording-help" class="sr-only">Click to begin recording your response</div>
+</div>
+
+<!-- NEW: shown only when mic/cam isn’t available -->
+<div id="recording-unavailable" class="status-box error hidden"
+     role="alert" aria-live="assertive" aria-atomic="true" style="margin-top:10px;">
+  <div>Recording isn’t available. You can allow access and retry, or choose
+    <strong>Skip Recording</strong> to continue.</div>
+</div>
+      
     <!-- Standard reading controls -->
     <div id="reading-controls" class="center hidden" style="margin: 16px 0;">
       <button id="start-reading" class="primary">Start Reading</button>
@@ -2370,6 +2383,12 @@ startBtn.classList.remove('hidden');
 stopBtn.classList.add('hidden');
 timerEl.classList.add('hidden');
 document.getElementById('rec-indicator').classList.add('hidden');
+      // NEW: make Skip visible and reset alert panel
+const skipBtn = document.getElementById('skip-recording');
+const unavailableBox = document.getElementById('recording-unavailable');
+if (skipBtn) skipBtn.classList.remove('hidden');
+if (unavailableBox) unavailableBox.classList.add('hidden');
+
 
 return;
   }
@@ -2443,50 +2462,53 @@ function handleReadingDone() {
 
 
 async function handleStartRecording() {
-  // If there is no stream (permissions denied earlier), try again now
+  // Ensure we have a stream; if we don't, try to get one
   if (!state.stream) {
     const mode = state.useVideoRecording ? 'video' : 'audio';
     const ok = mode === 'video' ? await setupVideo() : await setupAudio();
+
     if (!ok) {
-  announceToScreenReader('Recording not available. Continuing without a recording.', 'assertive');
-  alert('Recording not available. This item will be marked without a recording and we will continue.');
-
-  const trial = currentTrial();
-  state.results.push({
-    item: trial.item,
-    type: 'read-aloud',
-    passageId: trial.passageId,
-    durationSec: 0,
-    mediaPresent: false
-  });
-
-  // Log and continue
-  gsPost('item_completed', {
-    pid: state.pid,
-    itemNumber: trial.item,
-    endTime: new Date().toISOString(),
-    duration: 0,
-    response: '[read-aloud: no media]',
-    explanation: '',
-    autoScore: '',
-    scoreConfidence: '',
-    needsReview: false,
-    scoringNotes: 'read-aloud: permissions denied',
-    finalScore: '',
-    itemType: 'read-aloud'
-  });
-
-  // honor discontinue rule (unchanged)
-  if (DISCONTINUE_AFTER_ZEROS > 0 && state.consecutiveZeros >= DISCONTINUE_AFTER_ZEROS) {
-    announceToScreenReader('Assessment will end early due to repeated zero scores.', 'assertive');
-    finishAssessment('Stopped early due to scoring rule.');
-    return;
+      // Do NOT auto-advance; show inline alert + focus Skip
+      announceToScreenReader('Recording not available. You can allow access or skip recording.', 'assertive');
+      const unavailableBox = document.getElementById('recording-unavailable');
+      const skipBtn = document.getElementById('skip-recording');
+      if (unavailableBox) unavailableBox.classList.remove('hidden');
+      if (skipBtn) { skipBtn.classList.remove('hidden'); skipBtn.focus(); }
+      return;
+    }
   }
 
-  goNextOrFinish();
-  return;
+  // Start UI + timer
+  const startBtn = document.getElementById('start-recording');
+  const stopBtn = document.getElementById('stop-recording');
+  const timerEl = document.getElementById('recording-timer');
+
+  startBtn.classList.add('hidden');
+  stopBtn.classList.remove('hidden');
+  timerEl.classList.remove('hidden');
+  timerEl.textContent = '00:00';
+
+  document.getElementById('rec-indicator').classList.remove('hidden');
+  document.getElementById('rec-type').textContent = state.useVideoRecording ? 'Recording video' : 'Recording audio';
+
+  let sec = 0;
+  Timers.start('recording', t => {
+    sec = t;
+    timerEl.textContent = formatMMSS(t);
+  });
+
+  startMediaRecorder(() => {
+    const trial = currentTrial();
+    state.results.push({
+      item: trial.item,
+      type: 'read-aloud',
+      passageId: trial.passageId,
+      durationSec: sec,
+      mediaPresent: true
+    });
+  });
 }
-  }
+
 
   const startBtn = document.getElementById('start-recording');
   const stopBtn = document.getElementById('stop-recording');
@@ -2555,7 +2577,41 @@ function handleStopRecording() {
 
   goNextOrFinish();
 }
+function handleSkipRecording() {
+  // Ensure any recording is stopped
+  try { if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') state.mediaRecorder.stop(); } catch {}
+  Timers.stop('recording');
+  document.getElementById('rec-indicator').classList.add('hidden');
 
+  const trial = currentTrial();
+  state.results.push({
+    item: trial.item,
+    type: 'read-aloud',
+    passageId: trial.passageId,
+    durationSec: 0,
+    mediaPresent: false,
+    skipped: true
+  });
+
+  gsPost('item_completed', {
+    pid: state.pid,
+    itemNumber: trial.item,
+    endTime: new Date().toISOString(),
+    duration: 0,
+    response: '[read-aloud: skipped/no media]',
+    explanation: '',
+    autoScore: '',
+    scoreConfidence: '',
+    needsReview: false,
+    scoringNotes: 'read-aloud skipped by user',
+    finalScore: '',
+    itemType: 'read-aloud'
+  });
+
+  goNextOrFinish();
+}
+
+    
         function handleQASkip() {
   const trial = currentTrial();
 
@@ -2877,7 +2933,7 @@ function handleQASubmit(e) {
    Wire up DOM events
    =========================== */
 document.addEventListener('DOMContentLoaded', () => {
-  // Welcome form events
+  // ——— Welcome form events ———
   document.getElementById('pid').addEventListener('input', checkWelcomeReady);
   document.getElementById('edu').addEventListener('change', checkWelcomeReady);
   document.getElementById('consent').addEventListener('change', checkWelcomeReady);
@@ -2887,16 +2943,17 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('input[name="read-modality"]').forEach(el => {
     el.addEventListener('change', () => {
       determineReadModalityFromUI();
+      checkWelcomeReady();
     });
   });
 
-  // Begin -> Setup
+  // ——— Begin -> Setup ———
   document.getElementById('begin').addEventListener('click', () => {
-  state.sessionStartTime = Date.now();
-  enterSetup();
-});
+    state.sessionStartTime = Date.now();
+    enterSetup();
+  });
 
-  // Test audio on setup
+  // ——— Test audio on setup ———
   const testBtn = document.getElementById('test-audio-record');
   const stopTestBtn = document.getElementById('stop-test-audio');
   const testTimer = document.getElementById('test-audio-timer');
@@ -2906,21 +2963,26 @@ document.addEventListener('DOMContentLoaded', () => {
     testBtn.addEventListener('click', async () => {
       // Ensure audio stream
       if (!state.stream) await setupAudio();
+
       testBtn.classList.add('hidden');
       stopTestBtn.classList.remove('hidden');
       testTimer.classList.remove('hidden');
       testTimer.textContent = '00:00';
+
       let sec = 0;
       Timers.start('test', t => { sec = t; testTimer.textContent = formatMMSS(t); });
 
       startMediaRecorder(blob => {
         Timers.stop('test');
+        stopTestBtn.classList.add('hidden');
+        testBtn.classList.remove('hidden');
         testPlayback.src = URL.createObjectURL(blob);
         testPlayback.classList.remove('hidden');
         document.getElementById('audio-status').textContent = 'Test recording complete. Play it back to confirm.';
       });
     });
   }
+
   if (stopTestBtn) {
     stopTestBtn.addEventListener('click', () => {
       stopTestBtn.classList.add('hidden');
@@ -2930,57 +2992,57 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Start study
-document.getElementById('start-study').addEventListener('click', () => {
-  state.sequence = TRIALS.slice();
-  state.currentIndex = 0;
-  state.totalPoints = 0;
-  state.consecutiveZeros = 0;
+  // ——— Start study ———
+  document.getElementById('start-study').addEventListener('click', () => {
+    state.sequence = TRIALS.slice();
+    state.currentIndex = 0;
+    state.totalPoints = 0;
+    state.consecutiveZeros = 0;
 
-  // 🔹 TRIAL-BY-TRIAL: session_start
-  gsPost('session_start', {
-    pid: state.pid,
-    education: state.edu,
-    timestamp: new Date().toISOString(),
-    adminMode: !!state.adminMode,
-    hasRecording: !!(state.useVideoRecording || state.useAudioRecording),
-    userAgent: navigator.userAgent
+    gsPost('session_start', {
+      pid: state.pid,
+      education: state.edu,
+      timestamp: new Date().toISOString(),
+      adminMode: !!state.adminMode,
+      hasRecording: !!(state.useVideoRecording || state.useAudioRecording),
+      userAgent: navigator.userAgent
+    });
+
+    showScreen('screen-item');
+    renderTrial(currentTrial());
   });
 
-  showScreen('screen-item');
-  renderTrial(currentTrial());
-});
-
-
-  // Read controls
+  // ——— Reading controls ———
   document.getElementById('start-reading').addEventListener('click', handleReadingStart);
   document.getElementById('done-reading').addEventListener('click', handleReadingDone);
 
-  // Recording controls
+  // ——— Recording controls (item screen) ———
   document.getElementById('start-recording').addEventListener('click', handleStartRecording);
   document.getElementById('stop-recording').addEventListener('click', handleStopRecording);
+  document.getElementById('skip-recording').addEventListener('click', handleSkipRecording);
 
-  // QA form
+  // ——— QA form ———
   document.getElementById('qa-form').addEventListener('submit', handleQASubmit);
   document.getElementById('skip').addEventListener('click', handleQASkip);
 
-  // Finish actions
+  // ——— Finish actions ———
   document.getElementById('retry-upload').addEventListener('click', uploadAll);
   document.getElementById('download-backup').addEventListener('click', downloadLocalBackup);
 
-  // Preferences
-  document.getElementById('toggle-selfview').addEventListener('change', (e) => {
-    const v = document.getElementById('preview');
-    if (!v) return;
-    v.style.visibility = e.target.checked ? 'hidden' : 'visible';
-  });
+  // ——— Preferences ———
+  const selfview = document.getElementById('toggle-selfview');
+  if (selfview) {
+    selfview.addEventListener('change', (e) => {
+      const v = document.getElementById('preview');
+      if (v) v.style.visibility = e.target.checked ? 'hidden' : 'visible';
+    });
+  }
 
-  // Initial
+  // ——— Initial ———
+  loadLocal();
   checkWelcomeReady();
   setConnectionStatus(false);
-    loadLocal();
-window.addEventListener('beforeunload', () => { saveLocal(); stopMedia(); });
-
+  window.addEventListener('beforeunload', () => { saveLocal(); stopMedia(); });
 });
 </script>
 </body>
