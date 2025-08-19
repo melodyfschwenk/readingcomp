@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WIAT-2 Reading Comprehension Study</title>
-   <style>
+    <style>
   /* ================================
      Fixed Dark Theme - Drop-in CSS
      ================================ */
@@ -259,8 +259,62 @@
   .recording-dot { width: 10px; height: 10px; background: #fff; border-radius: 999px; animation: blink 1s infinite; }
   @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
 
-  /* Stimulus media */
-  #stim { max-width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--border-primary); }
+  /* Reading Passage Styles */
+  .reading-passage {
+    background: #0f141b;
+    border: 1px solid var(--border-secondary);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 20px 0;
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: var(--text-primary);
+    max-height: 500px;
+    overflow-y: auto;
+  }
+
+  .reading-passage h3 {
+    color: var(--primary-400);
+    margin-bottom: 16px;
+    font-size: 1.3rem;
+  }
+
+  .reading-passage em {
+    color: var(--text-muted);
+    font-style: italic;
+    display: block;
+    margin-bottom: 16px;
+  }
+
+  .reading-passage p {
+    margin-bottom: 16px;
+  }
+
+  .reading-passage .underlined {
+    text-decoration: underline;
+    text-decoration-color: var(--primary-600);
+    text-underline-offset: 3px;
+    font-weight: 600;
+  }
+
+  .reading-passage table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+  }
+
+  .reading-passage th {
+    background: var(--bg-tertiary);
+    color: var(--primary-400);
+    padding: 12px;
+    text-align: left;
+    border: 1px solid var(--border-secondary);
+  }
+
+  .reading-passage td {
+    padding: 12px;
+    border: 1px solid var(--border-secondary);
+  }
 
   /* Q blocks */
   .q-block {
@@ -345,6 +399,7 @@
     .row { flex-direction: column; }
     button { width: 100%; }
     h1 { font-size: 1.6rem; }
+    .reading-passage { font-size: 1rem; padding: 16px; }
   }
 
   /* Reduced motion */
@@ -360,7 +415,6 @@
     button, .recording-indicator, .admin-panel, .connection-status { display: none !important; }
   }
 </style>
-
 </head>
 <body>
 <div class="wrap">
@@ -373,14 +427,13 @@
     <div class="warning-box" role="alert">
       <span class="warning-icon" aria-hidden="true">⚠️</span>
       <div class="warning-text">
-        <strong>Note:</strong> Pages may load slowly. Please click buttons once and wait—avoid double clicking.
+        <strong>Note:</strong> This version uses inline text for better performance. Click buttons once and wait.
       </div>
     </div>
 
     <div class="row">
       <div>
         <label for="pid">Participant Code</label>
-        <!-- Enforce format and length in HTML -->
         <input id="pid" type="text" placeholder="Enter initials" required
                maxlength="20"
                pattern="[A-Za-z0-9_-]{1,20}"
@@ -459,7 +512,6 @@
     </div>
 
     <div style="margin-top: 20px;">
-      <!-- Consent + privacy -->
       <label style="display:flex;gap:8px;align-items:center;margin-top:8px;">
         <input type="checkbox" id="consent" />
         <span>I consent to audio/video recording and secure storage for this study.</span>
@@ -529,7 +581,6 @@
 
     <div class="item-header">
       <div class="item-info">
-        <!-- CHANGED: Only show item number without position info -->
         Item <span id="actual-item-number"></span>
       </div>
       <div id="timer-container" class="hidden">
@@ -537,8 +588,9 @@
       </div>
     </div>
 
-    <div id="stim-container" class="center">
-      <img id="stim" class="stim" alt="Reading material" />
+    <!-- Reading Passage Container -->
+    <div id="passage-container" class="reading-passage">
+      <!-- Content will be dynamically inserted here -->
     </div>
 
     <div id="instructions" class="muted center" style="margin: 16px 0;">
@@ -577,21 +629,21 @@
   <!-- Finish Screen -->
   <div id="screen-finish" class="card hidden">
     <h2>Assessment Complete</h2>
-<p id="finish-msg" class="muted" role="status" aria-live="polite" aria-atomic="true">Thank you for participating.</p>
+    <p id="finish-msg" class="muted" role="status" aria-live="polite" aria-atomic="true">Thank you for participating.</p>
 
-<div id="upload-status" class="status-box">
-<div class="status-message" id="upload-progress" role="status" aria-live="polite" aria-atomic="true">Saving your data...</div>
+    <div id="upload-status" class="status-box">
+      <div class="status-message" id="upload-progress" role="status" aria-live="polite" aria-atomic="true">Saving your data...</div>
     </div>
 
-<div id="final-stats" class="hidden" style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 4px;">
-  <h3 style="font-size: 14px; margin: 0 0 10px;">Session Summary</h3>
-  <div id="stats-content"></div>
-</div>
+    <div id="final-stats" class="hidden" style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 4px;">
+      <h3 style="font-size: 14px; margin: 0 0 10px;">Session Summary</h3>
+      <div id="stats-content"></div>
+    </div>
 
-<div style="margin-top: 20px; text-align: center;">
-  <button id="retry-upload" class="primary hidden">Retry Upload</button>
-  <button id="download-backup" class="hidden">Download Backup</button>
-</div>
+    <div style="margin-top: 20px; text-align: center;">
+      <button id="retry-upload" class="primary hidden">Retry Upload</button>
+      <button id="download-backup" class="hidden">Download Backup</button>
+    </div>
   </div>
 
   <!-- Admin Panel -->
@@ -605,40 +657,194 @@
 
   <!-- Connection Status -->
   <div class="connection-status" id="connection-status">
-<span id="connection-text" role="status" aria-live="polite" aria-atomic="true">Not connected</span>
+    <span id="connection-text" role="status" aria-live="polite" aria-atomic="true">Not connected</span>
   </div>
 
 </div>
 
 <script>
 /* ===========================
+   TEXT PASSAGES DATA
+   =========================== */
+const PASSAGES = {
+  1: {
+    title: "How California Came To Be",
+    subtitle: "Among the Native American Gabrielino people of Southern California, this tale has become part of their heritage.",
+    content: `Before Kwawar, the Great Spirit, had placed people on earth, there was nothing but water. While the Great Spirit contemplated how to create land, a huge turtle swam by. Kwawar had an idea: "Turtle," he summoned, "bring me your six brothers so I may bestow a great gift upon you."
+
+When they arrived, the Great Spirit decreed, "Form a line from head to tail, extending from north to south." Kwawar spread bulrushes over the backs of the Brothers. Then he deposited earth over their shells and majestic mountains arose. Next, he inserted his fingers into the soil and noble trees sprouted skyward. Water flowed in to fill lakes and rivers.
+
+At first, the Brothers were proud to bear California on their backs, but eventually they became restless. The earth began to tremble. However, because of the weight of the land, the Turtle Brothers could not travel far from each other.
+
+From time to time the Turtle Brothers disagree and the ground quivers. But when the Brothers are in harmony, the land is serene once again.`
+  },
+  2: {
+    content: `Traffic stopped when an avalanche came tumbling down the hillside, covering the road with <span class="underlined">debris</span>.`
+  },
+  3: {
+    content: `You might think that cheese would be the choice of mice, but they <span class="underlined">fancy</span> nuts, grain, and seeds more.`
+  },
+  4: {
+    content: `Because of the <span class="underlined">inclement</span> weather, the long distance events were cancelled; consequently, the track meet ended earlier than expected.`
+  },
+  5: {
+    title: "YUKON GOLD",
+    subtitle: "Starring Johnathan Dupre, Elise Young, and Piers Janal",
+    content: `<strong>Daily News, Gary Callahan:</strong> Yukon Gold mixed wilderness adventure and family conflict into a sometimes-interesting story. The Jasso family is in Seattle when they hear about the Yukon gold rush. Shortly after they board a ship for Alaska, outlaws attack them. Then they must hike the Chilkoot Pass, a cold and harsh wilderness. Luckily for the Jassos, they meet Leaping Fish, a young Native American. He helps them survive while he guides them to Dawson City. Yukon Gold has some exciting moments, such as when the father is attacked by a grizzly. Unfortunately, the story is hackneyed, and the ending holds no surprises. (2 stars)
+
+<strong>North America Press Service, Diana Fernandez:</strong> Yukon Gold is about one family's experiences during the last gold rush. Buried within this exciting adventure tale is the story of two teenagers fighting to become independent. Ed Jasso dreams of gold and sets off for Yukon during the Gold Rush of 1898. His teenage children, Charlie and Helen, go with him on the uncertain journey. Charlie rebels against going because he does not want to chase his father's dreams. The family encounters one danger after another. They are robbed in Alaska and barely survive the wilderness, only to face a fierce grizzly bear. If you see just one movie all summer, see Yukon Gold. (4 stars)`
+  },
+  6: {
+    title: "Words of Wisdom",
+    content: `Proverbs are well-known sayings that sum up apparent truths about life in a few words. "Better late than never." "Practice makes perfect." "A stitch in time saves nine." Human beings almost everywhere in the world have thought up and repeated proverbs, probably ever since they began to talk. The oldest known proverbs are found among the oldest written records, 3500-year-old clay tablets from ancient Sumer.
+
+Benjamin Franklin popularized many proverbs in his Poor Richard's Almanack. For more than two centuries, parents have reminded their children that "Early to bed, early to rise, makes a man healthy, wealthy, and wise" and "Haste makes waste." But not all proverbs are so old. "A picture is worth a thousand words" was made up in the 1920's. "Different strokes for different folks" was first heard in the 1950's. "Garbage in, garbage out" is a product of the computer age.
+
+Old or new, proverbs remain popular in advertising, songs, and everyday conversations. People like proverbs. They are short, easily remembered, and widely accepted as true.`
+  },
+  7: {
+    content: `Mammals differ in sundry ways from the group of animals called saurian. Mammals maintain a fairly consistent body temperature that is independent of their environment, but the temperature of saurian changes relative to the environmental temperature.`
+  },
+  8: {
+    content: `The great Dust Bowl began in 1931 when it quit raining in large parts of Kansas, Colorado, New Mexico, and Texas.`
+  },
+  9: {
+    title: "Jewel on Ice",
+    content: `Could you awaken at four o'clock every morning, practice skating for the next five hours, and then begin your school day? After seeing her idol, figure skater Dorothy Hamill, win Olympic gold in 1976, five-year-old Kristi Yamaguchi, chose this grueling <span class="underlined">routine</span>.
+
+Kristi's mother began her lessons the next year, hoping that figure skating would strengthen her daughter's frail legs. By 1982, at age eleven, Kristi was good enough to team up with 13-year-old Rudi Galindo. Together, the duo developed a beautifully choreographed <span class="underlined">routine</span> that often captivated their audience. At the 1986 National Figure Skating Championship, Kristi and Rudi captured the junior pairs title.
+
+Although Kristi had teamed up with Rudi, she never stopped skating solo. Her stamina amazed her coaches. In 1989, she and Rudi won the pairs gold medal, and Kristi took an individual silver medal at the Nationals. She duplicated this accomplishment the following year, but felt she had to concentrate on her singles career to make the 1992 Olympic team. As a warm-up, Kristi garnered gold at the 1991 World Championships as well as at the Nationals in January 1992.
+
+With the approach of the Olympics, a reporter dubbed Kristi a "Jewel on Ice." Nowhere was this jewel more scintillating than in Albertville, France. What Kristi lacked in athletic ability was more than compensated for by her grace and consistency. The crystal-and-gold medal she won illuminated the arduous road that had originated in the dreams of a five-year-old girl.`
+  },
+  10: {
+    title: "Humpback Whales - Survival or Extinction?",
+    content: `At one time there were over 100,000 humpbacks in the world. By the 1960's there were only 7,000 of these majestic creatures remaining. Then, in 1966, humpback whales were placed on the endangered species list.
+
+One reason for the decline in the number of humpback whales is that people hunt them for commercial gain. Factories use whale bones to make glues and fertilizers. Then the fat is made into oil that is used in oil lamps. A portion of the fat is also used to make soaps and waxes.
+
+The fishing industries are another threat to the humpback existence. If a humpback whale gets caught in a fisherman's nets, it can drown. Sometimes, the larger whales can pull the entire net off the boat. If they are unable to get the net from around their head, they will starve.
+
+Understanding the reason for the decline in the number of humpback whales is the first step to finding a solution. Just as people have been the primary reason for their demise, people must be the primary reason for their recovery. Because more people are now aware of the situation and are more active in their recovery, there has been a change. Although we do not know the precise number of humpback whales remaining, all studies suggest a promising recovery for the species. It is easy to see the importance of saving even one of these beautiful creatures.`
+  },
+  11: {
+    content: `When peaches first appear in grocery stores, their prices are quite high. At the height of the growing season, their prices actually decrease. As the season nears its conclusion, their prices increase again.`
+  },
+  12: {
+    title: "Should City Zoo Hike Prices?",
+    content: `<strong>NO</strong>
+
+Dear Editor,
+
+The City Zoo is considering raising the price of admission for adults and children. The zoo should not consider any increase in admission prices for one obvious reason. No one can deny that the zoo's own statistics demonstrate that the last time admission increased, there was a dramatic decline in attendance. For example, in 1992, over 968,000 people visited the zoo. In March of the next year, a $1.00 per ticket increase was instituted.
+
+The 1993 attendance fell to 902,000. In 1994, only 871,000 patrons paid admission, and in 1995, attendance dropped to 866,000. It seems that attendance never rebounded from the price increase.
+
+Maybe the City Zoo needs to think about how other entertainment facilities, like the local movie houses, boost income. They offer a reasonable admission price and take up the slack with concession and souvenir sales.
+
+Sincerely,
+Tom Green
+
+<strong>YES</strong>
+
+Dear Editor,
+
+The City Zoo has no choice. They must raise admission prices or else close their gates! Then everyone loses, because animals would be sold off to other zoos, City children would no longer have the learning experiences offered by the zoo, and families would have to look elsewhere for weekend entertainment. An increase of $1.00 per ticket is a small price to pay, and the increased revenue could support a small employee raise, much needed facility improvements, and new animal acquisitions.
+
+Funding these expenses through increased concession and souvenir sales is unrealistic. In fact, only 25% of zoo revenues, according to their last annual report, are from such sales. Also, zoo patrons may start bringing their own snacks into the park rather than buy the more expensive treats. This could even lower concession income in the long run. In my opinion, the small price increase is justified by zoo needs, and should be supported by the community.
+
+Sincerely,
+Tanisha Washington`
+  },
+  13: {
+    content: `The king's reign ended with his demise.`
+  },
+  14: {
+    title: "Under Gobi Sands",
+    content: `To naturalist Roy Chapman Andrews, the shifting sands of the Gobi Desert looked forbidding.
+
+Located on the boundaries of mysterious Mongolia, few North Americans had ever seen the great desert. Andrews was sure the dunes contained dinosaur fossils.
+
+Andrews had faced mystery and danger more than once in his lifetime. Working for the American Museum of Natural History, he had hunted whales off the Alaskan coast, was accosted by Manchurian bandits in Northeastern China, and searched the remote regions of Tibet and Burma for museum specimens.
+
+In April 1923, Andrews was in the Gobi Desert. With two automobiles and a caravan of camels, the naturalist and his Central Asiatic Expedition snaked their way across the wasteland. The region was so desolate that he was able to see the tire tracks made the year before. At one point, Andrews was forced to use his vehicle to chase away brigands waiting in ambush on their Mongol ponies.
+
+Arriving at a region known as the Flaming Cliffs, Andrews' band of scientists immediately began sifting through the sands in search of prehistoric bones. By nightfall, all had discovered dinosaur skulls. The next day, however, held the true treasure. Scientist George Olsen noticed fossilized eggs in the dunes. Andrews, Olsen, and other paleontologists carefully began scraping away loose rock and sand. The eggs were elongated and about nine inches long. Two of the eggs were broken and contained the tiny skeletons of unhatched baby dinosaurs. Andrews was certain these were the first dinosaur eggs to be seen by modern man.
+
+Later, in a valley called Iren Dabassu, Andrews' expedition discovered mounds of bones from herbivorous and carnivorous dinosaurs. But it was the discovery at the Flaming Cliffs that astounded the scientific world and proved that dinosaurs laid eggs.`
+  },
+  15: {
+    content: `In 1990, 76.9% of adults could expect to live to the age of 65 years or older; at the turn of the previous century, however, only 40.9% of adults enjoyed such <span class="underlined">longevity</span>.`
+  },
+  16: {
+    title: "Life Stages and Typical Developmental Tasks",
+    content: `<table>
+      <thead>
+        <tr>
+          <th>Stage</th>
+          <th>Age</th>
+          <th>Tasks</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Breaking Loose</strong></td>
+          <td>Late teens - early 20's</td>
+          <td>leave home, focus on peers, attach to causes, change lifestyle, challenge family morals, test own beliefs, identify anticipated occupation</td>
+        </tr>
+        <tr>
+          <td><strong>Building the Nest</strong></td>
+          <td>20's</td>
+          <td>search for identity, intimate friendships/relationships, marriage, great dreams, take on responsibilities, get launched in a career, work toward goals, do "shoulds," find a mentor, have children</td>
+        </tr>
+        <tr>
+          <td><strong>Looking Around</strong></td>
+          <td>30's</td>
+          <td>raise questions, recognize painful limitations, gather possessions, move up career ladder, settle down, ask "What do I want to do with my life?"</td>
+        </tr>
+        <tr>
+          <td><strong>Mid-life Rebirth</strong></td>
+          <td>40's</td>
+          <td>aware of mortality, diminished physical energy, emotional turmoil, finding new friends, deep questions regarding spiritual issues, change careers, sense of aloneness, remodel life structure, establish new stability</td>
+        </tr>
+        <tr>
+          <td><strong>Investing in Life</strong></td>
+          <td>50's</td>
+          <td>life ordered, settle down, act on new values, focus on people instead of possessions and power, select a few good friends, last child leaving home, grandparenting, more financial freedom, more leisure time, empty nest, lost dreams</td>
+        </tr>
+      </tbody>
+    </table>`
+  },
+  17: {
+    title: "The Rock",
+    content: `Angela and Sherry made their way slowly up the mountain. When they had set out this morning, their energy had been high and they'd radiated confidence. Now they felt like mules whose packs had become too heavy at the end of the day. The last half-hour had been especially taxing. The switchbacks seemed to come every few feet.
+
+Abruptly the trail came to an end. A twenty-foot escarpment towered above the women, rising out of a bed of shale. Angela and Sherry peered into the sun hanging just over the top of the mountain. They then contemplated the craggy ravine below. The possibility of turning back crossed their minds, but these women had not hiked five miles and 6,000 feet only to surrender to a clump of rocks.
+
+As the women dropped their backpacks, the wind whipped at their clothes. It felt like ice dicing them into tiny pieces, as they stood frozen in time. Then Angela shivered, breaking the mountain's spell. She stepped forward to challenge the rock, seeking a handhold that must be there. After much patting, she found one and hoisted herself up to the next crevice in the stone. Angela moved cautiously, inching her way up the sheer surface. Finally, she came to a fissure in the stone and wedged herself in out of the wind. Looking up, she realized that there were only five feet to go. She dared not look down to check on Sherry's progress. Angela began to creep along the crack. Within what seemed like hour-long seconds, she reached the summit. She stretched up, saluting the sun, then bent down to give Sherry a hand. They'd made it!`
+  }
+};
+
+/* ===========================
    CONFIGURATION
    =========================== */
-// IMPORTANT: Replace this with your actual Google Apps Script Web App URL
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyX6yfgjIVSzmL2nL73IxIWPCV4RPbxfjPTDOxB-_Ax6siB2vmKJXnCpwLP4-PUA4MCpQ/exec';
-
-// Add: Secondary backup endpoint (serverless function you control)
-// Example: https://your-worker.example.com/wiat-backup
-const GITHUB_BACKUP_URL = 'https://readingcomp-f3ii59o6j-melodys-projects-8b5cbe18.vercel.app/'; // Vercel backup endpoint
-const GOOGLE_TIMEOUT_MS = 3500; // consider as "slow"
+const GITHUB_BACKUP_URL = 'https://readingcomp-f3ii59o6j-melodys-projects-8b5cbe18.vercel.app/';
+const GOOGLE_TIMEOUT_MS = 3500;
 const BACKUP_TIMEOUT_MS = 3500;
-
-// Add: GitHub repo/path hints for your backup endpoint (non-sensitive, safe in client)
 const BACKUP_REPO_OWNER = 'melodyfschwenk';
 const BACKUP_REPO_NAME = 'readingcomp';
 const BACKUP_DIR_HINT = 'data/sessions';
-
-// Tunable discontinue threshold
 const DISCONTINUE_AFTER_ZEROS = 6;
 
-// Add: stable session id to help dedupe on the server side
 const SESSION_ID = (() => {
   try { return crypto.randomUUID(); }
   catch { return 'sid_' + Date.now() + '_' + Math.random().toString(36).slice(2); }
 })();
 
 /* ===========================
-   Debug helper (conditional console logging)
+   Debug helper
    =========================== */
 function debugLog(message, data = null) {
   if (window.location.hostname === 'localhost' || window.location.search.includes('debug=1')) {
@@ -650,52 +856,43 @@ function debugLog(message, data = null) {
 /* ===========================
    State Management
    =========================== */
-// ADD THIS: Better screen reader announcements
 function announceToScreenReader(message, priority = 'polite') {
     const liveRegion = document.getElementById('sr-live');
     if (liveRegion) {
         liveRegion.setAttribute('aria-live', priority);
         liveRegion.textContent = message;
         
-        // Clear after announcement
         setTimeout(() => {
             liveRegion.textContent = '';
         }, 1000);
     }
 }
 
-// MOVED: State declaration after the announceToScreenReader function
 let state = {
-  // Session info
   pid: '',
   edu: '',
-  participantGroup: '', // deaf-fluent, hearing-fluent, deaf-nonfluent, hearing-nonfluent, hearing-nonsigner
-  readModality: '', // sign or speak (for all participants who can choose)
+  participantGroup: '',
+  readModality: '',
   sessionStartTime: null,
   
-  // Progress tracking
   currentIndex: 0,
   totalPoints: 0,
   consecutiveZeros: 0,
   gateItemsFailed: [],
 
-  // Results storage
   results: [],
   sequence: [],
   
-  // Timers
   timers: {
     reading: null,
     recording: null,
     test: null,
-    // New: fast connectivity heartbeat timer
     heartbeat: null
   },
   readingStartTime: null,
   itemStartTime: null,
   lastStartPromise: null,
 
-  // Recording
   useVideoRecording: false,
   useAudioRecording: false,
   mediaRecorder: null,
@@ -716,17 +913,12 @@ let state = {
   }
 };
 
-// Test recording timer variables (global scope to prevent memory leaks)
 let testTimerSec = 0;
 
 /* ===========================
-   WIAT-2 Scoring Reference
+   WIAT-2 Scoring Reference (same as original)
    =========================== */
-
 const SCORING_REFERENCE = {
-  /* =======================
-     Turtle Brothers (75–80)
-     ======================= */
   q75: {
     twoPoint: {
       patterns: [/great\s+spirit/i, /\bgod\b/i, /deity/i, /creator/i, /divine\s+being/i, /supreme\s+being/i]
@@ -756,10 +948,6 @@ const SCORING_REFERENCE = {
     twoPoint: { patterns: [/think\s+about/i, /form.*plan/i, /ponder/i] },
     onePoint: { patterns: [/think\s+hard/i, /\bthink\b/i] }
   },
-
-  /* =======================
-     Avalanche (82–83)
-     ======================= */
   q82: {
     twoPoint: { patterns: [/road.*covered.*debris/i, /traffic.*stop/i] },
     onePoint: { patterns: [/snow.*covered.*road/i, /avalanche.*covered/i] }
@@ -768,18 +956,10 @@ const SCORING_REFERENCE = {
     twoPoint: { patterns: [/tree.*branch/i, /\bdirt\b/i, /\brock/i, /\bmud\b/i, /junk/i] },
     onePoint: { patterns: [/\bsnow\b/i, /rubbish/i] }
   },
-
-  /* =======================
-     Fancy (85)
-     ======================= */
   q85: {
     twoPoint: { patterns: [/like.*better/i, /prefer/i, /\blike\b/i] },
     onePoint: { patterns: [/adore/i, /enjoy/i] }
   },
-
-  /* =======================
-     Track Meet (87–88)
-     ======================= */
   q87: {
     twoPoint: { patterns: [/bad.*weather.*cancel/i, /weather.*long.*distance/i] },
     onePoint: { patterns: [/bad.*weather/i, /cancel/i] }
@@ -787,17 +967,13 @@ const SCORING_REFERENCE = {
   q88: {
     twoPoint: {
       patterns: [
-        /\binclement\b/i,                           // echoes the key word
+        /\binclement\b/i,
         /(bad|severe|stormy|harsh|rough|foul|nasty)\s+(weather|storm|conditions)/i,
         /(unpleasant|poor)\s+weather/i
       ]
     },
     notes: "Full = clearly 'bad/severe/stormy weather'. Partial = mentions weather conditions without stating severity."
   },
-
-  /* =======================
-     Yukon Gold (89–93)
-     ======================= */
   q89: {
     onePoint: {
       patterns: [
@@ -840,10 +1016,6 @@ const SCORING_REFERENCE = {
     onePoint: { patterns: [/(commonplace|old|familiar)/i] },
     notes: "Meaning of 'hackneyed'."
   },
-
-  /* =======================
-     Words of Wisdom (94–98)
-     ======================= */
   q94: {
     twoPoint: { patterns: [/(written|document|recorded|chronicle|account)s?\b/i] },
     onePoint: { patterns: [/(history|facts|notes|information)/i] },
@@ -876,10 +1048,6 @@ const SCORING_REFERENCE = {
   q98: {
     notes: "Selects the proverb that comments on modern technology. Mark for manual review (no scoring patterns here)."
   },
-
-  /* =======================
-     Mammals vs Saurian (100) & Dust Bowl (102)
-     ======================= */
   q100: {
     twoPoint: { patterns: [/(mammal).*(warm[- ]?blood)/i, /(saurian|reptile).*(cold[- ]?blood)/i] },
     onePoint: { patterns: [/(warm[- ]?blood|cold[- ]?blood)/i, /(mammal|saurian|reptile)/i] }
@@ -888,10 +1056,6 @@ const SCORING_REFERENCE = {
     twoPoint: { patterns: [/(long|several|many)\s+(years|period).*(no|little)\s+rain/i, /\bdrought\b/i] },
     onePoint: { patterns: [/(dust\s*storm|sand\s*storm)s?/i] }
   },
-
-  /* =======================
-     Kristi Yamaguchi (103–107)
-     ======================= */
   q103: {
     twoPoint: { patterns: [/(health|medical|therapy|exercise)/i, /(turned[- ]in\s+(hips|feet)|foot\s+problem|hip\s+problem)/i] },
     onePoint: { patterns: [/(to\s+exercise|for\s+her\s+health)/i] }
@@ -924,10 +1088,6 @@ const SCORING_REFERENCE = {
     onePoint: { patterns: [/(not\s+just\s+jumps|technique|balance|control)/i] },
     notes: "She compensated with choreography/artistry."
   },
-
-  /* =======================
-     Humpback Whales (108–112)
-     ======================= */
   q108: {
     twoPoint: { patterns: [/(death|dying|end|extinction|downfall|ruin)/i] },
     onePoint: { patterns: [/(decline|fall|reduce|less)/i] }
@@ -960,10 +1120,6 @@ const SCORING_REFERENCE = {
     twoPoint: { patterns: [/(become|go)\s+extinct/i, /(die\s+out)/i] },
     onePoint: { patterns: [/(decline|decrease|fall)\s+in\s+numbers/i, /(endangered|at\s+risk)/i] }
   },
-
-  /* =======================
-     Peach Prices (114)
-     ======================= */
   q114: {
     twoPoint: {
       patterns: [
@@ -974,10 +1130,6 @@ const SCORING_REFERENCE = {
     onePoint: { patterns: [/(supply).*affect(s|ed)?.*price/i, /(season|harvest)/i] },
     notes: "Seasonal supply explains price changes."
   },
-
-  /* =======================
-     Zoo Admission (115–119)
-     ======================= */
   q115: {
     twoPoint: { patterns: [/\$?\s*3(\.00)?\b/i, /\bthree\s*dollars?\b/i] },
     onePoint: { patterns: [/(less|cheaper|lower)/i] }
@@ -1021,10 +1173,6 @@ const SCORING_REFERENCE = {
     },
     notes: "Give 2 if three stated consequences are listed; 1 for one–two. Often needs review."
   },
-
-  /* =======================
-     The King (121–122)
-     ======================= */
   q121: {
     twoPoint: { patterns: [/(the\s+)?king\s+(has\s+)?(died|is\s+dead|passed\s+away|was\s+assassinated)/i] },
     onePoint: { patterns: [/(the\s+)?king\s+(is\s+gone|no\s+longer|not\s+alive)/i] }
@@ -1033,10 +1181,6 @@ const SCORING_REFERENCE = {
     twoPoint: { patterns: [/(new\s+king|succession|heir|prince\s+becomes\s+king)/i, /(funeral|mourning|power\s+struggle|war|chaos)/i] },
     onePoint: { patterns: [/(someone\s+else\s+will\s+rule|change\s+of\s+power)/i] }
   },
-
-  /* =======================
-     Central Asiatic Expedition (123–127)
-     ======================= */
   q123: {
     twoPoint: { patterns: [/(first|initial)\s+discovery.*(skull|skulls)/i, /(flaming\s+cliffs|bayanzag|gobi)/i] },
     onePoint: { patterns: [/(dinosaur|fossil)/i] }
@@ -1057,10 +1201,6 @@ const SCORING_REFERENCE = {
     twoPoint: { patterns: [/(brigands?)\s*=\s*(bandits?|robbers?|thieves?)/i] },
     onePoint: { patterns: [/(outlaws?|criminals?)/i] }
   },
-
-  /* =======================
-     Longevity (129–130)
-     ======================= */
   q129: {
     twoPoint: { patterns: [/(longevity)\s*=\s*(length\s+of\s+life|life\s*span|how\s+long\s+people\s+live)/i] },
     onePoint: { patterns: [/(old|older|age)/i] }
@@ -1069,10 +1209,6 @@ const SCORING_REFERENCE = {
     twoPoint: { patterns: [/(life\s+expectancy|longevity)\s+(has\s+)?(risen|increased|gone\s+up|grown)\b/i, /(trend|graph|chart).*(upward|increase|rise)/i] },
     onePoint: { patterns: [/(people\s+live\s+longer)/i] }
   },
-
-  /* =======================
-     Life Stages (131–135)
-     ======================= */
   q131: {
     twoPoint: { patterns: [/(young|early)\s+adult(hood)?/i, /(begin|start)\s+a\s+career/i] },
     onePoint: { patterns: [/\badult\b/i] }
@@ -1093,10 +1229,6 @@ const SCORING_REFERENCE = {
     twoPoint: { patterns: [/(mentor|guide|teach|advise|give\s+back)/i, /(reflect|wisdom|insight|legacy|purpose|meaning)/i] },
     onePoint: { patterns: [/(help\s+others|share\s+experience|reflection)/i] }
   },
-
-  /* =======================
-     The Rock (136–140)
-     ======================= */
   q136: {
     twoPoint: { patterns: [/(fissure)\s*=\s*(narrow|thin)\s+(crack|split|opening)\s+in\s+rock/i] },
     onePoint: { patterns: [/(crack|split|opening)/i] }
@@ -1120,13 +1252,13 @@ const SCORING_REFERENCE = {
 };
 
 /* ===========================
-   TRIALS Configuration - COMPLETE
+   TRIALS Configuration
    =========================== */
 const TRIALS = [
   // Turtle Brothers passage
   {
     item: 75,
-    image: "1.jpeg",
+    passageId: 1,
     type: "passage",
     instruction: "Read the passage. Click 'Start Reading' when ready.",
     questions: [{
@@ -1137,7 +1269,7 @@ const TRIALS = [
   },
   {
     item: 76,
-    image: "1.jpeg",
+    passageId: 1,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1148,7 +1280,7 @@ const TRIALS = [
   },
   {
     item: 77,
-    image: "1.jpeg",
+    passageId: 1,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1159,7 +1291,7 @@ const TRIALS = [
   },
   {
     item: 78,
-    image: "1.jpeg",
+    passageId: 1,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1170,7 +1302,7 @@ const TRIALS = [
   },
   {
     item: 79,
-    image: "1.jpeg",
+    passageId: 1,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1181,7 +1313,7 @@ const TRIALS = [
   },
   {
     item: 80,
-    image: "1.jpeg",
+    passageId: 1,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1194,7 +1326,7 @@ const TRIALS = [
   // Avalanche passage (read aloud)
   {
     item: 81,
-    image: "2.jpeg",
+    passageId: 2,
     type: "read-aloud",
     readAloud: true,
     instruction: "Read this aloud.",
@@ -1202,7 +1334,7 @@ const TRIALS = [
   },
   {
     item: 82,
-    image: "2.jpeg",
+    passageId: 2,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1213,7 +1345,7 @@ const TRIALS = [
   },
   {
     item: 83,
-    image: "2.jpeg",
+    passageId: 2,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1226,7 +1358,7 @@ const TRIALS = [
   // Fancy passage (read aloud)
   {
     item: 84,
-    image: "3.jpeg",
+    passageId: 3,
     type: "read-aloud",
     readAloud: true,
     instruction: "Read this aloud.",
@@ -1234,7 +1366,7 @@ const TRIALS = [
   },
   {
     item: 85,
-    image: "3.jpeg",
+    passageId: 3,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1247,7 +1379,7 @@ const TRIALS = [
   // Track meet passage (read aloud)
   {
     item: 86,
-    image: "4.jpeg",
+    passageId: 4,
     type: "read-aloud",
     readAloud: true,
     instruction: "Read this aloud.",
@@ -1255,7 +1387,7 @@ const TRIALS = [
   },
   {
     item: 87,
-    image: "4.jpeg",
+    passageId: 4,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1266,7 +1398,7 @@ const TRIALS = [
   },
   {
     item: 88,
-    image: "4.jpeg",
+    passageId: 4,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1279,7 +1411,7 @@ const TRIALS = [
   // Yukon Gold passage
   {
     item: 89,
-    image: "5.jpeg",
+    passageId: 5,
     type: "passage",
     instruction: "Read the passage. Click 'Start Reading' when ready.",
     questions: [{
@@ -1290,7 +1422,7 @@ const TRIALS = [
   },
   {
     item: 90,
-    image: "5.jpeg",
+    passageId: 5,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1301,7 +1433,7 @@ const TRIALS = [
   },
   {
     item: 91,
-    image: "5.jpeg",
+    passageId: 5,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1312,7 +1444,7 @@ const TRIALS = [
   },
   {
     item: 92,
-    image: "5.jpeg",
+    passageId: 5,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1323,7 +1455,7 @@ const TRIALS = [
   },
   {
     item: 93,
-    image: "5.jpeg",
+    passageId: 5,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1336,7 +1468,7 @@ const TRIALS = [
   // Words of Wisdom (Grades 9-12 Start)
   {
     item: 94,
-    image: "6.jpeg",
+    passageId: 6,
     type: "passage",
     instruction: "Read the passage. Click 'Start Reading' when ready.",
     questions: [{
@@ -1347,7 +1479,7 @@ const TRIALS = [
   },
   {
     item: 95,
-    image: "6.jpeg",
+    passageId: 6,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1358,7 +1490,7 @@ const TRIALS = [
   },
   {
     item: 96,
-    image: "6.jpeg",
+    passageId: 6,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1369,7 +1501,7 @@ const TRIALS = [
   },
   {
     item: 97,
-    image: "6.jpeg",
+    passageId: 6,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1380,7 +1512,7 @@ const TRIALS = [
   },
   {
     item: 98,
-    image: "6.jpeg",
+    passageId: 6,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1393,7 +1525,7 @@ const TRIALS = [
   // Mammals vs Saurian (read aloud)
   {
     item: 99,
-    image: "7.jpeg",
+    passageId: 7,
     type: "read-aloud",
     readAloud: true,
     instruction: "Read this aloud.",
@@ -1401,7 +1533,7 @@ const TRIALS = [
   },
   {
     item: 100,
-    image: "7.jpeg",
+    passageId: 7,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1414,7 +1546,7 @@ const TRIALS = [
   // Dust Bowl (read aloud)
   {
     item: 101,
-    image: "8.jpeg",
+    passageId: 8,
     type: "read-aloud",
     readAloud: true,
     instruction: "Read this aloud.",
@@ -1422,7 +1554,7 @@ const TRIALS = [
   },
   {
     item: 102,
-    image: "8.jpeg",
+    passageId: 8,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1435,7 +1567,7 @@ const TRIALS = [
   // Kristi Yamaguchi passage
   {
     item: 103,
-    image: "9.jpeg",
+    passageId: 9,
     type: "passage",
     instruction: "Read the passage. Click 'Start Reading' when ready.",
     questions: [{
@@ -1446,7 +1578,7 @@ const TRIALS = [
   },
   {
     item: 104,
-    image: "9.jpeg",
+    passageId: 9,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1457,7 +1589,7 @@ const TRIALS = [
   },
   {
     item: 105,
-    image: "9.jpeg",
+    passageId: 9,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1468,7 +1600,7 @@ const TRIALS = [
   },
   {
     item: 106,
-    image: "9.jpeg",
+    passageId: 9,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1479,7 +1611,7 @@ const TRIALS = [
   },
   {
     item: 107,
-    image: "9.jpeg",
+    passageId: 9,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1492,7 +1624,7 @@ const TRIALS = [
   // Humpback whales passage
   {
     item: 108,
-    image: "10.jpeg",
+    passageId: 10,
     type: "passage",
     instruction: "Read the passage. Click 'Start Reading' when ready.",
     questions: [{
@@ -1503,7 +1635,7 @@ const TRIALS = [
   },
   {
     item: 109,
-    image: "10.jpeg",
+    passageId: 10,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1514,7 +1646,7 @@ const TRIALS = [
   },
   {
     item: 110,
-    image: "10.jpeg",
+    passageId: 10,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1525,7 +1657,7 @@ const TRIALS = [
   },
   {
     item: 111,
-    image: "10.jpeg",
+    passageId: 10,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1536,7 +1668,7 @@ const TRIALS = [
   },
   {
     item: 112,
-    image: "10.jpeg",
+    passageId: 10,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1549,7 +1681,7 @@ const TRIALS = [
   // Peach prices (read aloud)
   {
     item: 113,
-    image: "11.jpeg",
+    passageId: 11,
     type: "read-aloud",
     readAloud: true,
     instruction: "Read this aloud.",
@@ -1557,7 +1689,7 @@ const TRIALS = [
   },
   {
     item: 114,
-    image: "11.jpeg",
+    passageId: 11,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1570,7 +1702,7 @@ const TRIALS = [
   // Zoo admission passage
   {
     item: 115,
-    image: "12.jpeg",
+    passageId: 12,
     type: "passage",
     instruction: "Read the passage. Click 'Start Reading' when ready.",
     questions: [{
@@ -1581,7 +1713,7 @@ const TRIALS = [
   },
   {
     item: 116,
-    image: "12.jpeg",
+    passageId: 12,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1592,7 +1724,7 @@ const TRIALS = [
   },
   {
     item: 117,
-    image: "12.jpeg",
+    passageId: 12,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1603,7 +1735,7 @@ const TRIALS = [
   },
   {
     item: 118,
-    image: "12.jpeg",
+    passageId: 12,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1614,7 +1746,7 @@ const TRIALS = [
   },
   {
     item: 119,
-    image: "12.jpeg",
+    passageId: 12,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1627,7 +1759,7 @@ const TRIALS = [
   // King passage (read aloud)
   {
     item: 120,
-    image: "13.jpeg",
+    passageId: 13,
     type: "read-aloud",
     readAloud: true,
     instruction: "Read this aloud.",
@@ -1635,7 +1767,7 @@ const TRIALS = [
   },
   {
     item: 121,
-    image: "13.jpeg",
+    passageId: 13,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1645,8 +1777,8 @@ const TRIALS = [
     }]
   },
   {
-       item: 122,
-    image: "13.jpeg",
+    item: 122,
+    passageId: 13,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1659,7 +1791,7 @@ const TRIALS = [
   // Central Asiatic Expedition passage
   {
     item: 123,
-    image: "14.jpeg",
+    passageId: 14,
     type: "passage",
     instruction: "Read the passage. Click 'Start Reading' when ready.",
     questions: [{
@@ -1670,7 +1802,7 @@ const TRIALS = [
   },
   {
     item: 124,
-    image: "14.jpeg",
+    passageId: 14,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1681,7 +1813,7 @@ const TRIALS = [
   },
   {
     item: 125,
-    image: "14.jpeg",
+    passageId: 14,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1692,7 +1824,7 @@ const TRIALS = [
   },
   {
     item: 126,
-    image: "14.jpeg",
+    passageId: 14,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1703,7 +1835,7 @@ const TRIALS = [
   },
   {
     item: 127,
-    image: "14.jpeg",
+    passageId: 14,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1716,7 +1848,7 @@ const TRIALS = [
   // Longevity (read aloud)
   {
     item: 128,
-    image: "15.jpeg",
+    passageId: 15,
     type: "read-aloud",
     readAloud: true,
     instruction: "Read this aloud.",
@@ -1724,7 +1856,7 @@ const TRIALS = [
   },
   {
     item: 129,
-    image: "15.jpeg",
+    passageId: 15,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1735,7 +1867,7 @@ const TRIALS = [
   },
   {
     item: 130,
-    image: "15.jpeg",
+    passageId: 15,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1748,7 +1880,7 @@ const TRIALS = [
   // Life stages passage
   {
     item: 131,
-    image: "16.jpeg",
+    passageId: 16,
     type: "passage",
     instruction: "Read the passage. Click 'Start Reading' when ready.",
     questions: [{
@@ -1759,7 +1891,7 @@ const TRIALS = [
   },
   {
     item: 132,
-    image: "16.jpeg",
+    passageId: 16,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1770,7 +1902,7 @@ const TRIALS = [
   },
   {
     item: 133,
-    image: "16.jpeg",
+    passageId: 16,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1781,7 +1913,7 @@ const TRIALS = [
   },
   {
     item: 134,
-    image: "16.jpeg",
+    passageId: 16,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1792,7 +1924,7 @@ const TRIALS = [
   },
   {
     item: 135,
-    image: "16.jpeg",
+    passageId: 16,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1805,7 +1937,7 @@ const TRIALS = [
   // The Rock passage
   {
     item: 136,
-    image: "17.jpeg",
+    passageId: 17,
     type: "passage",
     instruction: "Read the passage. Click 'Start Reading' when ready.",
     questions: [{
@@ -1816,7 +1948,7 @@ const TRIALS = [
   },
   {
     item: 137,
-    image: "17.jpeg",
+    passageId: 17,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1827,7 +1959,7 @@ const TRIALS = [
   },
   {
     item: 138,
-    image: "17.jpeg",
+    passageId: 17,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1838,7 +1970,7 @@ const TRIALS = [
   },
   {
     item: 139,
-    image: "17.jpeg",
+    passageId: 17,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1849,7 +1981,7 @@ const TRIALS = [
   },
   {
     item: 140,
-    image: "17.jpeg",
+    passageId: 17,
     type: "question",
     skipReading: true,
     questions: [{
@@ -1859,6 +1991,10 @@ const TRIALS = [
     }]
   }
 ];
+
+/* ===========================
+   REST OF THE JAVASCRIPT CODE - Same as original but with passage display changes
+   =========================== */
 
 function getReadAloudInstructions() {
   if (state.useVideoRecording) {
@@ -1876,14 +2012,10 @@ function getReadAloudInstructions() {
   }
 }
 
-/* ===========================
-   Participant Group Configuration
-   =========================== */
 function determineRecordingNeeds() {
   const group = state.participantGroup;
   const modality = state.readModality;
   
-  // All participants can choose their modality
   if (modality === 'sign') {
     state.useVideoRecording = true;
     state.useAudioRecording = false;
@@ -1895,1304 +2027,612 @@ function determineRecordingNeeds() {
   }
 }
 
-// Check whether all welcome fields are completed
 function checkWelcomeReady() {
+    function checkWelcomeReady() {
   const hasPid = document.getElementById('pid').value.trim().length > 0;
-  const hasEdu = !!document.getElementById('edu').value;
-  const hasGroup = !!state.participantGroup;
-  const hasModality = !!state.readModality;
-  const hasConsent = document.getElementById('consent').checked;
-  
-  const isReady = hasPid && hasEdu && hasGroup && hasModality && hasConsent;
-  document.getElementById('begin').disabled = !isReady;
-}
+  const hasEdu = document.getElementById('edu').value.trim().length > 0;
+  const group = document.querySelector('input[name="participant-group"]:checked');
+  const consent = document.getElementById('consent').checked;
 
-// Bind welcome screen inputs so the Continue button can enable
-document.getElementById('pid').addEventListener('input', (e) => {
-  // Sanitize input - remove special characters, limit length
-  let value = e.target.value.replace(/[^a-zA-Z0-9_-]/g, '').substring(0, 20);
-  e.target.value = value;
-  state.pid = value.trim();
-  checkWelcomeReady();
-});
+  state.pid = document.getElementById('pid').value.trim();
+  state.edu = document.getElementById('edu').value.trim();
+  state.participantGroup = group ? group.value : '';
 
-document.getElementById('edu').addEventListener('change', (e) => {
-  state.edu = e.target.value;
-  checkWelcomeReady();
-});
-
-document.querySelectorAll('input[name="participant-group"]').forEach((radio) => {
-  radio.addEventListener('change', (e) => {
-    state.participantGroup = e.target.value;
-    // Reveal modality options and deaf note if applicable
-    document.getElementById('modality-selection').classList.remove('hidden');
-    const deafNote = document.getElementById('deaf-note');
-    if (e.target.value.startsWith('deaf')) deafNote.classList.remove('hidden');
+  // Show modality selection only after group is chosen
+  const modalityBlock = document.getElementById('modality-selection');
+  const deafNote = document.getElementById('deaf-note');
+  if (group) {
+    modalityBlock.classList.remove('hidden');
+    // If group indicates deaf, show note
+    if (state.participantGroup.startsWith('deaf')) deafNote.classList.remove('hidden');
     else deafNote.classList.add('hidden');
-    checkWelcomeReady();
-  });
-});
+  }
 
-document.querySelectorAll('input[name="read-modality"]').forEach((radio) => {
-  radio.addEventListener('change', (e) => {
-    state.readModality = e.target.value;
-    checkWelcomeReady();
-  });
-});
+  // Enable continue only if everything required is present
+  const ready = hasPid && hasEdu && !!group && consent;
+  document.getElementById('begin').disabled = !ready;
+}
 
-// Listen for consent changes to enable/disable Continue
-document.getElementById('consent').addEventListener('change', checkWelcomeReady);
+function showScreen(id) {
+  for (const el of document.querySelectorAll('#screen-welcome, #screen-setup, #screen-item, #screen-finish')) {
+    el.classList.add('hidden');
+  }
+  document.getElementById(id).classList.remove('hidden');
+}
 
-// Move from welcome to setup once all fields are ready
-document.getElementById('begin').addEventListener('click', async () => {
-  const beginBtn = document.getElementById('begin');
-  if (beginBtn.disabled) return;
-  
-  // Prevent double-clicks
-  beginBtn.disabled = true;
-  
+function formatMMSS(sec) {
+  const m = String(Math.floor(sec / 60)).padStart(2, '0');
+  const s = String(Math.floor(sec % 60)).padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+/* ===========================
+   Timers
+   =========================== */
+const Timers = {
+  start(name, tickCb) {
+    this.stop(name);
+    let t = 0;
+    state.timers[name] = setInterval(() => {
+      t += 1;
+      if (typeof tickCb === 'function') tickCb(t);
+    }, 1000);
+    return () => this.stop(name);
+  },
+  stop(name) {
+    if (state.timers[name]) {
+      clearInterval(state.timers[name]);
+      state.timers[name] = null;
+    }
+  },
+  stopAll() {
+    Object.keys(state.timers).forEach(k => this.stop(k));
+  }
+};
+
+/* ===========================
+   Media setup and recording
+   =========================== */
+async function setupVideo() {
   try {
-    // Hide welcome, show setup
-    document.getElementById('screen-welcome').classList.add('hidden');
-    document.getElementById('screen-setup').classList.remove('hidden');
-    
-    // Setup recording based on choices
-    const recordingType = determineRecordingNeeds();
-    
-    document.getElementById('recording-method-text').textContent = 
-      recordingType === 'video' 
-        ? 'Setting up video recording for ASL...' 
-        : 'Setting up audio recording for spoken responses...';
-    
-    let setupSuccess = false;
-    
-    if (recordingType === 'video') {
-      document.getElementById('video-setup').classList.remove('hidden');
-      document.getElementById('pref-hide-selfview').classList.remove('hidden');
-      setupSuccess = await setupVideoRecording();
-    } else {
-      document.getElementById('audio-setup').classList.remove('hidden');
-      setupSuccess = await setupAudioRecording();
-    }
-    
-    if (setupSuccess) {
-      document.getElementById('setup-status').className = 'status-box success';
-      document.getElementById('setup-status-text').textContent = 'Setup complete! Ready to begin.';
-      document.getElementById('start-study').disabled = false;
-    } else {
-      document.getElementById('setup-status').className = 'status-box error';
-      document.getElementById('setup-status-text').textContent = 'Setup failed. Please check permissions and refresh.';
-    }
-  } catch (error) {
-    console.error('Setup error:', error);
-    document.getElementById('setup-status').className = 'status-box error';
-    document.getElementById('setup-status-text').textContent = 'Setup failed. Please check permissions and refresh.';
-  } finally {
-    // Don't re-enable begin button after navigation
-    // Only re-enable if there was an error and user is still on welcome screen
-    if (!document.getElementById('screen-welcome').classList.contains('hidden')) {
-      beginBtn.disabled = false;
-    }
-  }
-});
-
-// ADD THIS FUNCTION - It's being called but not defined!
-function ensureMediaRecorder() {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    throw new Error('mediaDevices unsupported');
-  }
-  if (!('MediaRecorder' in window)) {
-    throw new Error('MediaRecorder unsupported');
+    state.stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    const v = document.getElementById('preview');
+    v.srcObject = state.stream;
+    document.getElementById('video-status').textContent = 'Camera is ready. You can proceed.';
+    document.getElementById('pref-hide-selfview').classList.remove('hidden');
+    return true;
+  } catch (e) {
+    document.getElementById('video-status').textContent = 'Could not access camera. Please allow permissions and retry.';
+    return false;
   }
 }
 
-async function setupVideoRecording() {
-  // Disable buttons during setup to prevent race conditions
-  const startButton = document.getElementById('start-study');
-  const beginButton = document.getElementById('begin');
-  const originalStartState = startButton.disabled;
-  
-  startButton.disabled = true;
-  beginButton.disabled = true;
-  
+async function setupAudio() {
   try {
-    ensureMediaRecorder(); // capability check first
-
-    // Clean up any existing stream
-    if (state.stream) {
-      state.stream.getTracks().forEach(track => track.stop());
-    }
-    
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
-      audio: false
-    });
-    state.stream = stream;
-    const preview = document.getElementById('preview');
-    preview.srcObject = stream;
-
-    const mime = pickMime('video');
-    state.recordMime = mime || 'video/webm';
-    state.mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
-    state.recordedChunks = [];
-    state.mediaRecorder.ondataavailable = (e) => { 
-      if (e.data.size > 0) state.recordedChunks.push(e.data); 
-    };
-
-    document.getElementById('video-status').textContent = 'Camera ready. You can see yourself above.';
+    state.stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    document.getElementById('audio-status').textContent = 'Microphone is ready. You can proceed.';
     return true;
-  } catch (err) {
-    console.error('Video setup error:', err);
-    const statusEl = document.getElementById('video-status');
-    if (err && err.message === 'mediaDevices unsupported') {
-      statusEl.textContent = 'This browser does not support camera access. Please use the latest Chrome, Edge, or Firefox.';
-    } else if (err && err.message === 'MediaRecorder unsupported') {
-      statusEl.textContent = 'Recording is not supported in this browser. Please use the latest Chrome, Edge, or Firefox.';
-    } else if (err && (err.name === 'NotAllowedError' || err.name === 'SecurityError')) {
-      statusEl.textContent = 'Camera permission is blocked. Please allow camera access in your browser settings and retry.';
-    } else if (err && (err.name === 'NotFoundError' || err.name === 'OverconstrainedError')) {
-      statusEl.textContent = 'No camera was found or it is in use by another app. Please check your device and try again.';
-    } else {
-      statusEl.textContent = 'Error: Could not access camera. Please check permissions.';
-    }
+  } catch (e) {
+    document.getElementById('audio-status').textContent = 'Could not access microphone. Please allow permissions and retry.';
     return false;
-  } finally {
-    // Re-enable buttons after setup completes
-    startButton.disabled = originalStartState;
-    beginButton.disabled = false;
   }
 }
 
-async function setupAudioRecording() {
-  // Disable buttons during setup to prevent race conditions
-  const startButton = document.getElementById('start-study');
-  const beginButton = document.getElementById('begin');
-  const testRecordButton = document.getElementById('test-audio-record');
-  const originalStartState = startButton.disabled;
-  
-  startButton.disabled = true;
-  beginButton.disabled = true;
-  testRecordButton.disabled = true;
-  
+function startMediaRecorder(onStop) {
+  if (!state.stream) return null;
   try {
-    ensureMediaRecorder(); // capability check first
-
-    // Clean up any existing stream
-    if (state.stream) {
-      state.stream.getTracks().forEach(track => track.stop());
-    }
-    
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: true, noiseSuppression: true }
-    });
-    state.stream = stream;
-
-    const mime = pickMime('audio');
-    state.recordMime = mime || 'audio/webm';
-    state.mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
     state.recordedChunks = [];
-    state.mediaRecorder.ondataavailable = (e) => { 
-      if (e.data.size > 0) state.recordedChunks.push(e.data); 
+    const mr = new MediaRecorder(state.stream);
+    state.mediaRecorder = mr;
+    mr.ondataavailable = e => { if (e.data && e.data.size > 0) state.recordedChunks.push(e.data); };
+    mr.onstop = () => {
+      try { if (typeof onStop === 'function') onStop(new Blob(state.recordedChunks)); }
+      catch {}
     };
-
-    document.getElementById('audio-status').textContent = 'Microphone ready. Test your audio above.';
-    return true;
-  } catch (err) {
-    console.error('Audio setup error:', err);
-    const statusEl = document.getElementById('audio-status');
-    if (err && err.message === 'mediaDevices unsupported') {
-      statusEl.textContent = 'This browser does not support microphone access. Please use the latest Chrome, Edge, or Firefox.';
-    } else if (err && err.message === 'MediaRecorder unsupported') {
-      statusEl.textContent = 'Recording is not supported in this browser. Please use the latest Chrome, Edge, or Firefox.';
-    } else if (err && (err.name === 'NotAllowedError' || err.name === 'SecurityError')) {
-      statusEl.textContent = 'Microphone permission is blocked. Please allow microphone access in your browser settings and retry.';
-    } else if (err && (err.name === 'NotFoundError' || err.name === 'OverconstrainedError')) {
-      statusEl.textContent = 'No microphone was found or it is in use by another app. Please check your device and try again.';
-    } else {
-      statusEl.textContent = 'Error: Could not access microphone. Please check permissions.';
-    }
-    return false;
-  } finally {
-    // Re-enable buttons after setup completes
-    startButton.disabled = originalStartState;
-    beginButton.disabled = false;
-    testRecordButton.disabled = false;
+    mr.start(10);
+    return mr;
+  } catch (e) {
+    return null;
   }
 }
 
 /* ===========================
-   Core Functions
+   Rendering helpers
    =========================== */
-function buildSequence() {
-  const gradeNum = state.edu === "13+" ? 13 : parseInt(state.edu);
-  
-  const sortedTrials = TRIALS.slice().sort((a, b) => a.item - b.item);
-  
-  if (gradeNum >= 9) {
-    const startIdx = sortedTrials.findIndex(t => t.item === 94);
-    if (startIdx >= 0) {
-      state.sequence = sortedTrials.slice(startIdx);
-    } else {
-      state.sequence = sortedTrials;
-    }
-  } else {
-    state.sequence = sortedTrials;
-  }
-  
-  debugLog(`Built sequence with ${state.sequence.length} items for grade ${state.edu}`);
+function renderPassage(passageId) {
+  const slot = document.getElementById('passage-container');
+  const p = PASSAGES[passageId];
+  if (!p) { slot.innerHTML = ''; return; }
+  let html = '';
+  if (p.title) html += `<h3>${p.title}</h3>`;
+  if (p.subtitle) html += `<em>${p.subtitle}</em>`;
+  if (p.content) html += `<div class="q-block">${p.content}</div>`;
+  slot.innerHTML = html;
 }
 
-async function showItem() {
+function renderQAFields(trial) {
+  const holder = document.getElementById('qa-fields');
+  holder.innerHTML = '';
+  if (!trial.questions || !trial.questions.length) return;
+
+  trial.questions.forEach((q, idx) => {
+    const id = `ans_${trial.item}_${idx}`;
+    const block = document.createElement('div');
+    block.className = 'q-block';
+    block.innerHTML = `
+      <label for="${id}">${q.text}</label>
+      <textarea id="${id}" data-scoring-key="${q.scoringKey || ''}" placeholder="Type your answer here..."></textarea>
+    `;
+    holder.appendChild(block);
+  });
+}
+
+/* ===========================
+   Scoring
+   =========================== */
+function scoreAnswer(scoringKey, text) {
+  const val = (text || '').trim();
+  if (!scoringKey || !SCORING_REFERENCE[scoringKey]) return { points: 0, note: 'no-key' };
+  const ref = SCORING_REFERENCE[scoringKey];
+  const t = val.toLowerCase();
+
+  // semantic blocks
+  if (ref.semantic) {
+    // full means all words from at least one list are present
+    for (const set of (ref.semantic.full || [])) {
+      const hit = set.every(word => t.includes(word.toLowerCase()));
+      if (hit) return { points: 2, note: 'semantic-full' };
+    }
+    for (const word of (ref.semantic.partial || [])) {
+      if (t.includes(word.toLowerCase())) return { points: 1, note: 'semantic-partial' };
+    }
+    return { points: 0, note: 'semantic-none' };
+  }
+
+  // regex patterns
+  if (ref.twoPoint && ref.twoPoint.patterns && ref.twoPoint.patterns.some(rx => rx.test(val))) {
+    return { points: 2, note: 'pattern-2' };
+  }
+  if (ref.onePoint && ref.onePoint.patterns && ref.onePoint.patterns.some(rx => rx.test(val))) {
+    return { points: 1, note: 'pattern-1' };
+  }
+  return { points: 0, note: 'no-match' };
+}
+
+/* ===========================
+   Trial flow
+   =========================== */
+function currentTrial() { return TRIALS[state.currentIndex]; }
+
+function resetReadingUI() {
+  document.getElementById('timer-container').classList.add('hidden');
+  document.getElementById('timer').textContent = '00:00';
+  document.getElementById('read-aloud-instructions').classList.add('hidden');
+  document.getElementById('recording-controls').classList.add('hidden');
+  document.getElementById('reading-controls').classList.add('hidden');
+  document.getElementById('qa-form').classList.add('hidden');
+}
+
+function renderTrial(trial) {
+  resetReadingUI();
+  document.getElementById('actual-item-number').textContent = trial.item;
+  renderPassage(trial.passageId);
+
+  // Instruction text
+  document.getElementById('instruction-text').textContent = trial.instruction || '';
+
+  // Read aloud item
+  if (trial.type === 'read-aloud' || trial.readAloud) {
+    const info = getReadAloudInstructions();
+    document.getElementById('read-aloud-title').textContent = info.title;
+    document.getElementById('read-aloud-text').textContent = info.text;
+    document.getElementById('read-aloud-instructions').classList.remove('hidden');
+    document.getElementById('recording-controls').classList.remove('hidden');
+    document.getElementById('start-recording').textContent = info.buttonText;
+    return;
+  }
+
+  // Passage that requires timed reading first
+  if (trial.type === 'passage' && !trial.skipReading) {
+    document.getElementById('reading-controls').classList.remove('hidden');
+    if (!document.getElementById('pref-hide-timer').checked) {
+      document.getElementById('timer-container').classList.remove('hidden');
+    }
+    return;
+  }
+
+  // Plain question (no reading step)
+  if (trial.type === 'question') {
+    renderQAFields(trial);
+    document.getElementById('qa-form').classList.remove('hidden');
+  }
+}
+
+function goNextOrFinish() {
+  state.currentIndex += 1;
   if (state.currentIndex >= state.sequence.length) {
     finishAssessment();
     return;
   }
-  
-  // WIAT-2 discontinue rule
-  if (state.consecutiveZeros >= DISCONTINUE_AFTER_ZEROS) {
-    finishAssessment();
+  renderTrial(currentTrial());
+}
+
+function handleReadingStart() {
+  document.getElementById('start-reading').classList.add('hidden');
+  document.getElementById('done-reading').classList.remove('hidden');
+  if (!document.getElementById('pref-hide-timer').checked) {
+    document.getElementById('timer-container').classList.remove('hidden');
+  }
+  let sec = 0;
+  Timers.start('reading', t => {
+    sec = t;
+    document.getElementById('timer').textContent = formatMMSS(t);
+  });
+  state.readingStartTime = Date.now();
+}
+
+function handleReadingDone() {
+  Timers.stop('reading');
+  document.getElementById('reading-controls').classList.add('hidden');
+
+  const trial = currentTrial();
+  // If the passage trial itself has questions, show them now
+  if (trial.questions && trial.questions.length) {
+    renderQAFields(trial);
+    document.getElementById('qa-form').classList.remove('hidden');
+  } else {
+    goNextOrFinish();
+  }
+}
+
+function handleStartRecording() {
+  const recBox = document.getElementById('recording-controls');
+  const startBtn = document.getElementById('start-recording');
+  const stopBtn = document.getElementById('stop-recording');
+  const timerEl = document.getElementById('recording-timer');
+  startBtn.classList.add('hidden');
+  stopBtn.classList.remove('hidden');
+  timerEl.classList.remove('hidden');
+  timerEl.textContent = '00:00';
+
+  let sec = 0;
+  Timers.start('recording', t => { sec = t; document.getElementById('recording-timer').textContent = formatMMSS(t); });
+
+  startMediaRecorder(blob => {
+    // Store a small handle so uploads can use it later
+    const trial = currentTrial();
+    state.results.push({
+      item: trial.item,
+      type: 'read-aloud',
+      passageId: trial.passageId,
+      durationSec: sec,
+      mediaPresent: true
+    });
+  });
+}
+
+function handleStopRecording() {
+  document.getElementById('stop-recording').classList.add('hidden');
+  document.getElementById('recording-timer').classList.add('hidden');
+  Timers.stop('recording');
+  if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
+    state.mediaRecorder.stop();
+  }
+  goNextOrFinish();
+}
+
+function handleQASubmit(ev) {
+  ev.preventDefault();
+  const trial = currentTrial();
+  const answers = [];
+  let trialPoints = 0;
+
+  document.querySelectorAll('#qa-fields textarea').forEach(tx => {
+    const key = tx.dataset.scoringKey || '';
+    const val = tx.value || '';
+    const scored = scoreAnswer(key, val);
+    answers.push({ key, answer: val, points: scored.points, note: scored.note });
+    trialPoints += scored.points || 0;
+  });
+
+  // Track zeros to support discontinue rule
+  if (trialPoints === 0) state.consecutiveZeros += 1;
+  else state.consecutiveZeros = 0;
+
+  state.totalPoints += trialPoints;
+  state.results.push({
+    item: trial.item,
+    type: 'qa',
+    passageId: trial.passageId,
+    answers,
+    points: trialPoints
+  });
+
+  // Apply discontinue rule if configured
+  if (DISCONTINUE_AFTER_ZEROS > 0 && state.consecutiveZeros >= DISCONTINUE_AFTER_ZEROS) {
+    announceToScreenReader('Assessment will end early due to repeated zero scores.', 'assertive');
+    finishAssessment('Stopped early due to scoring rule.');
     return;
   }
-  
-  const trial = state.sequence[state.currentIndex];
 
-  // Start sending item start event and keep reference
-  state.lastStartPromise = sendEventSafely('item_started', {
+  goNextOrFinish();
+}
+
+function handleQASkip() {
+  const trial = currentTrial();
+  state.consecutiveZeros += 1;
+  state.results.push({
+    item: trial.item,
+    type: 'qa',
+    passageId: trial.passageId,
+    answers: [],
+    points: 0,
+    skipped: true
+  });
+  if (DISCONTINUE_AFTER_ZEROS > 0 && state.consecutiveZeros >= DISCONTINUE_AFTER_ZEROS) {
+    finishAssessment('Stopped early due to scoring rule.');
+    return;
+  }
+  goNextOrFinish();
+}
+
+/* ===========================
+   Upload and backup
+   =========================== */
+function postWithTimeout(url, data, timeoutMs) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs || 3500);
+  return fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+    signal: ctrl.signal,
+    mode: url.includes('script.google.com') ? 'no-cors' : 'cors'
+  }).finally(() => clearTimeout(t));
+}
+
+async function uploadAll() {
+  const payload = {
+    action: 'study_completed',
     sessionId: SESSION_ID,
     pid: state.pid,
     edu: state.edu,
-    participantGroup: state.participantGroup,
-    readModality: state.readModality,
-    itemNumber: trial.item,
-    imageFile: trial.image,
-    questionText: trial.questions ? trial.questions[0].text : '',
-    itemType: trial.type
-  }).catch(err => {
-    console.warn('Failed to record item start', err);
-  });
-
-  // Immediately render the item
-  showScreen('item');
-  updateAdminPanel();
-  
-  // CHANGED: Only show item number without position
-  document.getElementById('actual-item-number').textContent = trial.item;
-  document.getElementById('stim').src = `stimuli/${trial.image}`;
-  
-  // Reset form and controls
-  document.getElementById('qa-form').classList.add('hidden');
-  document.getElementById('qa-fields').innerHTML = '';
-  document.getElementById('timer').textContent = '00:00';
-  document.getElementById('timer-container').classList.add('hidden');
-  
-  // Hide all controls initially
-  document.getElementById('recording-controls').classList.add('hidden');
-  document.getElementById('reading-controls').classList.add('hidden');
-  document.getElementById('read-aloud-instructions').classList.add('hidden');
-  
-  // Reset button states
-  document.getElementById('start-reading').classList.remove('hidden');
-  document.getElementById('done-reading').classList.add('hidden');
-  document.getElementById('start-recording').classList.remove('hidden');
-  document.getElementById('stop-recording').classList.add('hidden');
-  
-  const instruction = trial.instruction || '';
-  document.getElementById('instruction-text').textContent = instruction;
-  
-  // Clear any existing timers
-  clearAllTimers();
-  
-  // Handle different item types
-  if (trial.readAloud) {
-    // This is a read-aloud item
-    const instructions = getReadAloudInstructions();
-    document.getElementById('read-aloud-title').textContent = instructions.title;
-    document.getElementById('read-aloud-text').textContent = instructions.text;
-    document.getElementById('read-aloud-instructions').classList.remove('hidden');
-    document.getElementById('recording-controls').classList.remove('hidden');
-    document.getElementById('start-recording').textContent = instructions.buttonText;
-  } else if (trial.skipReading) {
-    // Question only, no reading needed
-    showQuestions(0);
-  } else {
-    // Standard silent reading passage
-    document.getElementById('reading-controls').classList.remove('hidden');
-    document.getElementById('start-reading').classList.remove('hidden');
-    document.getElementById('done-reading').classList.add('hidden');
-  }
-  
-  state.itemStartTime = Date.now();
-}
-// Helper to pick a recorder mime type the browser actually supports
-function pickMime(kind){
-  const c = kind === 'video'
-    ? [
-        'video/webm;codecs=vp8',
-        'video/webm',
-        // Safari resilience
-        'video/mp4;codecs=h264'
-      ]
-    : [
-        'audio/webm;codecs=opus',
-        'audio/webm',
-        'audio/ogg',
-        // Safari resilience
-        'audio/mp4'
-      ];
-  return c.find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || '';
-}
-
-
-function showQuestions(readingTime) {
-  const trial = state.sequence[state.currentIndex];
-  if (trial.skipScoring) {
-    state.currentIndex++;
-    showItem();
-    return;
-  }
-
-  const form = document.getElementById('qa-form');
-  const fields = document.getElementById('qa-fields');
-  form.classList.remove('hidden');
-  document.getElementById('reading-controls').classList.add('hidden');
-  document.getElementById('recording-controls').classList.add('hidden');
-  document.getElementById('read-aloud-instructions').classList.add('hidden');
-
-  // Clear existing
-  fields.innerHTML = '';
-
-  // Add a participant-friendly tip only once per item
-  const tip = document.createElement('div');
-  tip.className = 'tip-box';
-  tip.id = 'answer-tips';
-  tip.innerHTML = `
-    <div><strong>Answer tips</strong></div>
-    <ul>
-      <li>Type in your own words. <em>Spelling and grammar don't matter.</em></li>
-      <li>Short answers are okay (a sentence or two).</li>
-      <li>If you're unsure, write your best guess.</li>
-      <li>You can use ASL gloss if that's easier.</li>
-      <li>You can skip any question.</li>
-      <li><span class="kbd">Ctrl/⌘ + Enter</span> = Submit, <span class="kbd">Alt + S</span> = Skip</li>
-    </ul>
-  `;
-  fields.appendChild(tip);
-
-  // Build question fields
-  trial.questions.forEach(q => {
-    const qDiv = document.createElement('div');
-    qDiv.className = 'q-block';
-
-    const label = document.createElement('label');
-    label.textContent = q.text;
-    label.setAttribute('for', q.id);
-
-    const textarea = document.createElement('textarea');
-    textarea.id = q.id;
-    textarea.name = q.id;
-    // Align with Skip: do not require text entry
-    textarea.required = false;
-    // Participant-friendly typing settings
-    textarea.placeholder = 'Type your answer here (short is fine)';
-    textarea.setAttribute('spellcheck', 'false');
-    textarea.setAttribute('autocapitalize', 'off');
-    textarea.setAttribute('autocorrect', 'off');
-    textarea.setAttribute('aria-describedby', 'answer-tips');
-
-    // Optional tiny word count (non-judgmental)
-    const wc = document.createElement('div');
-    wc.className = 'muted';
-    wc.style.marginTop = '6px';
-    wc.textContent = 'Word count: 0 (no minimum)';
-    textarea.addEventListener('input', () => {
-      const n = textarea.value.trim() ? textarea.value.trim().split(/\s+/).length : 0;
-      wc.textContent = `Word count: ${n} (no minimum)`;
-    });
-
-    qDiv.appendChild(label);
-    qDiv.appendChild(textarea);
-    qDiv.appendChild(wc);
-    fields.appendChild(qDiv);
-  });
-
-  // Friendlier skip label each time this view shows
-  const skipBtn = document.getElementById('skip');
-  if (skipBtn) skipBtn.textContent = 'Skip question';
-
-  // Keyboard shortcuts
-  form.onkeydown = (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-      e.preventDefault();
-      form.requestSubmit();
-    } else if (e.altKey && e.key.toLowerCase() === 's') {
-      e.preventDefault();
-      document.getElementById('skip').click();
-    }
-  };
-}
-
-
-  /* ===========================
-   Semantic scoring helpers - universal
-   =========================== */
-const STOPWORDS = new Set(['a','an','the','of','to','in','on','for','with','and','or','but','is','are','was','were','be','been','being','as','by','from','that','this','those','these','it','its','at','which','who','whom','what','why','how','do','does','did','so','very','really','just','about','into','over','under','up','down','out','off','than','then','there','their','them','they','you','your']);
-
-const NUMBER_WORDS = new Map([
-  ['zero','0'], ['one','1'], ['two','2'], ['three','3'], ['four','4'],
-  ['five','5'], ['six','6'], ['seven','7'], ['eight','8'], ['nine','9'],
-  ['ten','10'], ['eleven','11'], ['twelve','12']
-]);
-
-// REPLACE normalizeText with this merged version
-function normalizeText(t) {
-  t = String(t || '').toLowerCase();
-  // unify quotes
-  t = t.replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"');
-
-  // expand only true contractions (avoid turning possessives into "is")
-  t = t
-    .replace(/\bwon't\b/g, 'will not')
-    .replace(/\bcan't\b/g, 'cannot')
-    .replace(/n't\b/g, ' not')
-    .replace(/\bI'm\b/gi, 'I am')
-    .replace(/\byou're\b/gi, 'you are')
-    .replace(/\bwe're\b/gi, 'we are')
-    .replace(/\bthey're\b/gi, 'they are')
-    .replace(/\bI've\b/gi, 'I have')
-    .replace(/\bwe've\b/gi, 'we have')
-    .replace(/\bthey've\b/gi, 'they have')
-    .replace(/\bI'll\b/gi, 'I will')
-    .replace(/\byou'll\b/gi, 'you will')
-    .replace(/\bwe'll\b/gi, 'we will')
-    .replace(/\bthey'll\b/gi, 'they will');
-
-  // strip punctuation (keep digits/letters/spaces)
-  t = t.replace(/[.,!?;:"`']/g, ' ').replace(/\s+/g, ' ').trim();
-  return t;
-}
-
-function simpleStem(w) {
-  if (!w) return w;
-  // light stem rules; do NOT eat short words like "is"
-  if (w.length > 3) {
-    if (w.endsWith('ies')) return w.slice(0, -3) + 'y';
-    if (/(ing|ed|ly|ers|er|est)$/.test(w)) return w.replace(/(ing|ed|ly|ers|er|est)$/,'');
-
-    // Also handle plural "s" correctly
-    if (w.endsWith('s') && !w.endsWith('ss') && !w.endsWith('us')) return w.slice(0, -1);
-  }
-  return w;
-}
-
-function tokenize(t) {
-  const norm = normalizeText(t);
-  const raw = norm.split(' ').map(w => NUMBER_WORDS.get(w) || w);
-  const filtered = raw.filter(w => w && !STOPWORDS.has(w));
-  const stemmed = filtered.map(simpleStem);
-  return { tokens: stemmed, joined: ' ' + stemmed.join(' ') + ' ' };
-}
-
-function patternToTokenSet(pat) {
-  const src = pat instanceof RegExp ? pat.source : String(pat || '');
-  // strip common regex meta so alternations like (foo|bar) become tokens
-  const deRegex = src.replace(/[\\^$.*+?()[\]{}|]/g, ' ');
-  const parts = normalizeText(deRegex).split(' ');
-  const toks = parts.map(simpleStem).filter(Boolean);
-  return new Set(toks);
-}
-
-function tokenSetSatisfied(respTokens, tokenSet) {
-  if (!tokenSet || tokenSet.size === 0) return { hits: 0, need: 0 };
-  let hits = 0;
-  for (const tok of tokenSet) if (respTokens.includes(tok)) hits++;
-  return { hits, need: tokenSet.size };
-}
-
-
-  // --- Simple response quality + review helpers (used in submitAnswers) ---
-function checkKeywords(response, scoringKey) {
-  // Heuristic: does the response hit some tokens from any pattern in SCORING_REFERENCE?
-  const scoring = SCORING_REFERENCE[scoringKey];
-  if (!scoring) return false;
-  const { tokens } = tokenize(response);
-
-  const sets = [];
-  const addSets = (bucket) => {
-    if (bucket && Array.isArray(bucket.patterns)) {
-      bucket.patterns.forEach(p => sets.push(patternToTokenSet(p)));
-    }
-  };
-  addSets(scoring.twoPoint);
-  addSets(scoring.onePoint);
-
-  return sets.some(set => {
-    let hits = 0;
-    set.forEach(tok => { if (tokens.includes(tok)) hits++; });
-    return hits >= Math.max(1, Math.ceil(set.size * 0.4)); // ~40% overlap counts as "has relevant keywords"
-  });
-}
-
-function detectASLGloss(response) {
-  const raw = String(response || '');
-  const words = raw.trim().split(/\s+/);
-  const upperFrac = words.length ? words.filter(w => /^[A-Z0-9-]{2,}$/.test(w)).length / words.length : 0;
-  return upperFrac > 0.3; // Return true if >30% of words look like ASL gloss
-}
-
-/* ===========================
-   Form Submission & Scoring
-   =========================== */
-async function submitAnswers(e) {
-  e.preventDefault();
-  
-  const trial = state.sequence[state.currentIndex];
-  const itemResult = {
-    item: trial.item,
-    image: trial.image,
-    type: trial.type,
-    readingTime: state.readingStartTime ? Date.now() - state.readingStartTime : 0,
-    responses: {},
-    scores: {},
-    totalScore: 0,
-    timestamp: new Date().toISOString()
-  };
-  
-  // Collect responses and score them
-  let itemScore = 0;
-  for (const q of trial.questions) {
-    const response = document.getElementById(q.id).value.trim();
-    itemResult.responses[q.id] = response;
-    
-    // Auto-score if scoring key exists
-    if (q.scoringKey && SCORING_REFERENCE[q.scoringKey]) {
-      const score = scoreResponse(response, q.scoringKey);
-      itemResult.scores[q.id] = score;
-      itemScore = Math.max(itemScore, score); // Take highest score for item
-    }
-  }
-  
-  itemResult.totalScore = itemScore;
-  state.results.push(itemResult);
-  
-  // Always update local state first
-  state.totalPoints += itemScore;
-  if (itemScore === 0) {
-    state.consecutiveZeros++;
-  } else {
-    state.consecutiveZeros = 0;
-  }
-  
-  // Prepare data for Google Apps Script
-  const gasData = {
-    itemNumber: trial.item,
-    imageFile: trial.image,
-    questionText: trial.questions ? trial.questions[0].text : '',
-    itemType: trial.type,
-    response: Object.values(itemResult.responses).join(' | '),
-    explanation: '',
-    autoScore: itemScore,
-    scoreConfidence: itemScore > 0 ? 'High' : 'Low',
-    // Flag for manual review if no points were awarded but at least one response
-    // contains more than 10 characters. This helps catch potentially valid
-    // answers that our heuristic auto-scorer missed.
-    needsReview: itemScore === 0 &&
-                 Object.values(itemResult.responses).some(r => r.length > 10),
-    scoringNotes: `Auto-scored: ${itemScore}`,
-    finalScore: itemScore,
-    duration: Math.round((Date.now() - state.itemStartTime) / 1000),
-    endTime: new Date().toISOString(),
-    consecutiveZeros: state.consecutiveZeros
-  };
-
-  // Try to send to Google
-  try {
-    // Ensure start event finished before completing item
-    if (state.lastStartPromise) {
-      try { await state.lastStartPromise; } catch (e) { console.warn('Item start failed:', e); }
-    }
-    await sendEventSafely('item_completed', gasData);
-    updateConnectionStatus(true);
-  } catch (error) {
-    console.warn('Failed to send item to Google, continuing locally:', error);
-    updateConnectionStatus(false);
-    const live = document.getElementById('sr-live');
-    if (live) live.textContent = 'Network issue: response saved locally. You can continue.';
-  }
-  
-  // Always move to next item
-  state.currentIndex++;
-  showItem();
-}
-
-function scoreResponse(response, scoringKey) {
-  if (!response || !response.trim()) return 0;
-  
-  const scoring = SCORING_REFERENCE[scoringKey];
-  if (!scoring) return 0;
-  
-  const norm = normalizeText(response);
-  
-  // Check 2-point patterns
-  if (scoring.twoPoint && scoring.twoPoint.patterns) {
-    for (const pattern of scoring.twoPoint.patterns) {
-      if (pattern.test(norm)) return 2;
-    }
-  }
-  
-  // Check 1-point patterns
-  if (scoring.onePoint && scoring.onePoint.patterns) {
-    for (const pattern of scoring.onePoint.patterns) {
-      if (pattern.test(norm)) return 1;
-    }
-  }
-  
-  // Check semantic scoring if available
-  if (scoring.semantic) {
-    const { tokens } = tokenize(response);
-    
-    // Check full credit
-    if (scoring.semantic.full) {
-      let matches = 0;
-      for (const conceptGroup of scoring.semantic.full) {
-        const concepts = Array.isArray(conceptGroup) ? conceptGroup : [conceptGroup];
-        if (concepts.some(concept => {
-          const conceptTokens = tokenize(concept).tokens;
-          return conceptTokens.every(t => tokens.includes(t));
-        })) {
-          matches++;
-        }
-      }
-      if (matches >= (scoring.semantic.full.length === 2 ? 2 : 1)) return 2;
-      if (matches >= 1) return 1;
-    }
-    
-    // Check partial credit
-    if (scoring.semantic.partial) {
-      if (scoring.semantic.partial.some(term => tokens.includes(simpleStem(term)))) {
-        return 1;
-      }
-    }
-  }
-  
-  return 0;
-}
-
-/* ===========================
-   UI Functions
-   =========================== */
-function showScreen(screen) {
-  document.querySelectorAll('.card').forEach(el => el.classList.add('hidden'));
-  document.getElementById(`screen-${screen}`).classList.remove('hidden');
-}
-
-function updateAdminPanel() {
-  if (!state.adminMode) return;
-  document.getElementById('admin-group').textContent = state.participantGroup || '-';
-  document.getElementById('admin-item').textContent = (state.sequence[state.currentIndex] && state.sequence[state.currentIndex].item) || '-';
-  document.getElementById('admin-score').textContent = state.totalPoints;
-  document.getElementById('admin-zeros').textContent = state.consecutiveZeros;
-  document.getElementById('admin-status').textContent =
-    state.consecutiveZeros >= DISCONTINUE_AFTER_ZEROS ? 'Discontinue' : 'Active';
-}
-
-/* ===========================
-   Timer Functions
-   =========================== */
-function clearAllTimers() {
-  Object.keys(state.timers).forEach((key) => {
-    if (state.timers[key]) {
-      clearInterval(state.timers[key]);
-      state.timers[key] = null;
-    }
-  });
-}
-
-function startTimer() {
-  state.readingStartTime = Date.now();
-  let seconds = 0;
-  const timerEl = document.getElementById('timer');
-  const container = document.getElementById('timer-container');
-
-  if (!document.getElementById('pref-hide-timer').checked) {
-    container.classList.remove('hidden');
-  }
-
-  // Use centralized reading timer
-  state.timers.reading = setInterval(() => {
-    seconds++;
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    timerEl.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  }, 1000);
-}
-
-function stopTimer() {
-  if (state.timers.reading) {
-    clearInterval(state.timers.reading);
-    state.timers.reading = null;
-  }
-}
-
-/* ===========================
-   Assessment Flow
-   =========================== */
-async function startAssessment() {
-  state.sessionStartTime = Date.now();
-  buildSequence();
-
-  // Send session start with correct field names for GAS
-  await sendEventSafely('session_started', {
-    education: state.edu, // GAS expects 'education'
-    participantGroup: state.participantGroup,
-    readModality: state.readModality,
-    totalItems: state.sequence.length,
-    adminMode: state.adminMode,
-    hasRecording: state.useVideoRecording || state.useAudioRecording,
-    userAgent: navigator.userAgent,
-    ipAddress: '' // Will be filled by GAS if needed
-  });
-
-  state.currentIndex = 0;
-  showItem();
-}
-
-async function finishAssessment() {
-  // Clean up resources first
-  cleanupResources();
-  
-  showScreen('finish');
-  
-  const sessionData = {
-    pid: state.pid,
-    education: state.edu, // Will be mapped to 'education' in sendEventSafely
-    participantGroup: state.participantGroup,
-    readModality: state.readModality,
-    sessionStartTime: state.sessionStartTime,
-    sessionEndTime: Date.now(),
-    duration: Math.round((Date.now() - state.sessionStartTime) / 60000),
-    totalPoints: state.totalPoints,
-    itemsCompleted: state.results.length,
-    consecutiveZeros: state.consecutiveZeros,
-    discontinued: state.consecutiveZeros >= DISCONTINUE_AFTER_ZEROS,
-    gateItemsFailed: state.gateItemsFailed.join(', '),
+    group: state.participantGroup,
+    modality: state.readModality,
+    startedAt: state.sessionStartTime,
+    finishedAt: Date.now(),
+    totals: {
+      points: state.totalPoints,
+      items: state.results.length
+    },
     results: state.results
   };
-  
-  // Save locally first
-  state.savedData = sessionData;
-  localStorage.setItem(`wiat2_${state.pid}_${Date.now()}`, JSON.stringify(sessionData));
-  
-  // Try to upload (Google-first, then backup)
-  document.getElementById('upload-progress').textContent = 'Uploading your results...';
-  const ok = await sendEventSafely('session_completed', sessionData);
 
+  // Try Google first
+  let ok = false;
+  try {
+    const r = await postWithTimeout(GOOGLE_SCRIPT_URL, payload, GOOGLE_TIMEOUT_MS);
+    // no-cors returns opaque; assume success if no network error
+    ok = true;
+  } catch (e) {
+    ok = false;
+  }
   if (ok) {
-    document.getElementById('upload-status').className = 'status-box success';
-    document.getElementById('upload-progress').textContent = 'Results uploaded successfully!';
-    
-    // Show stats
-    document.getElementById('final-stats').classList.remove('hidden');
-    document.getElementById('stats-content').innerHTML = `
-      <p>Items completed: ${state.results.length}</p>
-      <p>Total score: ${state.totalPoints}</p>
-      <p>Session duration: ${Math.round((sessionData.sessionEndTime - sessionData.sessionStartTime) / 60000)} minutes</p>
-    `;
-  } else {
-    document.getElementById('upload-status').className = 'status-box error';
-    document.getElementById('upload-progress').textContent = 'Upload failed. Your data is saved locally.';
+    setConnectionStatus(true);
+    document.getElementById('upload-progress').textContent = 'Saved to Google successfully.';
+    return true;
+  }
+
+  // Fallback: serverless backup if configured
+  try {
+    const b = await postWithTimeout(GITHUB_BACKUP_URL, {
+      owner: BACKUP_REPO_OWNER,
+      repo: BACKUP_REPO_NAME,
+      dirHint: BACKUP_DIR_HINT,
+      fileHint: `session_${SESSION_ID}.json`,
+      payload
+    }, BACKUP_TIMEOUT_MS);
+    setConnectionStatus(true);
+    document.getElementById('upload-progress').textContent = 'Saved to backup endpoint successfully.';
+    return true;
+  } catch (e) {
+    setConnectionStatus(false);
+    document.getElementById('upload-progress').textContent = 'Upload failed. You can retry or download a local backup file.';
     document.getElementById('retry-upload').classList.remove('hidden');
     document.getElementById('download-backup').classList.remove('hidden');
-  }
-}
-
-// Add cleanup function if it doesn't exist
-function cleanupResources() {
-  // Stop all timers
-  clearAllTimers();
-  
-  // Stop any active media streams
-  if (state.stream) {
-    state.stream.getTracks().forEach(track => track.stop());
-    state.stream = null;
-  }
-  
-  // Stop any active recording
-  if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
-    state.mediaRecorder.stop();
-  }
-}
-
-// Before-unload cleanup & “unsaved” prompt
-window.addEventListener('beforeunload', (e) => {
-  try { cleanupResources(); } catch (_) {}
-  if (state.results.length && !state.savedData) {
-    e.preventDefault();
-    e.returnValue = '';
-  }
-});
-
-// Add event listeners for buttons that might be missing
-document.addEventListener('DOMContentLoaded', () => {
-  // ADD THIS: Show keyboard shortcuts on focus
-  const keyboardHelp = document.createElement('div');
-  keyboardHelp.innerHTML = `
-      <div style="position: fixed; bottom: 20px; right: 20px; 
-                  background: white; padding: 10px; border-radius: 8px; 
-                  box-shadow: 0 2px 10px rgba(0,0,0,0.1); font-size: 12px;
-                  display: none; z-index: 1000;" id="keyboard-help">
-          <strong>Keyboard shortcuts:</strong><br>
-          Tab = Navigate<br>
-          Enter = Select<br>
-          Ctrl+Enter = Submit<br>
-          Alt+S = Skip<br>
-          Alt+A = Admin panel
-      </div>
-  `;
-  document.body.appendChild(keyboardHelp);
-  
-  // Show help when user presses ?
-  document.addEventListener('keydown', (e) => {
-      if (e.key === '?') {
-          const help = document.getElementById('keyboard-help');
-          help.style.display = help.style.display === 'none' ? 'block' : 'none';
-      }
-  });
-  
-  // Start Study button
-  const startStudyBtn = document.getElementById('start-study');
-  if (startStudyBtn) {
-    startStudyBtn.addEventListener('click', startAssessment);
-  }
-  
-  // Start/Done Reading buttons
-  const startReadingBtn = document.getElementById('start-reading');
-  if (startReadingBtn) {
-    startReadingBtn.addEventListener('click', () => {
-      startTimer();
-      startReadingBtn.classList.add('hidden');
-      document.getElementById('done-reading').classList.remove('hidden');
-    });
-  }
-  
-  const doneReadingBtn = document.getElementById('done-reading');
-  if (doneReadingBtn) {
-    doneReadingBtn.addEventListener('click', () => {
-      stopTimer();
-      const readingTime = Date.now() - state.readingStartTime;
-      showQuestions(readingTime);
-    });
-  }
-  
-  // Recording buttons
-  const startRecordingBtn = document.getElementById('start-recording');
-  if (startRecordingBtn) {
-    startRecordingBtn.addEventListener('click', startRecording);
-  }
-  
-  const stopRecordingBtn = document.getElementById('stop-recording');
-  if (stopRecordingBtn) {
-    stopRecordingBtn.addEventListener('click', stopRecording);
-  }
-  
-  // Form submission
-  const qaForm = document.getElementById('qa-form');
-  if (qaForm) {
-    qaForm.addEventListener('submit', submitAnswers);
-  }
-  
-  // Skip button
-  const skipBtn = document.getElementById('skip');
-  if (skipBtn) {
-    skipBtn.addEventListener('click', () => {
-      // Send skip event to Google Apps Script
-      sendEventSafely('item_skipped', {
-        itemNumber: state.sequence[state.currentIndex].item,
-        imageFile: state.sequence[state.currentIndex].image,
-        questionText: (state.sequence[state.currentIndex].questions && state.sequence[state.currentIndex].questions[0] && state.sequence[state.currentIndex].questions[0].text) || '',
-        itemType: state.sequence[state.currentIndex].type,
-        reason: 'User choice',
-        consecutiveZeros: state.consecutiveZeros + 1
-      });
-      
-      state.consecutiveZeros++;
-      state.currentIndex++;
-      showItem();
-    });
-  }
-  
-  // Retry upload button
-  const retryBtn = document.getElementById('retry-upload');
-  if (retryBtn) {
-    retryBtn.addEventListener('click', async () => {
-      retryBtn.disabled = true;
-      document.getElementById('upload-progress').textContent = 'Retrying upload...';
-      
-      const ok = await sendEventSafely('session_completed', state.savedData);
-      
-      if (ok) {
-        document.getElementById('upload-status').className = 'status-box success';
-        document.getElementById('upload-progress').textContent = 'Results uploaded successfully!';
-        retryBtn.classList.add('hidden');
-      } else {
-        document.getElementById('upload-progress').textContent = 'Upload failed again. Please download backup.';
-        retryBtn.disabled = false;
-      }
-    });
-  }
-  
-  // Download backup button
-  const downloadBtn = document.getElementById('download-backup');
-  if (downloadBtn) {
-    downloadBtn.addEventListener('click', () => {
-      const dataStr = JSON.stringify(state.savedData, null, 2);
-      const dataBlob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(dataBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `wiat2_${state.pid}_${Date.now()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    });
-  }
-  
-  // Audio test setup
-  const testAudioBtn = document.getElementById('test-audio-record');
-  const stopTestBtn = document.getElementById('stop-test-audio');
-  if (testAudioBtn && stopTestBtn) {
-    setupAudioTest(testAudioBtn, stopTestBtn);
-  }
-});
-
-// ---------- Utilities ----------
-function timeout(ms) {
-  return new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms));
-}
-
-async function postWithTimeout(url, body, timeoutMs, asForm=false) {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), timeoutMs);
-  
-  try {
-    console.log(`POST request to: ${url}`);
-    
-    // Add no-cors mode for Google Apps Script if needed
-    const fetchOptions = {
-      method: 'POST',
-      mode: url.includes('script.google.com') ? 'no-cors' : 'cors',
-      headers: asForm ? {} : { 'Content-Type': 'application/json' },
-      body: asForm ? body : JSON.stringify(body),
-      signal: ctrl.signal
-    };
-    
-    const res = await fetch(url, fetchOptions);
-    clearTimeout(t);
-    
-    // Handle no-cors mode (Google Apps Script returns opaque response)
-    if (fetchOptions.mode === 'no-cors') {
-      console.log('Google Apps Script request sent (no-cors mode, response opaque)');
-      return {}; // Can't read response in no-cors mode, assume success
-    }
-    
-    if (!res.ok) throw new Error('bad status ' + res.status);
-    return await res.json().catch(() => ({}));
-  } catch (error) {
-    clearTimeout(t);
-    if (error.name === 'AbortError') {
-      throw new Error(`Request timeout after ${timeoutMs}ms`);
-    }
-    throw error;
-  }
-}
-
-// Update the bottom-left connection chip
-function updateConnectionStatus(connected) {
-  const el = document.getElementById('connection-status');
-  const txt = document.getElementById('connection-text');
-  if (!el || !txt) return;
-  if (connected) {
-    el.classList.remove('error');
-    el.classList.add('connected');
-    txt.textContent = 'Connected';
-  } else {
-    el.classList.remove('connected');
-    el.classList.add('error');
-    txt.textContent = 'Offline (saved locally)';
-  }
-}
-
-// Try Google first, then backup, then give up (return false)
-async function sendEventSafely(kind, payload) {
-  // Map frontend events to Google Apps Script actions
-  const actionMap = {
-    'session_started': 'session_start',
-    'item_started': 'item_started',
-    'item_completed': 'item_completed',
-    'session_completed': 'session_complete',
-    'media_upload': 'video_upload'
-  };
-  
-  // Prepare payload for Google Apps Script
-  const gasPayload = {
-    action: actionMap[kind] || kind,
-    sessionId: SESSION_ID,
-    pid: state.pid,
-    education: state.edu, // Note: GAS expects 'education' not 'edu'
-    timestamp: new Date().toISOString(),
-    ...payload
-  };
-  
-  // Remove duplicate fields
-  delete gasPayload.kind;
-  delete gasPayload.edu;
-  
-  // Special handling for media uploads
-  if (kind === 'media_upload' && payload instanceof FormData) {
-    // Convert FormData to base64 for Google Apps Script
-    try {
-      const mediaBlob = payload.get('media');
-      if (mediaBlob) {
-        const arrayBuffer = await mediaBlob.arrayBuffer();
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-        
-        gasPayload.videoData = base64;
-        gasPayload.itemNumber = payload.get('itemNumber');
-        gasPayload.sessionDate = new Date().toISOString().split('T')[0];
-      }
-    } catch (err) {
-      console.error('Failed to convert media to base64:', err);
-      return false;
-    }
-  }
-
-  console.log(`Attempting to send ${kind} to server...`);
-  
-  try {
-    // Google Apps Script expects POST with JSON body
-    const response = await fetch(GOOGLE_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors', // GAS doesn't support CORS
-      headers: {
-        'Content-Type': 'text/plain' // GAS prefers text/plain for CORS workaround
-      },
-      body: JSON.stringify(gasPayload)
-    });
-    
-    console.log(`Successfully sent ${kind} to Google Apps Script`);
-    updateConnectionStatus(true);
-    return true;
-  } catch (error) {
-    console.error(`Failed to send to Google Apps Script:`, error);
-    
-    // Try backup endpoint if available
-    if (GITHUB_BACKUP_URL && GITHUB_BACKUP_URL !== 'https://readingcomp-f3ii59o6j-melodys-projects-8b5cbe18.vercel.app/') {
-      console.log(`Attempting backup endpoint...`);
-      try {
-        const backupResponse = await fetch(GITHUB_BACKUP_URL, {
-          method: 'POST',
-          mode: 'cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        
-        if (backupResponse.ok) {
-          console.log(`Successfully sent ${kind} to backup endpoint`);
-          updateConnectionStatus(true);
-          return true;
-        }
-      } catch (e2) {
-        console.error(`Failed to send to backup endpoint:`, e2);
-      }
-    }
-    
-    updateConnectionStatus(false);
     return false;
   }
 }
 
+function downloadLocalBackup() {
+  const data = {
+    sessionId: SESSION_ID,
+    pid: state.pid,
+    edu: state.edu,
+    group: state.participantGroup,
+    modality: state.readModality,
+    startedAt: state.sessionStartTime,
+    finishedAt: Date.now(),
+    totals: { points: state.totalPoints, items: state.results.length },
+    results: state.results
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `readingcomp_${SESSION_ID}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
 
+function setConnectionStatus(connected) {
+  state.connectionStatus = connected;
+  const box = document.getElementById('connection-status');
+  const text = document.getElementById('connection-text');
+  box.classList.remove('connected', 'error');
+  if (connected) {
+    box.classList.add('connected');
+    text.textContent = 'Connected';
+  } else {
+    box.classList.add('error');
+    text.textContent = 'Offline';
+  }
+}
 
-// Add connection test on page load
-window.addEventListener('DOMContentLoaded', async () => {
-  // Test connection to Google Apps Script
-  console.log('Testing connection to Google Apps Script...');
-  try {
-    const testPayload = { test: true, timestamp: Date.now() };
-    const response = await fetch(GOOGLE_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors', // Google Apps Script doesn't support CORS
-      body: JSON.stringify(testPayload)
+/* ===========================
+   Finish
+   =========================== */
+async function finishAssessment(reason = '') {
+  showScreen('screen-finish');
+  const msg = document.getElementById('finish-msg');
+  msg.textContent = reason ? `Thank you. ${reason}` : 'Thank you for participating.';
+
+  // Minimal session stats
+  const stats = document.getElementById('final-stats');
+  const content = document.getElementById('stats-content');
+  content.innerHTML = `
+    <div>Total items: <strong>${state.results.length}</strong></div>
+    <div>Total points: <strong>${state.totalPoints}</strong></div>
+    <div>Session: <strong>${SESSION_ID}</strong></div>
+  `;
+  stats.classList.remove('hidden');
+
+  // Attempt upload
+  document.getElementById('upload-progress').textContent = 'Saving your data...';
+  await uploadAll();
+}
+
+/* ===========================
+   Setup screen logic
+   =========================== */
+function determineReadModalityFromUI() {
+  const chosen = document.querySelector('input[name="read-modality"]:checked');
+  state.readModality = chosen ? chosen.value : 'speak';
+  return state.readModality;
+}
+
+async function enterSetup() {
+  showScreen('screen-setup');
+  document.getElementById('setup-status-text').textContent = 'Initializing...';
+
+  determineReadModalityFromUI();
+  const mode = determineRecordingNeeds();
+
+  // Toggle setup panels
+  const vs = document.getElementById('video-setup');
+  const as = document.getElementById('audio-setup');
+  if (mode === 'video') {
+    vs.classList.remove('hidden');
+    as.classList.add('hidden');
+    await setupVideo();
+  } else {
+    vs.classList.add('hidden');
+    as.classList.remove('hidden');
+    await setupAudio();
+  }
+
+  document.getElementById('setup-status-text').textContent = 'Ready. You can start the assessment.';
+  document.getElementById('start-study').disabled = false;
+}
+
+/* ===========================
+   Wire up DOM events
+   =========================== */
+document.addEventListener('DOMContentLoaded', () => {
+  // Welcome form events
+  document.getElementById('pid').addEventListener('input', checkWelcomeReady);
+  document.getElementById('edu').addEventListener('change', checkWelcomeReady);
+  document.getElementById('consent').addEventListener('change', checkWelcomeReady);
+  document.querySelectorAll('input[name="participant-group"]').forEach(el => {
+    el.addEventListener('change', checkWelcomeReady);
+  });
+  document.querySelectorAll('input[name="read-modality"]').forEach(el => {
+    el.addEventListener('change', () => {
+      determineReadModalityFromUI();
     });
-    console.log('Google Apps Script connection test completed');
-    updateConnectionStatus(true);
-  } catch (error) {
-    console.error('Google Apps Script connection test failed:', error);
-    updateConnectionStatus(false);
-    
-    // Show warning if Google Script is not accessible
-    const warn = document.getElementById('config-warning');
-    if (warn) {
-      warn.classList.remove('hidden');
-      warn.querySelector('.status-message').innerHTML = `
-        <strong>Connection Issue:</strong> Cannot reach Google Apps Script. 
-        Data will be saved locally and to backup endpoint if available.
-        <br><small>URL: ${GOOGLE_SCRIPT_URL}</small>
-      `;
-    }
-  }
-  
-  // Test backup endpoint
-  if (GITHUB_BACKUP_URL && GITHUB_BACKUP_URL !== 'https://readingcomp-f3ii59o6j-melodys-projects-8b5cbe18.vercel.app/') {
-    console.log('Testing backup endpoint...');
-    try {
-      const response = await fetch(GITHUB_BACKUP_URL, {
-        method: 'GET', // Test with GET first
-        mode: 'cors'
+  });
+
+  // Begin -> Setup
+  document.getElementById('begin').addEventListener('click', () => {
+    state.sessionStartTime = Date.now();
+    enterSetup();
+  });
+
+  // Test audio on setup
+  const testBtn = document.getElementById('test-audio-record');
+  const stopTestBtn = document.getElementById('stop-test-audio');
+  const testTimer = document.getElementById('test-audio-timer');
+  const testPlayback = document.getElementById('test-audio-playback');
+
+  if (testBtn) {
+    testBtn.addEventListener('click', async () => {
+      // Ensure audio stream
+      if (!state.stream) await setupAudio();
+      testBtn.classList.add('hidden');
+      stopTestBtn.classList.remove('hidden');
+      testTimer.classList.remove('hidden');
+      testTimer.textContent = '00:00';
+      let sec = 0;
+      Timers.start('test', t => { sec = t; testTimer.textContent = formatMMSS(t); });
+
+      startMediaRecorder(blob => {
+        Timers.stop('test');
+        testPlayback.src = URL.createObjectURL(blob);
+        testPlayback.classList.remove('hidden');
+        document.getElementById('audio-status').textContent = 'Test recording complete. Play it back to confirm.';
       });
-      console.log('Backup endpoint accessible');
-    } catch (error) {
-      console.error('Backup endpoint test failed:', error);
-    }
+    });
   }
-});
-
-// ---------- Recording (read-aloud) ----------
-let recTimerSec = 0;
-function startRecording() {
-  if (!state.mediaRecorder) {
-    alert('Recorder not ready. Please go back to Setup.');
-    return;
-  }
-  state.recordedChunks = [];
-  try {
-    state.mediaRecorder.start(200); // gather chunks
-  } catch (e) {
-    alert('Could not start recording in this browser.');
-    return;
-  }
-  // UI
-  document.getElementById('rec-indicator').classList.remove('hidden');
-  document.getElementById('recording-timer').classList.remove('hidden');
-  document.getElementById('start-recording').classList.add('hidden');
-  document.getElementById('stop-recording').classList.remove('hidden');
-
-  // Timer
-  recTimerSec = 0;
-  const tEl = document.getElementById('recording-timer');
-  tEl.textContent = '00:00';
-  state.timers.recording = setInterval(() => {
-    recTimerSec++;
-    const m = String(Math.floor(recTimerSec/60)).padStart(2,'0');
-    const s = String(recTimerSec%60).padStart(2,'0');
-    tEl.textContent = `${m}:${s}`;
-  }, 1000);
-}
-
-async function stopRecording() {
-  try { if (state.mediaRecorder && state.mediaRecorder.state === 'recording') state.mediaRecorder.stop(); } catch (_) {}
-  if (state.timers.recording) { clearInterval(state.timers.recording); state.timers.recording = null; }
-
-  // UI
-  document.getElementById('rec-indicator').classList.add('hidden');
-  document.getElementById('recording-timer').classList.add('hidden');
-  document.getElementById('stop-recording').classList.add('hidden');
-
-  // Wait one tick for last dataavailable
-  await new Promise(r => setTimeout(r, 100));
-
-  const mime = state.recordMime || (state.useVideoRecording ? 'video/webm' : 'audio/webm');
-  const ext  = mime.includes('mp4') ? 'mp4' : (mime.startsWith('audio/') ? 'webm' : 'webm');
-  const trial = state.sequence[state.currentIndex];
-
-  const blob = new Blob(state.recordedChunks, { type: mime });
-  state.recordedChunks = [];
-
-  // Try to upload
-  const fd = new FormData();
-  fd.append('pid', state.pid);
-  fd.append('edu', state.edu);
-  fd.append('participantGroup', state.participantGroup);
-  fd.append('readModality', state.readModality);
-  fd.append('itemNumber', String(trial.item));
-  fd.append('mime', mime);
-  const fname = `${state.pid || 'anon'}_item${trial.item}_${Date.now()}.${ext}`;
-  fd.append('fileName', fname);
-  fd.append('media', blob, fname);
-
-  const ok = await sendEventSafely('media_upload', fd);
-  if (!ok) {
-    // Fallback: client-side download so nothing is lost
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = fname;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    const live = document.getElementById('sr-live');
-    if (live) live.textContent = 'Network issue: recording saved to your device.';
+  if (stopTestBtn) {
+    stopTestBtn.addEventListener('click', () => {
+      stopTestBtn.classList.add('hidden');
+      testBtn.classList.remove('hidden');
+      Timers.stop('test');
+      if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') state.mediaRecorder.stop();
+    });
   }
 
-  // Read-aloud items are non-scored → advance
-  state.currentIndex++;
-  showItem();
-}
-
-// ---------- Audio Test ----------
-function setupAudioTest(btnStart, btnStop) {
-  const timerEl = document.getElementById('test-audio-timer');
-  const pb = document.getElementById('test-audio-playback');
-  let testChunks = [];
-  let testRecorder = null;
-
-  btnStart.addEventListener('click', () => {
-    if (!state.stream) { alert('Microphone not initialized.'); return; }
-    testChunks = [];
-    try {
-      const mime = pickMime('audio') || 'audio/webm';
-      testRecorder = new MediaRecorder(state.stream, mime ? { mimeType: mime } : {});
-    } catch (e) { alert('Audio recording not supported here.'); return; }
-
-    testRecorder.ondataavailable = (e) => { if (e.data.size) testChunks.push(e.data); };
-    testRecorder.start(200);
-
-    // UI
-    btnStart.classList.add('hidden');
-    btnStop.classList.remove('hidden');
-    timerEl.classList.remove('hidden');
-    testTimerSec = 0;
-    timerEl.textContent = '00:00';
-    state.timers.test = setInterval(() => {
-      testTimerSec++;
-      const m = String(Math.floor(testTimerSec/60)).padStart(2,'0');
-      const s = String(testTimerSec%60).padStart(2,'0');
-      timerEl.textContent = `${m}:${s}`;
-    }, 1000);
+  // Start study
+  document.getElementById('start-study').addEventListener('click', () => {
+    state.sequence = TRIALS.slice();
+    state.currentIndex = 0;
+    state.totalPoints = 0;
+    state.consecutiveZeros = 0;
+    showScreen('screen-item');
+    renderTrial(currentTrial());
   });
 
-  btnStop.addEventListener('click', () => {
-    try { if (testRecorder && testRecorder.state === 'recording') testRecorder.stop(); } catch (_) {}
-    if (state.timers.test) { clearInterval(state.timers.test); state.timers.test = null; }
-    btnStop.classList.add('hidden');
-    btnStart.classList.remove('hidden');
-    timerEl.classList.add('hidden');
+  // Read controls
+  document.getElementById('start-reading').addEventListener('click', handleReadingStart);
+  document.getElementById('done-reading').addEventListener('click', handleReadingDone);
 
-    setTimeout(() => {
-      const blob = new Blob(testChunks, { type: state.recordMime || 'audio/webm' });
-      pb.src = URL.createObjectURL(blob);
-      pb.classList.remove('hidden');
-      document.getElementById('audio-status').textContent = 'Test recorded. Play it back to confirm.';
-    }, 50);
+  // Recording controls
+  document.getElementById('start-recording').addEventListener('click', handleStartRecording);
+  document.getElementById('stop-recording').addEventListener('click', handleStopRecording);
+
+  // QA form
+  document.getElementById('qa-form').addEventListener('submit', handleQASubmit);
+  document.getElementById('skip').addEventListener('click', handleQASkip);
+
+  // Finish actions
+  document.getElementById('retry-upload').addEventListener('click', uploadAll);
+  document.getElementById('download-backup').addEventListener('click', downloadLocalBackup);
+
+  // Preferences
+  document.getElementById('toggle-selfview').addEventListener('change', (e) => {
+    const v = document.getElementById('preview');
+    if (!v) return;
+    v.style.visibility = e.target.checked ? 'hidden' : 'visible';
   });
-}
 
-// ---------- Optional: keyboard to toggle admin panel ----------
-window.addEventListener('keydown', (e) => {
-  if (e.altKey && e.key.toLowerCase() === 'a') {
-    state.adminMode = !state.adminMode;
-    document.body.classList.toggle('admin-mode', state.adminMode);
-    updateAdminPanel();
-  }
+  // Initial
+  checkWelcomeReady();
+  setConnectionStatus(false);
 });
 </script>
+</body>
+</html>
+
+  const hasPid = document.getElementById('pi
