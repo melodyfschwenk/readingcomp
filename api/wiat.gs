@@ -930,4 +930,3 @@ function testSetup() {
   console.log('Test result:', result.getContent());
   console.log('✅ Test complete! Check your sheets.');
 }
-
