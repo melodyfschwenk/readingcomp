@@ -53,14 +53,14 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
-  font-size: 18.67px;    /* = 14pt */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+  /* = 14pt */
   background:
     radial-gradient(1000px 700px at 20% 0%, #121622 0%, #0b0e11 60%),
     #0b0e11;
   color: var(--text-primary);
   min-height: 100vh;
-  line-height: 1.7;      /* a touch more spacing for readability */
+  line-height: 1.6;      /* a touch more spacing for readability */
 }
 
 
@@ -268,10 +268,14 @@ body {
   border-radius: 12px;
   padding: 28px;
   margin: 24px 0;
-  font-size: 1.2rem;      /* slightly larger than base (≈16.8pt if base = 14pt) */
-  line-height: 1.9;
+  font-size: 1.1rem;      /* slightly larger than base (≈16.8pt if base = 14pt) */
+  line-height: 1.8;
   color: var(--text-primary);
   /* removed max-height and overflow so it no longer scrolls */
+
+  max-height: 500px;
+
+  overflow-y: auto;
 }
 
 
@@ -339,8 +343,7 @@ u {
     border: 1px solid var(--border-secondary);
     border-radius: 10px;
     padding: 14px;
-    margin: 14px 0;
-      font-size: 1.1rem;   /* ~10% larger than base */
+    margin: 14px 0;   /* ~10% larger than base */
 
   }
   .q-block label { margin-bottom: 8px; }
@@ -427,7 +430,7 @@ body.large-print .q-block { font-size: 1.2rem; }         /* ≈ 24pt questions *
 
 /* Keep sizes large on mobile too */
 @media (max-width: 768px) {
-  body.large-print .reading-passage { font-size: 1.3rem; padding: 18px; }
+  body.large-print .reading-passage { font-size: 1rem; padding: 16px; }
 }
 
 /* Print fallback */
@@ -3166,7 +3169,6 @@ document.querySelectorAll('input[name="read-modality"]')
 checkWelcomeReady();
 
     });
-  });
 
   // ——— Begin -> Setup ———
   document.getElementById('begin').addEventListener('click', () => {
