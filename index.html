@@ -2703,11 +2703,13 @@ async function uploadAll() {
   };
 
   let googleOk = false;
-  try {
-    const r = await postWithTimeout(GOOGLE_SCRIPT_URL, payload, GOOGLE_TIMEOUT_MS);
-    // Treat as success ONLY if we actually get an OK response.
-    googleOk = !!(r && r.ok);
-  } catch {}
+try {
+  await postWithTimeout(GOOGLE_SCRIPT_URL, payload, GOOGLE_TIMEOUT_MS);
+  // With no-cors, no error = success
+  googleOk = true;
+} catch {
+  googleOk = false;
+}
 
   // Always try backup as a second leg if Google didn't clearly OK
   let backupOk = false;
@@ -2954,6 +2956,10 @@ function handleQASubmit(e) {
    Wire up DOM events
    =========================== */
 document.addEventListener('DOMContentLoaded', () => {
+      testConnection();
+  
+  // Periodically check connection (optional)
+  setInterval(testConnection, 30000); // Every 30 seconds
   // ——— Welcome form events ———
   document.getElementById('pid').addEventListener('input', checkWelcomeReady);
   document.getElementById('edu').addEventListener('change', checkWelcomeReady);
