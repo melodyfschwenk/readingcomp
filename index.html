@@ -2555,6 +2555,7 @@ function renderTrial(trial) {
   if (trial.type === 'passage' && !trial.skipReading) {
     // Show start button at the top
     document.getElementById('reading-controls-start').classList.remove('hidden');
+    document.getElementById('start-reading').classList.remove('hidden'); // Explicitly show the button
     if (!document.getElementById('pref-hide-timer').checked) {
       document.getElementById('timer-container').classList.remove('hidden');
     }
@@ -3227,13 +3228,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ——— Initial ———
-  loadLocal();
-  checkWelcomeReady();
-  // Remove initial connection status
-  // setConnectionStatus(false);
-  
-  /* ...existing code... */
-});
-</script>
-</body>
+ loadLocal(); 
+    checkWelcomeReady(); 
+    setConnectionStatus(false); 
+    window.addEventListener('beforeunload', () => { saveLocal(); stopMedia(); }); }); 
+</script> 
+</body> 
 </html>
