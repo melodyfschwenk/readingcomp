@@ -433,19 +433,6 @@
   }
   body.admin-mode .admin-panel { display: block; }
 
-  .connection-status {
-    position: fixed; bottom: 12px; left: 12px;
-    background: #0f141b;
-    border: 2px solid var(--border-secondary);
-    border-radius: 999px;
-    padding: 8px 14px;
-    color: var(--text-muted);
-    font-weight: 700;
-    font-size: 14px;
-  }
-  .connection-status.connected { border-color: var(--success-600); color: var(--success-600); }
-  .connection-status.error     { border-color: var(--danger-500); color: var(--danger-500); }
-
   /* Utilities */
   .hidden { display: none !important; }
   .center { text-align: center; }
@@ -671,9 +658,19 @@
       </div>
     </div>
 
+    <!-- Start reading control at the TOP -->
+    <div id="reading-controls-start" class="center hidden" style="margin: 16px 0;">
+      <button id="start-reading" class="primary">Start Reading</button>
+    </div>
+
     <!-- Reading Passage Container -->
     <div id="passage-container" class="reading-passage">
       <!-- Content will be dynamically inserted here -->
+    </div>
+
+    <!-- Done reading control at the BOTTOM -->
+    <div id="reading-controls-done" class="center hidden" style="margin: 16px 0;">
+      <button id="done-reading" class="hidden">Done Reading</button>
     </div>
 
     <div id="instructions" class="muted center" style="margin: 16px 0;">
@@ -689,25 +686,16 @@
     <!-- Recording controls for read-aloud items -->
     <div id="recording-controls" class="recording-controls hidden">
       <button id="start-recording" class="danger" aria-describedby="recording-help">Start Recording</button>
-        <button id="stop-recording" class="hidden" type="button">Stop Recording</button>
-
+      <button id="stop-recording" class="hidden" type="button">Stop Recording</button>
       <span class="recording-timer hidden" id="recording-timer">00:00</span>
-  
+      <div id="recording-help" class="sr-only">Click to begin recording your response</div>
+    </div>
 
-  <div id="recording-help" class="sr-only">Click to begin recording your response</div>
-</div>
-
-<!-- NEW: shown only when mic/cam isn’t available -->
-<div id="recording-unavailable" class="status-box error hidden"
-     role="alert" aria-live="assertive" aria-atomic="true" style="margin-top:10px;">
-  <div>Recording isn’t available. You can allow access and retry, or choose
-    <strong>Skip Recording</strong> to continue.</div>
-</div>
-      
-    <!-- Standard reading controls -->
-    <div id="reading-controls" class="center hidden" style="margin: 16px 0;">
-      <button id="start-reading" class="primary">Start Reading</button>
-      <button id="done-reading" class="hidden">Done Reading</button>
+    <!-- NEW: shown only when mic/cam isn't available -->
+    <div id="recording-unavailable" class="status-box error hidden"
+         role="alert" aria-live="assertive" aria-atomic="true" style="margin-top:10px;">
+      <div>Recording isn't available. You can allow access and retry, or choose
+        <strong>Skip Recording</strong> to continue.</div>
     </div>
 
     <form id="qa-form" class="hidden">
@@ -748,10 +736,12 @@
     <div>Status: <span id="admin-status">Active</span></div>
   </div>
 
-  <!-- Connection Status -->
+  <!-- Remove or comment out the Connection Status element -->
+  <!--
   <div class="connection-status" id="connection-status">
     <span id="connection-text" role="status" aria-live="polite" aria-atomic="true">Not connected</span>
   </div>
+  -->
 
 </div>
 
@@ -1423,6 +1413,7 @@ const SCORING_REFERENCE = {
 
 /* ===========================
    TRIALS Configuration
+
    =========================== */
 const TRIALS = [
   // Turtle Brothers passage
@@ -2508,7 +2499,10 @@ function resetReadingUI() {
   document.getElementById('timer').textContent = '00:00';
   document.getElementById('read-aloud-instructions').classList.add('hidden');
   document.getElementById('recording-controls').classList.add('hidden');
-  document.getElementById('reading-controls').classList.add('hidden');
+  // Updated to handle split reading controls
+  document.getElementById('reading-controls-start').classList.add('hidden');
+  document.getElementById('reading-controls-done').classList.add('hidden');
+  document.getElementById('done-reading').classList.add('hidden');
   document.getElementById('qa-form').classList.add('hidden');
 }
 
@@ -2519,46 +2513,48 @@ function renderTrial(trial) {
 
   // Instruction text
   document.getElementById('instruction-text').textContent = trial.instruction || '';
-// 🔹 TRIAL-BY-TRIAL: item_started
-gsPost('item_started', {
-  pid: state.pid,
-  itemNumber: trial.item,
-  imageFile: '', // text-only now
-  questionText: (trial.questions && trial.questions[0]) ? trial.questions[0].text : '',
-  itemType: trial.type || (trial.readAloud ? 'read-aloud' : 'question'),
-  timestamp: new Date().toISOString()
-});
+  
+  // 🔹 TRIAL-BY-TRIAL: item_started
+  gsPost('item_started', {
+    pid: state.pid,
+    itemNumber: trial.item,
+    imageFile: '', // text-only now
+    questionText: (trial.questions && trial.questions[0]) ? trial.questions[0].text : '',
+    itemType: trial.type || (trial.readAloud ? 'read-aloud' : 'question'),
+    timestamp: new Date().toISOString()
+  });
 
   // Read aloud item
   if (trial.type === 'read-aloud' || trial.readAloud) {
     const info = getReadAloudInstructions();
     document.getElementById('read-aloud-title').textContent = info.title;
     document.getElementById('read-aloud-text').textContent = info.text;
-   document.getElementById('read-aloud-instructions').classList.remove('hidden');
-document.getElementById('recording-controls').classList.remove('hidden');
-document.getElementById('start-recording').textContent = info.buttonText;
+    document.getElementById('read-aloud-instructions').classList.remove('hidden');
+    document.getElementById('recording-controls').classList.remove('hidden');
+    document.getElementById('start-recording').textContent = info.buttonText;
 
-// reset controls for this trial
-const startBtn = document.getElementById('start-recording');
-const stopBtn = document.getElementById('stop-recording');
-const timerEl = document.getElementById('recording-timer');
-startBtn.classList.remove('hidden');
-stopBtn.classList.add('hidden');
-timerEl.classList.add('hidden');
-document.getElementById('rec-indicator').classList.add('hidden');
-      // NEW: make Skip visible and reset alert panel
-const skipBtn = document.getElementById('skip-recording');
-const unavailableBox = document.getElementById('recording-unavailable');
-if (skipBtn) skipBtn.classList.remove('hidden');
-if (unavailableBox) unavailableBox.classList.add('hidden');
+    // reset controls for this trial
+    const startBtn = document.getElementById('start-recording');
+    const stopBtn = document.getElementById('stop-recording');
+    const timerEl = document.getElementById('recording-timer');
+    startBtn.classList.remove('hidden');
+    stopBtn.classList.add('hidden');
+    timerEl.classList.add('hidden');
+    document.getElementById('rec-indicator').classList.add('hidden');
+    
+    // NEW: make Skip visible and reset alert panel
+    const skipBtn = document.getElementById('skip-recording');
+    const unavailableBox = document.getElementById('recording-unavailable');
+    if (skipBtn) skipBtn.classList.remove('hidden');
+    if (unavailableBox) unavailableBox.classList.add('hidden');
 
-
-return;
+    return;
   }
 
   // Passage that requires timed reading first
   if (trial.type === 'passage' && !trial.skipReading) {
-    document.getElementById('reading-controls').classList.remove('hidden');
+    // Show start button at the top
+    document.getElementById('reading-controls-start').classList.remove('hidden');
     if (!document.getElementById('pref-hide-timer').checked) {
       document.getElementById('timer-container').classList.remove('hidden');
     }
@@ -2582,11 +2578,18 @@ function goNextOrFinish() {
 }
 
 function handleReadingStart() {
+  // Hide the start button at the top
+  document.getElementById('reading-controls-start').classList.add('hidden');
   document.getElementById('start-reading').classList.add('hidden');
+  
+  // Show the done button at the bottom
+  document.getElementById('reading-controls-done').classList.remove('hidden');
   document.getElementById('done-reading').classList.remove('hidden');
+  
   if (!document.getElementById('pref-hide-timer').checked) {
     document.getElementById('timer-container').classList.remove('hidden');
   }
+  
   let sec = 0;
   Timers.start('reading', t => {
     sec = t;
@@ -2597,7 +2600,9 @@ function handleReadingStart() {
 
 function handleReadingDone() {
   Timers.stop('reading');
-  document.getElementById('reading-controls').classList.add('hidden');
+  // Hide both reading control sections
+  document.getElementById('reading-controls-start').classList.add('hidden');
+  document.getElementById('reading-controls-done').classList.add('hidden');
 
   const trial = currentTrial();
   const dur = Math.round((Date.now() - (state.readingStartTime || Date.now())) / 1000);
@@ -2805,13 +2810,12 @@ function handleSkipRecording() {
 }
 
 /* ===========================
-   Upload and backup
+   Upload and backup - Updated
    =========================== */
 function postWithTimeout(url, data, timeoutMs) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs || 5000);
   
-  // For GitHub Pages, ensure we handle CORS properly
   const fetchOptions = {
     method: 'POST',
     body: JSON.stringify(data),
@@ -2835,7 +2839,8 @@ function postWithTimeout(url, data, timeoutMs) {
 function gsPost(action, payload) {
   return postWithTimeout(GOOGLE_SCRIPT_URL, { action, ...payload }, GOOGLE_TIMEOUT_MS)
     .then(() => {
-      setConnectionStatus(true); // Mark as connected on success
+      // Remove connection status update
+      // setConnectionStatus(true);
       return true;
     })
     .catch(() => {
@@ -2845,25 +2850,8 @@ function gsPost(action, payload) {
 }
 
 async function testConnection() {
-  // Skip connection test if running locally
-  if (window.location.protocol === 'file:') {
-    setConnectionStatus(false);
-    return false;
-  }
-  
-  try {
-    const response = await postWithTimeout(GOOGLE_SCRIPT_URL, {
-      action: 'test_connection',
-      timestamp: new Date().toISOString()
-    }, 2000);
-    
-    setConnectionStatus(true);
-    return true;
-  } catch (error) {
-    // Don't mark as error immediately, could be temporary
-    console.warn('Connection test failed:', error);
-    return false;
-  }
+  // Skip connection test entirely
+  return true;
 }
 
 
@@ -2885,13 +2873,13 @@ async function uploadAll() {
   };
 
   let googleOk = false;
-try {
-  await postWithTimeout(GOOGLE_SCRIPT_URL, payload, GOOGLE_TIMEOUT_MS);
-  // With no-cors, no error = success
-  googleOk = true;
-} catch {
-  googleOk = false;
-}
+  try {
+    await postWithTimeout(GOOGLE_SCRIPT_URL, payload, GOOGLE_TIMEOUT_MS);
+    // With no-cors, no error = success
+    googleOk = true;
+  } catch {
+    googleOk = false;
+  }
 
   // Always try backup as a second leg if Google didn't clearly OK
   let backupOk = false;
@@ -2909,20 +2897,22 @@ try {
   }
 
   if (googleOk || backupOk) {
-    setConnectionStatus(true);
+    // Remove connection status update
+    // setConnectionStatus(true);
     document.getElementById('upload-progress').textContent =
       googleOk && backupOk ? 'Saved to Google and backup.' :
-      googleOk ? 'Saved to Google successfully.' :
+      googleOk ? 'Saved successfully.' :
       'Saved to backup endpoint successfully.';
     return true;
   }
 
-  setConnectionStatus(false);
+  // Remove connection status update
+  // setConnectionStatus(false);
   const looksConfigured = /^https:\/\/script\.google\.com\/macros\/s\//.test(GOOGLE_SCRIPT_URL);
   if (!looksConfigured) document.getElementById('config-warning').classList.remove('hidden');
 
   document.getElementById('upload-progress').textContent =
-    'Upload failed. You can retry or download a local backup file.';
+    'Upload may have succeeded. You can download a local backup if needed.';
   document.getElementById('retry-upload').classList.remove('hidden');
   document.getElementById('download-backup').classList.remove('hidden');
   return false;
@@ -2950,20 +2940,6 @@ function downloadLocalBackup() {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
-}
-
-function setConnectionStatus(connected) {
-  state.connectionStatus = connected;
-  const box = document.getElementById('connection-status');
-  const text = document.getElementById('connection-text');
-  box.classList.remove('connected', 'error');
-  if (connected) {
-    box.classList.add('connected');
-    text.textContent = 'Connected';
-  } else {
-    box.classList.add('error');
-    text.textContent = 'Offline';
-  }
 }
 
 /* ===========================
@@ -3138,7 +3114,8 @@ function handleQASubmit(e) {
    Wire up DOM events
    =========================== */
 document.addEventListener('DOMContentLoaded', () => {
-      testConnection();
+      // Remove connection test calls
+  // testConnection();
   
   // Periodically check connection (optional)
   setInterval(testConnection, 30000); // Every 30 seconds
@@ -3252,8 +3229,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // ——— Initial ———
   loadLocal();
   checkWelcomeReady();
-  setConnectionStatus(false);
-  window.addEventListener('beforeunload', () => { saveLocal(); stopMedia(); });
+  // Remove initial connection status
+  // setConnectionStatus(false);
+  
+  /* ...existing code... */
 });
 </script>
 </body>
