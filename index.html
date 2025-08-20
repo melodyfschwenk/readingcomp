@@ -2798,35 +2798,46 @@ function handleSkipRecording() {
 /* ===========================
    Upload and backup
    =========================== */
-function postWithTimeout(url, data, timeoutMs = 10000) {
+// Replace your existing postWithTimeout function
+function postWithTimeout(url, data, timeoutMs) {
   const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  const t = setTimeout(() => ctrl.abort(), timeoutMs || 3500);
   return fetch(url, {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify(data),
-    signal: ctrl.signal
+    signal: ctrl.signal,
+    mode: 'no-cors' // Key addition
+  }).then(() => {
+    setConnectionStatus(true); // Mark as connected
+    return { ok: true }; // Fake response since we can't read it
+  }).catch(error => {
+    if (error.name !== 'AbortError') {
+      setConnectionStatus(false);
+    }
+    throw error;
   }).finally(() => clearTimeout(t));
 }
 
-
-async function gsPost(action, payload = {}) {
-  try {
-    return await postWithTimeout(GOOGLE_SCRIPT_URL, { action, ...payload }, GOOGLE_TIMEOUT_MS);
-  } catch (e) {
-    debugLog('gsPost failed', e);
-  }
+function gsPost(action, payload) {
+  return postWithTimeout(GOOGLE_SCRIPT_URL, { action, ...payload }, GOOGLE_TIMEOUT_MS)
+    .then(() => {
+      setConnectionStatus(true);
+      return true;
+    })
+    .catch(() => {
+      // Don't update to false to avoid flickering
+      return false;
+    });
 }
 
 
 async function testConnection() {
   try {
-    const response = await postWithTimeout(GOOGLE_SCRIPT_URL, {
+    await postWithTimeout(GOOGLE_SCRIPT_URL, {
       action: 'test_connection',
       timestamp: new Date().toISOString()
     }, 2000);
-    
-    // With no-cors, we can't read the response, but no error means it worked
     setConnectionStatus(true);
     return true;
   } catch (error) {
