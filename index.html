@@ -2649,18 +2649,39 @@ function postWithTimeout(url, data, timeoutMs) {
   const t = setTimeout(() => ctrl.abort(), timeoutMs || 3500);
   return fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'text/plain' }, // Change to text/plain for no-cors
     body: JSON.stringify(data),
-    signal: ctrl.signal
-    // NOTE: remove mode:'no-cors' so you get a readable response if CORS is enabled.
+    signal: ctrl.signal,
+    mode: 'no-cors' // Add this back
   }).finally(() => clearTimeout(t));
 }
 
-
 function gsPost(action, payload) {
-  // Uses your existing GOOGLE_SCRIPT_URL and postWithTimeout
   return postWithTimeout(GOOGLE_SCRIPT_URL, { action, ...payload }, GOOGLE_TIMEOUT_MS)
-    .catch(() => {}); // don't block the UI if Apps Script is slow
+    .then(() => {
+      setConnectionStatus(true); // Mark as connected on success
+      return true;
+    })
+    .catch(() => {
+      // Don't set to false on individual failures to avoid flickering
+      return false;
+    });
+}
+
+async function testConnection() {
+  try {
+    const response = await postWithTimeout(GOOGLE_SCRIPT_URL, {
+      action: 'test_connection',
+      timestamp: new Date().toISOString()
+    }, 2000);
+    
+    // With no-cors, we can't read the response, but no error means it worked
+    setConnectionStatus(true);
+    return true;
+  } catch (error) {
+    setConnectionStatus(false);
+    return false;
+  }
 }
 
 
