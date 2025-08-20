@@ -664,6 +664,7 @@ body.large-print .q-block { font-size: 1.2rem; }         /* ≈ 24pt questions *
     <div id="recording-controls" class="recording-controls hidden">
       <button id="start-recording" class="danger" aria-describedby="recording-help">Start Recording</button>
         <button id="stop-recording" class="hidden" type="button">Stop Recording</button>
+<button id="skip-recording-now" class="secondary hidden" type="button">Skip Recording</button>
 
       <span class="recording-timer hidden" id="recording-timer">00:00</span>
   
@@ -2561,8 +2562,9 @@ stopBtn.classList.add('hidden');
 timerEl.classList.add('hidden');
 document.getElementById('rec-indicator').classList.add('hidden');
       // NEW: make Skip visible and reset alert panel
-const skipBtn = document.getElementById('skip-recording');
-const unavailableBox = document.getElementById('recording-unavailable');
+const skipBtn =
+  document.getElementById('skip-recording-now') || // item screen (if you add one later)
+  document.getElementById('skip-recording');       // setup screen fallback
 if (skipBtn) skipBtn.classList.remove('hidden');
 if (unavailableBox) unavailableBox.classList.add('hidden');
 
@@ -2646,9 +2648,11 @@ async function handleStartRecording() {
       // Show inline alert + focus Skip instead of silently failing
       announceToScreenReader('Recording not available. You can allow access or skip recording.', 'assertive');
       const unavailableBox = document.getElementById('recording-unavailable');
-      const skipBtn = document.getElementById('skip-recording');
-      if (unavailableBox) unavailableBox.classList.remove('hidden');
-      if (skipBtn) { skipBtn.classList.remove('hidden'); skipBtn.focus(); }
+      const skipBtn =
+  document.getElementById('skip-recording-now') ||
+  document.getElementById('skip-recording');
+if (skipBtn) skipBtn.classList.remove('hidden');
+
       return;
     }
   }
@@ -2794,29 +2798,26 @@ function handleSkipRecording() {
 /* ===========================
    Upload and backup
    =========================== */
-function postWithTimeout(url, data, timeoutMs) {
+function postWithTimeout(url, data, timeoutMs = 10000) {
   const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), timeoutMs || 3500);
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
   return fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain' }, // Change to text/plain for no-cors
+    headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(data),
-    signal: ctrl.signal,
-    mode: 'no-cors' // Add this back
+    signal: ctrl.signal
   }).finally(() => clearTimeout(t));
 }
 
-function gsPost(action, payload) {
-  return postWithTimeout(GOOGLE_SCRIPT_URL, { action, ...payload }, GOOGLE_TIMEOUT_MS)
-    .then(() => {
-      setConnectionStatus(true); // Mark as connected on success
-      return true;
-    })
-    .catch(() => {
-      // Don't set to false on individual failures to avoid flickering
-      return false;
-    });
+
+async function gsPost(action, payload = {}) {
+  try {
+    return await postWithTimeout(GOOGLE_SCRIPT_URL, { action, ...payload }, GOOGLE_TIMEOUT_MS);
+  } catch (e) {
+    debugLog('gsPost failed', e);
+  }
 }
+
 
 async function testConnection() {
   try {
@@ -3098,6 +3099,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Periodically check connection (optional)
   setInterval(testConnection, 30000); // Every 30 seconds
   // ——— Welcome form events ———
+    document.getElementById('skip-recording-now')?.addEventListener('click', handleSkipRecording);
+
   document.getElementById('pid').addEventListener('input', checkWelcomeReady);
   document.getElementById('edu').addEventListener('change', checkWelcomeReady);
   document.getElementById('consent').addEventListener('change', checkWelcomeReady);
