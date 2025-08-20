@@ -914,6 +914,22 @@ const SESSION_ID = (() => {
 /* ===========================
    Debug helper
    =========================== */
+    function setConnectionStatus(isUp) {
+  state.connectionStatus = !!isUp;
+
+  const badge = document.getElementById('connection-status');
+  const text  = document.getElementById('connection-text');
+  if (badge && text) {
+    badge.classList.toggle('connected', !!isUp);
+    badge.classList.toggle('error', !isUp);
+    text.textContent = isUp ? 'Connected' : 'Not connected';
+  }
+
+  // Show/hide the config warning block based on connectivity
+  const cfg = document.getElementById('config-warning');
+  if (cfg) cfg.classList.toggle('hidden', !!isUp);
+}
+
 function debugLog(message, data = null) {
   if (window.location.hostname === 'localhost' || window.location.search.includes('debug=1')) {
     if (data !== null) console.log(message, data);
@@ -2561,12 +2577,15 @@ startBtn.classList.remove('hidden');
 stopBtn.classList.add('hidden');
 timerEl.classList.add('hidden');
 document.getElementById('rec-indicator').classList.add('hidden');
-      // NEW: make Skip visible and reset alert panel
+ // NEW: make Skip visible and reset alert panel
 const skipBtn =
-  document.getElementById('skip-recording-now') || // item screen (if you add one later)
+  document.getElementById('skip-recording-now') || // item screen
   document.getElementById('skip-recording');       // setup screen fallback
 if (skipBtn) skipBtn.classList.remove('hidden');
+
+const unavailableBox = document.getElementById('recording-unavailable');
 if (unavailableBox) unavailableBox.classList.add('hidden');
+
 
 
 return;
@@ -3109,19 +3128,43 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Periodically check connection (optional)
   setInterval(testConnection, 30000); // Every 30 seconds
-  // ——— Welcome form events ———
-    document.getElementById('skip-recording-now')?.addEventListener('click', handleSkipRecording);
+    // ===== C) Read-modality helper (used by D) =====
+function determineReadModalityFromUI() {
+  const sel = document.querySelector('input[name="read-modality"]:checked');
+  state.readModality = sel ? sel.value : '';
+  determineRecordingNeeds(); // flips state.useVideoRecording / useAudioRecording
+}
+// ===== /C) =====
 
-  document.getElementById('pid').addEventListener('input', checkWelcomeReady);
-  document.getElementById('edu').addEventListener('change', checkWelcomeReady);
-  document.getElementById('consent').addEventListener('change', checkWelcomeReady);
-  document.querySelectorAll('input[name="participant-group"]').forEach(el => {
+ // ===== D) Enable “Continue to Setup” (welcome form wiring) =====
+document.getElementById('skip-recording-now')
+  ?.addEventListener('click', handleSkipRecording);
+document.getElementById('skip-recording')
+  ?.addEventListener('click', handleSkipRecording);
+
+document.getElementById('pid')
+  ?.addEventListener('input', checkWelcomeReady);
+document.getElementById('edu')
+  ?.addEventListener('change', checkWelcomeReady);
+document.getElementById('consent')
+  ?.addEventListener('change', checkWelcomeReady);
+
+document.querySelectorAll('input[name="participant-group"]')
+  .forEach(el => {
     el.addEventListener('change', checkWelcomeReady);
   });
-  document.querySelectorAll('input[name="read-modality"]').forEach(el => {
+
+document.querySelectorAll('input[name="read-modality"]')
+  .forEach(el => {
     el.addEventListener('change', () => {
       determineReadModalityFromUI();
       checkWelcomeReady();
+    });
+  });
+
+// Run once on load to set initial button state
+checkWelcomeReady();
+
     });
   });
 
