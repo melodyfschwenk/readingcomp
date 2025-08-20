@@ -52,17 +52,16 @@
   /* Base reset */
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
-  /* = 14pt */
-  background:
-    radial-gradient(1000px 700px at 20% 0%, #121622 0%, #0b0e11 60%),
-    #0b0e11;
-  color: var(--text-primary);
-  min-height: 100vh;
-  line-height: 1.6;      /* a touch more spacing for readability */
-}
-
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    background:
+      radial-gradient(1000px 700px at 20% 0%, #121622 0%, #0b0e11 60%),
+      #0b0e11;
+    color: var(--text-primary);
+    min-height: 100vh;
+    line-height: 1.8;
+    font-size: 18px;
+  }
 
   /* Global focus ring for keyboard nav */
   :focus-visible {
@@ -75,7 +74,7 @@ body {
 
   /* Layout wrappers */
   .wrap, .container {
-    max-width: 860px;
+    max-width: 960px;
     margin: 0 auto;
     padding: 24px;
   }
@@ -84,63 +83,77 @@ body {
     background: var(--bg-secondary);
     border: 1px solid var(--border-primary);
     border-radius: 14px;
-    padding: 24px;
+    padding: 32px;
     box-shadow: 0 12px 40px var(--shadow-xl);
     margin: 14px 0;
   }
 
   /* Headings */
   h1 {
-    font-size: 1.9rem;
+    font-size: 2.2rem;
     font-weight: 650;
     color: var(--text-secondary);
-    margin-bottom: 10px;
+    margin-bottom: 14px;
     letter-spacing: 0.2px;
+    font-family: Arial, Helvetica, sans-serif;
   }
   h2 {
-    font-size: 1.35rem;
+    font-size: 1.7rem;
     font-weight: 600;
     color: var(--text-secondary);
-    margin-bottom: 10px;
+    margin-bottom: 12px;
+    font-family: Arial, Helvetica, sans-serif;
   }
-  h3 { font-size: 1.1rem; color: var(--text-secondary); }
+  h3 { 
+    font-size: 1.4rem; 
+    color: var(--text-secondary); 
+    font-family: Arial, Helvetica, sans-serif;
+  }
 
-  .subtitle, .muted { color: var(--text-muted); }
+  .subtitle, .muted { 
+    color: var(--text-muted); 
+    font-size: 16px;
+  }
 
   /* Info and instruction blocks */
   .instructions {
     background: var(--bg-tertiary);
     border-left: 3px solid var(--primary-600);
     border-radius: 10px;
-    padding: 14px 16px;
+    padding: 16px 18px;
     margin: 16px 0 24px;
+    font-size: 16px;
   }
 
   .warning-box {
     background: var(--warning-100);
     border: 1px solid var(--warning-600);
     border-radius: 10px;
-    padding: 12px 14px;
+    padding: 14px 16px;
     display: flex;
     gap: 12px;
     align-items: center;
   }
-  .warning-icon { font-size: 20px; color: var(--warning-600); }
-  .warning-text { color: var(--text-primary); }
+  .warning-icon { font-size: 22px; color: var(--warning-600); }
+  .warning-text { 
+    color: var(--text-primary); 
+    font-size: 16px;
+  }
 
   /* Buttons */
   button {
     -webkit-tap-highlight-color: transparent;
     border: 0;
     border-radius: 10px;
-    padding: 12px 18px;
-    font-size: 1rem;
+    padding: 14px 20px;
+    font-size: 1.1rem;
     font-weight: 650;
     letter-spacing: 0.2px;
     cursor: pointer;
     transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease, opacity 120ms ease;
     color: var(--text-on-dark);
-    min-height: 44px;
+    min-height: 48px;
+    font-family: Arial, Helvetica, sans-serif;
   }
 
   button.primary, button:not([class]) {
@@ -182,8 +195,9 @@ body {
     color: var(--text-primary);
     border: 1px solid var(--border-secondary);
     border-radius: 10px;
-    padding: 12px 14px;
-    font-size: 1rem;
+    padding: 14px 16px;
+    font-size: 1.05rem;
+    font-family: Arial, Helvetica, sans-serif;
     transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
   }
   input[type="text"]:hover, select:hover, textarea:hover { border-color: var(--border-focus); }
@@ -194,25 +208,32 @@ body {
   }
 
   input[type="checkbox"], input[type="radio"] {
-    width: 18px; height: 18px;
+    width: 20px; height: 20px;
     accent-color: var(--primary-600);
     cursor: pointer;
   }
 
-  label { display: block; margin-bottom: 6px; color: var(--text-secondary); font-weight: 600; }
+  label { 
+    display: block; 
+    margin-bottom: 8px; 
+    color: var(--text-secondary); 
+    font-weight: 600; 
+    font-size: 16px;
+  }
 
   .row { display: flex; gap: 16px; margin: 14px 0; }
   .row > div { flex: 1; }
 
   /* Radio groups */
-  .radio-group { display: grid; gap: 10px; }
+  .radio-group { display: grid; gap: 12px; }
   .radio-group label {
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: center; gap: 12px;
     background: #0f141b;
     border: 1px solid var(--border-secondary);
     border-radius: 10px;
-    padding: 12px 14px;
+    padding: 14px 16px;
     cursor: pointer;
+    font-size: 16px;
     transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
   }
   .radio-group label:hover { border-color: var(--border-focus); background: #101724; transform: translateX(2px); }
@@ -230,8 +251,9 @@ body {
     border: 1px solid var(--border-secondary);
     color: var(--text-primary);
     border-radius: 10px;
-    padding: 12px 14px;
+    padding: 14px 16px;
     margin: 14px 0;
+    font-size: 16px;
   }
   .status-box.success { border-color: var(--success-600); }
   .status-box.error   { border-color: var(--danger-500); }
@@ -242,11 +264,20 @@ body {
     background: var(--bg-tertiary);
     border: 1px solid var(--border-primary);
     border-radius: 10px;
-    padding: 10px 12px;
-    margin-bottom: 14px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
   }
-  .item-info { color: var(--text-secondary); }
-  .timer-display { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--primary-400); font-weight: 800; }
+  .item-info { 
+    color: var(--text-secondary); 
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .timer-display { 
+    font-family: Arial, Helvetica, sans-serif; 
+    color: var(--primary-400); 
+    font-weight: 800; 
+    font-size: 18px;
+  }
 
   /* Recording indicator */
   .recording-indicator {
@@ -254,114 +285,113 @@ body {
     display: flex; align-items: center; gap: 8px;
     background: var(--danger-500);
     color: #fff;
-    padding: 8px 12px;
+    padding: 10px 14px;
     border-radius: 999px;
     box-shadow: 0 8px 24px var(--shadow-lg);
+    font-size: 16px;
   }
   .recording-dot { width: 10px; height: 10px; background: #fff; border-radius: 999px; animation: blink 1s infinite; }
   @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
 
-  /* Reading Passage Styles */
- .reading-passage {
-  background: #0f141b;
-  border: 1px solid var(--border-secondary);
-  border-radius: 12px;
-  padding: 28px;
-  margin: 24px 0;
-  font-size: 1.1rem;      /* slightly larger than base (≈16.8pt if base = 14pt) */
-  line-height: 1.8;
-  color: var(--text-primary);
-  /* removed max-height and overflow so it no longer scrolls */
-
-  max-height: 500px;
-
-  overflow-y: auto;
-}
-
+  /* Reading Passage Styles - NO SCROLLBOX */
+  .reading-passage {
+    background: #0f141b;
+    border: 1px solid var(--border-secondary);
+    border-radius: 12px;
+    padding: 32px;
+    margin: 24px 0;
+    font-size: 1.3rem;
+    line-height: 2;
+    color: var(--text-primary);
+    font-family: Arial, Helvetica, sans-serif;
+    /* Removed max-height and overflow-y */
+  }
 
   .reading-passage h3 {
     color: var(--primary-400);
-    margin-bottom: 16px;
-    font-size: 1.3rem;
+    margin-bottom: 20px;
+    font-size: 1.6rem;
+    font-family: Arial, Helvetica, sans-serif;
   }
 
   .reading-passage em {
     color: var(--text-muted);
     font-style: italic;
     display: block;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
+    font-size: 1.1rem;
   }
 
   .reading-passage p {
-    margin-bottom: 16px;
+    margin-bottom: 20px;
+    font-size: 1.3rem;
+    line-height: 2;
   }
 
   .reading-passage .underlined {
     text-decoration: underline;
     text-decoration-color: var(--primary-600);
-    text-underline-offset: 3px;
+    text-underline-offset: 4px;
     font-weight: 600;
   }
 
   .reading-passage table {
     width: 100%;
     border-collapse: collapse;
-    margin: 20px 0;
+    margin: 24px 0;
+    font-size: 1.1rem;
   }
 
   .reading-passage th {
     background: var(--bg-tertiary);
     color: var(--primary-400);
-    padding: 12px;
+    padding: 14px;
     text-align: left;
     border: 1px solid var(--border-secondary);
+    font-size: 1.1rem;
   }
 
   .reading-passage td {
-    padding: 12px;
+    padding: 14px;
     border: 1px solid var(--border-secondary);
+    font-size: 1.05rem;
   }
-
-        /* Global underline token (matches passage look) */
-.underlined {
-  text-decoration: underline;
-  text-decoration-color: var(--primary-600);
-  text-underline-offset: 3px;
-  font-weight: 600;
-}
-
-/* Also treat <u> like our token, in case you prefer <u> */
-u {
-  text-decoration-color: var(--primary-600);
-  text-underline-offset: 3px;
-  font-weight: 600;
-}
 
   /* Q blocks */
   .q-block {
     background: #0f141b;
     border: 1px solid var(--border-secondary);
     border-radius: 10px;
-    padding: 14px;
-    margin: 14px 0;   /* ~10% larger than base */
-
+    padding: 20px;
+    margin: 16px 0;
+    font-size: 1.3rem;
+    line-height: 2;
+    font-family: Arial, Helvetica, sans-serif;
   }
-  .q-block label { margin-bottom: 8px; }
-  .q-block textarea { min-height: 110px; resize: vertical; }
+  .q-block label { 
+    margin-bottom: 10px; 
+    font-size: 18px;
+  }
+  .q-block textarea { 
+    min-height: 120px; 
+    resize: vertical; 
+    font-size: 1.05rem;
+    line-height: 1.6;
+  }
 
-   
   /* Helper chips and tips */
   .tip-box {
     background: var(--bg-tertiary);
     border: 1px solid var(--primary-600);
     border-radius: 10px;
-    padding: 12px 14px;
+    padding: 14px 16px;
     color: var(--text-primary);
     margin-bottom: 12px;
+    font-size: 16px;
   }
   .tip-box ul { margin: 8px 0 0 18px; color: var(--text-muted); }
   .kbd {
-    font: 600 12px ui-monospace, SFMono-Regular, Menlo, monospace;
+    font: 600 13px Arial, Helvetica, sans-serif;
     padding: 2px 6px; border-radius: 6px;
     background: #0b0f16; border: 1px solid var(--border-secondary); color: var(--text-secondary);
   }
@@ -371,8 +401,15 @@ u {
     background: #0f141b;
     border: 1px solid var(--border-secondary);
     border-radius: 10px;
-    padding: 14px;
-    margin: 12px 0 16px;
+    padding: 18px;
+    margin: 14px 0 20px;
+  }
+  .read-aloud-box h4 {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+  }
+  .read-aloud-box p {
+    font-size: 16px;
   }
 
   .video-preview-wrapper { text-align: center; }
@@ -391,7 +428,7 @@ u {
     border-radius: 10px;
     padding: 10px 12px;
     color: var(--text-muted);
-    font: 600 12px ui-monospace, SFMono-Regular, Menlo, monospace;
+    font: 600 13px Arial, Helvetica, sans-serif;
     display: none;
   }
   body.admin-mode .admin-panel { display: block; }
@@ -404,39 +441,10 @@ u {
     padding: 8px 14px;
     color: var(--text-muted);
     font-weight: 700;
+    font-size: 14px;
   }
   .connection-status.connected { border-color: var(--success-600); color: var(--success-600); }
   .connection-status.error     { border-color: var(--danger-500); color: var(--danger-500); }
-
-        /* ================================
-   Large Print Mode (accessible)
-   ================================ */
-.lp-toggle {
-  position: fixed;
-  top: 12px;
-  left: 12px;
-  z-index: 1100;
-}
-
-/* When ON, bump the base rem size for the whole app */
-body.large-print {
-  font-size: 26.67px;    /* = 20pt base */
-  line-height: 1.7;
-}
-
-/* Make key reading elements scale a bit more for comfort */
-body.large-print .reading-passage { font-size: 1.3rem; } /* ≈ 26pt passage text */
-body.large-print .q-block { font-size: 1.2rem; }         /* ≈ 24pt questions */
-
-/* Keep sizes large on mobile too */
-@media (max-width: 768px) {
-  body.large-print .reading-passage { font-size: 1rem; padding: 16px; }
-}
-
-/* Print fallback */
-@media print {
-  body.large-print { font-size: 14pt !important; } /* keep print legible without blowing layout */
-}
 
   /* Utilities */
   .hidden { display: none !important; }
@@ -446,14 +454,32 @@ body.large-print .q-block { font-size: 1.2rem; }         /* ≈ 24pt questions *
     overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
   }
 
-  /* Mobile */
+  /* Mobile - Enhanced for GitHub Pages */
   @media (max-width: 768px) {
     .wrap, .container { padding: 16px; }
     .row { flex-direction: column; }
     button { width: 100%; }
-    h1 { font-size: 1.6rem; }
-.reading-passage { font-size: 1.2rem; padding: 18px; }
-
+    h1 { font-size: 1.8rem; }
+    .reading-passage { 
+      font-size: 1.1rem; 
+      padding: 20px; 
+    }
+    .reading-passage p { font-size: 1.1rem; }
+    .reading-passage h3 { font-size: 1.3rem; }
+    .q-block { font-size: 1.1rem; }
+    .q-block textarea { font-size: 1rem; }
+    
+    /* Better touch targets for mobile */
+    button { min-height: 54px; }
+    input[type="checkbox"], input[type="radio"] {
+      width: 24px; 
+      height: 24px;
+    }
+    
+    /* Prevent zoom on input focus (iOS) */
+    input[type="text"], select, textarea {
+      font-size: 16px; /* Prevents zoom on iOS */
+    }
   }
 
   /* Reduced motion */
@@ -473,9 +499,6 @@ body.large-print .q-block { font-size: 1.2rem; }         /* ≈ 24pt questions *
 <body>
 <div class="wrap">
   <div id="sr-live" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
-<button id="toggle-large-print" class="secondary lp-toggle" type="button" aria-pressed="false" title="Large Print Mode (Alt+L)">
-  Large Print: Off
-</button>
 
   <!-- Welcome Screen -->
   <div id="screen-welcome" class="card">
@@ -667,7 +690,6 @@ body.large-print .q-block { font-size: 1.2rem; }         /* ≈ 24pt questions *
     <div id="recording-controls" class="recording-controls hidden">
       <button id="start-recording" class="danger" aria-describedby="recording-help">Start Recording</button>
         <button id="stop-recording" class="hidden" type="button">Stop Recording</button>
-<button id="skip-recording-now" class="secondary hidden" type="button">Skip Recording</button>
 
       <span class="recording-timer hidden" id="recording-timer">00:00</span>
   
@@ -898,41 +920,45 @@ As the women dropped their backpacks, the wind whipped at their clothes. It felt
 };
 
 /* ===========================
-   CONFIGURATION
+   CONFIGURATION - Updated for GitHub Pages
    =========================== */
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyX6yfgjIVSzmL2nL73IxIWPCV4RPbxfjPTDOxB-_Ax6siB2vmKJXnCpwLP4-PUA4MCpQ/exec';
-const GITHUB_BACKUP_URL = 'https://readingcomp-f3ii59o6j-melodys-projects-8b5cbe18.vercel.app/';
-const GOOGLE_TIMEOUT_MS = 3500;
-const BACKUP_TIMEOUT_MS = 3500;
+
+// Detect if running on GitHub Pages
+const IS_GITHUB_PAGES = window.location.hostname.includes('github.io') || 
+                        window.location.hostname.includes('github.dev') ||
+                        window.location.protocol === 'file:';
+
+// Use relative paths for GitHub Pages
+const GITHUB_BACKUP_URL = IS_GITHUB_PAGES 
+  ? './backup' // Relative path for GitHub Pages
+  : 'https://readingcomp-f3ii59o6j-melodys-projects-8b5cbe18.vercel.app/';
+
+// Increased timeouts for GitHub Pages (may have slower response)
+const GOOGLE_TIMEOUT_MS = IS_GITHUB_PAGES ? 5000 : 3500;
+const BACKUP_TIMEOUT_MS = IS_GITHUB_PAGES ? 5000 : 3500;
 const BACKUP_REPO_OWNER = 'melodyfschwenk';
 const BACKUP_REPO_NAME = 'readingcomp';
 const BACKUP_DIR_HINT = 'data/sessions';
 const DISCONTINUE_AFTER_ZEROS = 6;
 
 const SESSION_ID = (() => {
-  try { return crypto.randomUUID(); }
-  catch { return 'sid_' + Date.now() + '_' + Math.random().toString(36).slice(2); }
+  try { 
+    // Use crypto.randomUUID if available
+    if (crypto && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+  } catch {}
+  // Fallback with better entropy
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 15);
+  const random2 = Math.random().toString(36).substring(2, 15);
+  return `sid_${timestamp}_${random}${random2}`;
 })();
 
 /* ===========================
    Debug helper
    =========================== */
-    function setConnectionStatus(isUp) {
-  state.connectionStatus = !!isUp;
-
-  const badge = document.getElementById('connection-status');
-  const text  = document.getElementById('connection-text');
-  if (badge && text) {
-    badge.classList.toggle('connected', !!isUp);
-    badge.classList.toggle('error', !isUp);
-    text.textContent = isUp ? 'Connected' : 'Not connected';
-  }
-
-  // Show/hide the config warning block based on connectivity
-  const cfg = document.getElementById('config-warning');
-  if (cfg) cfg.classList.toggle('hidden', !!isUp);
-}
-
 function debugLog(message, data = null) {
   if (window.location.hostname === 'localhost' || window.location.search.includes('debug=1')) {
     if (data !== null) console.log(message, data);
@@ -1010,16 +1036,47 @@ let testTimerSec = 0;
         stream: null,          // don't try to serialize MediaStream
         mediaRecorder: null,   // don't serialize
         recordedChunks: []     // discard in-memory chunks here
-      }
+      },
+      timestamp: Date.now(),
+      version: '1.0'
     };
-    localStorage.setItem('wiat2_session', JSON.stringify(snapshot));
-  } catch {}
+    
+    // Try localStorage first
+    try {
+      localStorage.setItem('wiat2_session', JSON.stringify(snapshot));
+    } catch (e) {
+      // If localStorage fails (quota exceeded), try sessionStorage
+      console.warn('localStorage failed, using sessionStorage:', e);
+      sessionStorage.setItem('wiat2_session', JSON.stringify(snapshot));
+    }
+  } catch (e) {
+    console.error('Failed to save session:', e);
+  }
 }
+
 function loadLocal() {
   try {
-    const s = JSON.parse(localStorage.getItem('wiat2_session'));
-    if (s?.state) Object.assign(state, s.state);
-  } catch {}
+    // Try localStorage first
+    let data = localStorage.getItem('wiat2_session');
+    
+    // Fallback to sessionStorage
+    if (!data) {
+      data = sessionStorage.getItem('wiat2_session');
+    }
+    
+    if (data) {
+      const s = JSON.parse(data);
+      if (s?.state) {
+        // Check if data is not too old (24 hours)
+        const age = Date.now() - (s.timestamp || 0);
+        if (age < 24 * 60 * 60 * 1000) {
+          Object.assign(state, s.state);
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load session:', e);
+  }
 }
 
 /* ===========================
@@ -2257,8 +2314,26 @@ async function uploadBlob(kind, blob, meta = {}) {
 
 async function setupVideo() {
   const status = document.getElementById('video-status');
+  
+  // Check if getUserMedia is available
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    status.textContent = 'Camera access not supported in this browser. Please use Chrome, Firefox, or Edge.';
+    document.getElementById('start-study').disabled = false; // Allow continuing without recording
+    return false;
+  }
+  
   try {
-    state.stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: state.useAudioRecording });
+    // Request with fallback constraints
+    const constraints = {
+      video: {
+        width: { ideal: 640, max: 1280 },
+        height: { ideal: 480, max: 720 },
+        facingMode: 'user'
+      },
+      audio: state.useAudioRecording
+    };
+    
+    state.stream = await navigator.mediaDevices.getUserMedia(constraints);
     const v = document.getElementById('preview');
     v.srcObject = state.stream;
     status.textContent = 'Camera is ready. You can proceed.';
@@ -2267,28 +2342,42 @@ async function setupVideo() {
     return true;
   } catch (e) {
     const msg = /NotAllowed|Permission/i.test(e.name + e.message)
-      ? 'Permission denied. Click the lock icon in your browser’s address bar to allow camera/microphone, then retry.'
-      : 'Could not access camera. Ensure no other app is using it and retry.';
+      ? 'Permission denied. Please allow camera access and refresh the page.'
+      : 'Could not access camera. Recording will be unavailable.';
     status.textContent = msg;
-    document.getElementById('start-study').disabled = true;
+    document.getElementById('start-study').disabled = false; // Allow continuing
     return false;
   }
 }
 
-
 async function setupAudio() {
   const status = document.getElementById('audio-status');
+  
+  // Check if getUserMedia is available
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    status.textContent = 'Microphone access not supported in this browser. Please use Chrome, Firefox, or Edge.';
+    document.getElementById('start-study').disabled = false;
+    return false;
+  }
+  
   try {
-    state.stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    state.stream = await navigator.mediaDevices.getUserMedia({ 
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      }, 
+      video: false 
+    });
     status.textContent = 'Microphone is ready. You can proceed.';
     document.getElementById('start-study').disabled = false;
     return true;
   } catch (e) {
     const msg = /NotAllowed|Permission/i.test(e.name + e.message)
-      ? 'Permission denied. Click the lock icon in your browser’s address bar to allow the microphone, then retry.'
-      : 'Could not access microphone. Ensure no other app is using it and retry.';
+      ? 'Permission denied. Please allow microphone access and refresh the page.'
+      : 'Could not access microphone. Recording will be unavailable.';
     status.textContent = msg;
-    document.getElementById('start-study').disabled = true;
+    document.getElementById('start-study').disabled = false; // Allow continuing
     return false;
   }
 }
@@ -2321,7 +2410,6 @@ function startMediaRecorder(onStop) {
 /* ===========================
    Rendering helpers
    =========================== */
-    
 function renderPassage(passageId) {
   const slot = document.getElementById('passage-container');
   const p = PASSAGES[passageId];
@@ -2332,112 +2420,6 @@ function renderPassage(passageId) {
   if (p.content) html += `<div class="q-block">${p.content}</div>`;
   slot.innerHTML = html;
 }
-// Optional: tiny helper for auto-underlining pattern “What does the word X mean…”
-function autoFormatQuestionHTML(qText) {
-  if (!qText) return "";
-  const m = qText.match(/what does the word\s+([A-Za-z’'\-]+)\s+mean/i);
-  if (m) {
-    const token = m[1];
-    const formatted = qText.replace(
-      new RegExp(`(what does the word\\s+)(${token})(\\s+mean)`, 'i'),
-      (_, a, w, b) => `${a}<span class="underlined">${w}</span>${b}`
-    );
-    return `<p>${formatted}</p>`; // no extra '?'
-  }
-  return `<p>${qText}</p>`;
-}
-
-
-// Exact per-question HTML so formatting matches the source’s intent
-const QUESTION_HTML_OVERRIDES = {
-  // Turtle Brothers (vocab in the question)
-  q80:  `<p>What is the meaning of <span class="underlined">contemplated</span> in the story?</p>`,
-
-  // Avalanche / debris
-  q82:  `<p><strong>Tell me</strong> in your own words, what has happened as a result of the avalanche?</p>`,
-  q83:  `<p>What does the word <span class="underlined">debris</span> mean in this sentence?</p>`,
-
-  // Fancy
-  q85:  `<p>What does the word <span class="underlined">fancy</span> mean in this sentence?</p>`,
-
-  // Inclement
-  q87:  `<p>Why did the track meet end earlier than expected?</p>`,
-  q88:  `<p>What does the word <span class="underlined">inclement</span> mean in this sentence?</p>`,
-
-  // Yukon Gold (keep movie title as the doc emphasizes the title; we’ll use bold smallcaps)
-  q89:  `<p>What were two dangers encountered by the family on their journey in <strong>YUKON GOLD</strong>?</p>`,
-  q90:  `<p>According to <strong>Diana</strong>, why doesn't Charlie want to go to Yukon?</p>`,
-  q91:  `<p>According to the reviewers, what are two main themes or ideas in <strong>YUKON GOLD</strong>?</p>`,
-  q92:  `<p>Diana gave <strong>YUKON GOLD</strong> four stars although Gary gave it two. What did Gary dislike about the movie?</p>`,
-  q93:  `<p>What is the meaning of the word <span class="underlined">hackneyed</span> in Gary’s review?</p>`,
-
-  // Words of Wisdom
-  q94:  `<p>What is the meaning of the word <span class="underlined">records</span> in the first paragraph?</p>`,
-  q95:  `<p>Where do you think Ben Franklin found the proverbs he included in the <em>Poor Richard’s Almanack</em>?</p>`,
-  q96:  `<p>What do you think <q>Haste makes waste</q> might mean?</p>`,
-  q97:  `<p>Why do you think most people like proverbs?</p>`,
-  q98:  `<p>Which of the proverbs mentioned in the passage is a comment on modern technology?</p>`,
-
-  // Mammals vs saurian
-  q100: `<p>How are mammals and saurian different?</p>`,
-
-  // Dust Bowl
-  q102: `<p>What does the sentence tell you that the great Dust Bowl was?</p>`,
-
-  // Kristi Yamaguchi (underline “routine” like the passage does)
-  q103: `<p>For what primary reason did Kristi’s mother want her daughter to skate?</p>`,
-  q104: `<p>How does the definition of <span class="underlined">routine</span> in the first paragraph differ from that in the next paragraph?</p>`,
-  q105: `<p>Why was Kristi’s workload double that of other skaters?</p>`,
-  q106: `<p>Who won the pairs gold medal at the 1990 Nationals?</p>`,
-  q107: `<p>How was Kristi able to compensate for her athletic limitations?</p>`,
-
-  // Humpback whales (underline “demise”)
-  q108: `<p>What is the meaning of the word <span class="underlined">demise</span> in this story?</p>`,
-  q109: `<p>In what two ways have people been the primary reason for the whales’ demise?</p>`,
-  q110: `<p>Why is it important for us to know about the struggles of the humpback whales?</p>`,
-  q111: `<p>What two things might happen if a whale is caught in a fishing net?</p>`,
-  q112: `<p>According to current studies, what is likely to happen to the humpback whale in the future?</p>`,
-
-  // Peaches prices
-  q114: `<p>What is the most likely reason for the changes in the peach prices during the year?</p>`,
-
-  // City Zoo letters (quote the exact phrases)
-  q115: `<p>If today’s zoo admission is $4.00, what was zoo admission in January 1993?</p>`,
-  q116: `<p>What is the main reason Tom gives to support his position?</p>`,
-  q117: `<p>When he says <q>take up the slack</q> in his sentence, what does Tom mean?</p>`,
-  q118: `<p>Tanisha uses the word <q>acquisitions</q> in her letter. What does it mean?</p>`,
-  q119: `<p>According to Tanisha, what three things might happen if zoo prices are not raised?</p>`,
-
-  // King
-  q121: `<p>What has happened to the king?</p>`,
-  q122: `<p>What would you predict might happen as a result of the event described?</p>`,
-
-  // Gobi (quote key terms where helpful)
-  q123: `<p>What was the first discovery of the Central Asiatic Expedition?</p>`,
-  q124: `<p>Tell three adventures Andrews had experienced before going to the Gobi Desert.</p>`,
-  q125: `<p>Where did the scientists discover the dinosaur eggs?</p>`,
-  q126: `<p>How did Andrews’ expedition alter scientific knowledge?</p>`,
-  q127: `<p>What is the meaning of the word <span class="underlined">brigands</span> as used in the passage?</p>`,
-
-  // Longevity
-  q129: `<p>What is the meaning of the word <span class="underlined">longevity</span> in this sentence?</p>`,
-  q130: `<p>Describe the trend reported in this sentence.</p>`,
-
-  // Life stages
-  q131: `<p>At what life stage is a person likely to begin a career?</p>`,
-  q132: `<p>What is the main theme of the <q>Mid-life Rebirth</q> developmental tasks?</p>`,
-  q133: `<p>Although Rachel was recently promoted to manager of her office, she is questioning her choice of careers and regrets that she never pursued her dream of composing music. At the same time, she is reluctant to quit her job because she recently bought a new home. What developmental stage is Rachel probably in?</p>`,
-  q134: `<p>What might happen if a person did not accomplish the developmental tasks of the <q>Breaking Loose</q> stage?</p>`,
-  q135: `<p>If the last life stage called <q>Deepening Wisdom</q> were added to the chart, what would you predict two of the developmental tasks would be?</p>`,
-
-  // The Rock
-  q136: `<p>What is the <span class="underlined">fissure</span> as described in the passage?</p>`,
-  q137: `<p>What suddenly made this rock climb so difficult?</p>`,
-  q138: `<p>What was the most important thing the women had to overcome in order to scale the rock?</p>`,
-  q139: `<p>What kept the women from turning back when they saw the sheer surface of the rock?</p>`,
-  q140: `<p>Why did Angela refuse to look at Sherry as she approached the summit?</p>`
-};
-
 
 function renderQAFields(trial) {
   const holder = document.getElementById('qa-fields');
@@ -2445,28 +2427,12 @@ function renderQAFields(trial) {
   if (!trial.questions || !trial.questions.length) return;
 
   trial.questions.forEach((q, idx) => {
-    const inputId = `ans_${trial.item}_${idx}`;
-    const hintId  = `hint_${trial.item}_${idx}`;
-
-    // Build rich HTML for the prompt
-    const override = QUESTION_HTML_OVERRIDES[q.id];
-    const htmlPrompt = override || autoFormatQuestionHTML(q.text || '');
-
+    const id = `ans_${trial.item}_${idx}`;
     const block = document.createElement('div');
     block.className = 'q-block';
     block.innerHTML = `
-      <div class="q-text" id="qtext_${trial.item}_${idx}">
-        ${htmlPrompt || `<p>${q.text}</p>`}
-      </div>
-
-      <label for="${inputId}" class="sr-only">${q.text}</label>
-      <textarea id="${inputId}"
-        data-scoring-key="${q.scoringKey || ''}"
-        placeholder="Type your answer here…"
-        aria-describedby="${hintId}"
-        autocomplete="off" autocapitalize="sentences" spellcheck="true"></textarea>
-
-      <div id="${hintId}" class="muted">Answer in your own words.</div>
+      <label for="${id}">${q.text}</label>
+      <textarea id="${id}" data-scoring-key="${q.scoringKey || ''}" placeholder="Type your answer here..."></textarea>
     `;
     holder.appendChild(block);
   });
@@ -2580,15 +2546,11 @@ startBtn.classList.remove('hidden');
 stopBtn.classList.add('hidden');
 timerEl.classList.add('hidden');
 document.getElementById('rec-indicator').classList.add('hidden');
- // NEW: make Skip visible and reset alert panel
-const skipBtn =
-  document.getElementById('skip-recording-now') || // item screen
-  document.getElementById('skip-recording');       // setup screen fallback
-if (skipBtn) skipBtn.classList.remove('hidden');
-
+      // NEW: make Skip visible and reset alert panel
+const skipBtn = document.getElementById('skip-recording');
 const unavailableBox = document.getElementById('recording-unavailable');
+if (skipBtn) skipBtn.classList.remove('hidden');
 if (unavailableBox) unavailableBox.classList.add('hidden');
-
 
 
 return;
@@ -2663,26 +2625,26 @@ function handleReadingDone() {
 
 
 async function handleStartRecording() {
-  // If we don't have a stream yet, try to get one (don’t block progress forever)
+  // Ensure we have a stream; if we don't, try to get one
   if (!state.stream) {
-    const ok = state.useVideoRecording ? await setupVideo() : await setupAudio();
+    const mode = state.useVideoRecording ? 'video' : 'audio';
+    const ok = mode === 'video' ? await setupVideo() : await setupAudio();
+
     if (!ok) {
-      // Show inline alert + focus Skip instead of silently failing
+      // Do NOT auto-advance; show inline alert + focus Skip
       announceToScreenReader('Recording not available. You can allow access or skip recording.', 'assertive');
       const unavailableBox = document.getElementById('recording-unavailable');
-      const skipBtn =
-  document.getElementById('skip-recording-now') ||
-  document.getElementById('skip-recording');
-if (skipBtn) skipBtn.classList.remove('hidden');
-
+      const skipBtn = document.getElementById('skip-recording');
+      if (unavailableBox) unavailableBox.classList.remove('hidden');
+      if (skipBtn) { skipBtn.classList.remove('hidden'); skipBtn.focus(); }
       return;
     }
   }
 
-  // Toggle UI
+  // Start UI + timer
   const startBtn = document.getElementById('start-recording');
-  const stopBtn  = document.getElementById('stop-recording');
-  const timerEl  = document.getElementById('recording-timer');
+  const stopBtn = document.getElementById('stop-recording');
+  const timerEl = document.getElementById('recording-timer');
 
   startBtn.classList.add('hidden');
   stopBtn.classList.remove('hidden');
@@ -2707,10 +2669,35 @@ if (skipBtn) skipBtn.classList.remove('hidden');
       durationSec: sec,
       mediaPresent: true
     });
-    saveLocal();
   });
 }
 
+
+  const startBtn = document.getElementById('start-recording');
+  const stopBtn = document.getElementById('stop-recording');
+  const timerEl = document.getElementById('recording-timer');
+
+  startBtn.classList.add('hidden');
+  stopBtn.classList.remove('hidden');
+  timerEl.classList.remove('hidden');
+  timerEl.textContent = '00:00';
+
+  document.getElementById('rec-indicator').classList.remove('hidden');
+  document.getElementById('rec-type').textContent = state.useVideoRecording ? 'Recording video' : 'Recording audio';
+
+  let sec = 0;
+  Timers.start('recording', t => { sec = t; document.getElementById('recording-timer').textContent = formatMMSS(t); });
+
+  startMediaRecorder(blob => {
+    const trial = currentTrial();
+    state.results.push({
+      item: trial.item,
+      type: 'read-aloud',
+      passageId: trial.passageId,
+      durationSec: sec,
+      mediaPresent: true
+    });
+  });
 
 
 function handleStopRecording() {
@@ -2820,50 +2807,61 @@ function handleSkipRecording() {
 /* ===========================
    Upload and backup
    =========================== */
-// Replace your existing postWithTimeout function
 function postWithTimeout(url, data, timeoutMs) {
   const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), timeoutMs || 3500);
-  return fetch(url, {
+  const t = setTimeout(() => ctrl.abort(), timeoutMs || 5000);
+  
+  // For GitHub Pages, ensure we handle CORS properly
+  const fetchOptions = {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify(data),
-    signal: ctrl.signal,
-    mode: 'no-cors' // Key addition
-  }).then(() => {
-    setConnectionStatus(true); // Mark as connected
-    return { ok: true }; // Fake response since we can't read it
-  }).catch(error => {
-    if (error.name !== 'AbortError') {
-      setConnectionStatus(false);
-    }
-    throw error;
-  }).finally(() => clearTimeout(t));
+    signal: ctrl.signal
+  };
+  
+  // Only use no-cors for Google Scripts
+  if (url.includes('script.google.com')) {
+    fetchOptions.mode = 'no-cors';
+    fetchOptions.headers = { 'Content-Type': 'text/plain' };
+  } else {
+    // For other endpoints, try with CORS
+    fetchOptions.mode = 'cors';
+    fetchOptions.headers = { 'Content-Type': 'application/json' };
+  }
+  
+  return fetch(url, fetchOptions)
+    .finally(() => clearTimeout(t));
 }
 
 function gsPost(action, payload) {
   return postWithTimeout(GOOGLE_SCRIPT_URL, { action, ...payload }, GOOGLE_TIMEOUT_MS)
     .then(() => {
-      setConnectionStatus(true);
+      setConnectionStatus(true); // Mark as connected on success
       return true;
     })
     .catch(() => {
-      // Don't update to false to avoid flickering
+      // Don't set to false on individual failures to avoid flickering
       return false;
     });
 }
 
-
 async function testConnection() {
+  // Skip connection test if running locally
+  if (window.location.protocol === 'file:') {
+    setConnectionStatus(false);
+    return false;
+  }
+  
   try {
-    await postWithTimeout(GOOGLE_SCRIPT_URL, {
+    const response = await postWithTimeout(GOOGLE_SCRIPT_URL, {
       action: 'test_connection',
       timestamp: new Date().toISOString()
     }, 2000);
+    
     setConnectionStatus(true);
     return true;
   } catch (error) {
-    setConnectionStatus(false);
+    // Don't mark as error immediately, could be temporary
+    console.warn('Connection test failed:', error);
     return false;
   }
 }
@@ -3123,6 +3121,19 @@ function handleQASubmit(e) {
 }
 
 
+(function(){
+  const orig = handleQASubmit;
+  handleQASubmit = function() { const r = orig.apply(this, arguments); saveLocal(); return r; };
+})();
+(function(){
+  const orig = handleStopRecording;
+  handleStopRecording = function() { const r = orig.apply(this, arguments); saveLocal(); return r; };
+})();
+(function(){
+  const orig = goNextOrFinish;
+  goNextOrFinish = function() { const r = orig.apply(this, arguments); saveLocal(); return r; };
+})();
+
 /* ===========================
    Wire up DOM events
    =========================== */
@@ -3131,44 +3142,19 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Periodically check connection (optional)
   setInterval(testConnection, 30000); // Every 30 seconds
-    // ===== C) Read-modality helper (used by D) =====
-function determineReadModalityFromUI() {
-  const sel = document.querySelector('input[name="read-modality"]:checked');
-  state.readModality = sel ? sel.value : '';
-  determineRecordingNeeds(); // flips state.useVideoRecording / useAudioRecording
-}
-// ===== /C) =====
-
- // ===== D) Enable “Continue to Setup” (welcome form wiring) =====
-document.getElementById('skip-recording-now')
-  ?.addEventListener('click', handleSkipRecording);
-document.getElementById('skip-recording')
-  ?.addEventListener('click', handleSkipRecording);
-
-document.getElementById('pid')
-  ?.addEventListener('input', checkWelcomeReady);
-document.getElementById('edu')
-  ?.addEventListener('change', checkWelcomeReady);
-document.getElementById('consent')
-  ?.addEventListener('change', checkWelcomeReady);
-
-document.querySelectorAll('input[name="participant-group"]')
-  .forEach(el => {
+  // ——— Welcome form events ———
+  document.getElementById('pid').addEventListener('input', checkWelcomeReady);
+  document.getElementById('edu').addEventListener('change', checkWelcomeReady);
+  document.getElementById('consent').addEventListener('change', checkWelcomeReady);
+  document.querySelectorAll('input[name="participant-group"]').forEach(el => {
     el.addEventListener('change', checkWelcomeReady);
   });
-
-document.querySelectorAll('input[name="read-modality"]')
-  .forEach(el => {
+  document.querySelectorAll('input[name="read-modality"]').forEach(el => {
     el.addEventListener('change', () => {
       determineReadModalityFromUI();
       checkWelcomeReady();
     });
   });
-
-// Run once on load to set initial button state
-checkWelcomeReady();
-
-    });
 
   // ——— Begin -> Setup ———
   document.getElementById('begin').addEventListener('click', () => {
@@ -3228,7 +3214,9 @@ checkWelcomeReady();
       timestamp: new Date().toISOString(),
       adminMode: !!state.adminMode,
       hasRecording: !!(state.useVideoRecording || state.useAudioRecording),
-      userAgent: navigator.userAgent
+      userAgent: navigator.userAgent,
+      platform: IS_GITHUB_PAGES ? 'github-pages' : 'other',
+      protocol: window.location.protocol
     });
 
     showScreen('screen-item');
@@ -3262,70 +3250,11 @@ checkWelcomeReady();
   }
 
   // ——— Initial ———
-  // Restore any prior snapshot first
-loadLocal();
-
-// Core listeners
-document.getElementById('start-recording')?.addEventListener('click', handleStartRecording);
-document.getElementById('stop-recording')?.addEventListener('click', handleStopRecording);
-document.getElementById('skip-recording')?.addEventListener('click', handleSkipRecording);
-
-document.getElementById('start-reading')?.addEventListener('click', () => { handleReadingStart(); saveLocal(); });
-document.getElementById('done-reading')?.addEventListener('click', () => { handleReadingDone(); saveLocal(); });
-
-document.getElementById('qa-form')?.addEventListener('submit', (e) => { handleQASubmit(e); saveLocal(); });
-document.getElementById('skip')?.addEventListener('click', () => { handleQASkip(); saveLocal(); });
-
-// Defensive snapshot on navigation
-window.addEventListener('beforeunload', saveLocal);
-
-    /* ===========================
-   Large Print Mode toggle
-   =========================== */
-(function () {
-  const STORAGE_KEY = 'largePrintOn';
-
-  function setLargePrint(on) {
-    document.body.classList.toggle('large-print', !!on);
-    const btn = document.getElementById('toggle-large-print');
-    if (btn) {
-      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-      btn.textContent = on ? 'Large Print: On' : 'Large Print: Off';
-    }
-    try { localStorage.setItem(STORAGE_KEY, on ? '1' : '0'); } catch {}
-  }
-
-  function getInitial() {
-    try { return localStorage.getItem(STORAGE_KEY) === '1'; }
-    catch { return false; }
-  }
-
-  // Initialize once DOM is ready enough for the button to exist
-  function initLP() {
-    setLargePrint(getInitial());
-    document.addEventListener('click', (e) => {
-      if (e.target && e.target.id === 'toggle-large-print') {
-        setLargePrint(!document.body.classList.contains('large-print'));
-      }
-    });
-    // Keyboard shortcut: Alt+L (or Option+L on macOS)
-    document.addEventListener('keydown', (e) => {
-      const key = (e.key || '').toLowerCase();
-      if ((e.altKey || e.metaKey) && key === 'l') {
-        e.preventDefault();
-        setLargePrint(!document.body.classList.contains('large-print'));
-      }
-    });
-  }
-
-  // Run asap
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initLP);
-  } else {
-    initLP();
-  }
-})();
-
+  loadLocal();
+  checkWelcomeReady();
+  setConnectionStatus(false);
+  window.addEventListener('beforeunload', () => { saveLocal(); stopMedia(); });
+});
 </script>
 </body>
 </html>
