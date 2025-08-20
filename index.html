@@ -52,15 +52,17 @@
   /* Base reset */
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
-    background:
-      radial-gradient(1000px 700px at 20% 0%, #121622 0%, #0b0e11 60%),
-      #0b0e11;
-    color: var(--text-primary);
-    min-height: 100vh;
-    line-height: 1.6;
-  }
+body {
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  font-size: 18.67px;    /* = 14pt */
+  background:
+    radial-gradient(1000px 700px at 20% 0%, #121622 0%, #0b0e11 60%),
+    #0b0e11;
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.7;      /* a touch more spacing for readability */
+}
+
 
   /* Global focus ring for keyboard nav */
   :focus-visible {
@@ -260,18 +262,18 @@
   @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
 
   /* Reading Passage Styles */
-  .reading-passage {
-    background: #0f141b;
-    border: 1px solid var(--border-secondary);
-    border-radius: 12px;
-    padding: 24px;
-    margin: 20px 0;
-    font-size: 1.1rem;
-    line-height: 1.8;
-    color: var(--text-primary);
-    max-height: 500px;
-    overflow-y: auto;
-  }
+ .reading-passage {
+  background: #0f141b;
+  border: 1px solid var(--border-secondary);
+  border-radius: 12px;
+  padding: 28px;
+  margin: 24px 0;
+  font-size: 1.2rem;      /* slightly larger than base (≈16.8pt if base = 14pt) */
+  line-height: 1.9;
+  color: var(--text-primary);
+  /* removed max-height and overflow so it no longer scrolls */
+}
+
 
   .reading-passage h3 {
     color: var(--primary-400);
@@ -316,6 +318,21 @@
     border: 1px solid var(--border-secondary);
   }
 
+        /* Global underline token (matches passage look) */
+.underlined {
+  text-decoration: underline;
+  text-decoration-color: var(--primary-600);
+  text-underline-offset: 3px;
+  font-weight: 600;
+}
+
+/* Also treat <u> like our token, in case you prefer <u> */
+u {
+  text-decoration-color: var(--primary-600);
+  text-underline-offset: 3px;
+  font-weight: 600;
+}
+
   /* Q blocks */
   .q-block {
     background: #0f141b;
@@ -323,10 +340,13 @@
     border-radius: 10px;
     padding: 14px;
     margin: 14px 0;
+      font-size: 1.1rem;   /* ~10% larger than base */
+
   }
   .q-block label { margin-bottom: 8px; }
   .q-block textarea { min-height: 110px; resize: vertical; }
 
+   
   /* Helper chips and tips */
   .tip-box {
     background: var(--bg-tertiary);
@@ -385,6 +405,36 @@
   .connection-status.connected { border-color: var(--success-600); color: var(--success-600); }
   .connection-status.error     { border-color: var(--danger-500); color: var(--danger-500); }
 
+        /* ================================
+   Large Print Mode (accessible)
+   ================================ */
+.lp-toggle {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 1100;
+}
+
+/* When ON, bump the base rem size for the whole app */
+body.large-print {
+  font-size: 26.67px;    /* = 20pt base */
+  line-height: 1.7;
+}
+
+/* Make key reading elements scale a bit more for comfort */
+body.large-print .reading-passage { font-size: 1.3rem; } /* ≈ 26pt passage text */
+body.large-print .q-block { font-size: 1.2rem; }         /* ≈ 24pt questions */
+
+/* Keep sizes large on mobile too */
+@media (max-width: 768px) {
+  body.large-print .reading-passage { font-size: 1.3rem; padding: 18px; }
+}
+
+/* Print fallback */
+@media print {
+  body.large-print { font-size: 14pt !important; } /* keep print legible without blowing layout */
+}
+
   /* Utilities */
   .hidden { display: none !important; }
   .center { text-align: center; }
@@ -399,7 +449,8 @@
     .row { flex-direction: column; }
     button { width: 100%; }
     h1 { font-size: 1.6rem; }
-    .reading-passage { font-size: 1rem; padding: 16px; }
+.reading-passage { font-size: 1.2rem; padding: 18px; }
+
   }
 
   /* Reduced motion */
@@ -419,6 +470,9 @@
 <body>
 <div class="wrap">
   <div id="sr-live" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+<button id="toggle-large-print" class="secondary lp-toggle" type="button" aria-pressed="false" title="Large Print Mode (Alt+L)">
+  Large Print: Off
+</button>
 
   <!-- Welcome Screen -->
   <div id="screen-welcome" class="card">
@@ -2247,6 +2301,7 @@ function startMediaRecorder(onStop) {
 /* ===========================
    Rendering helpers
    =========================== */
+    
 function renderPassage(passageId) {
   const slot = document.getElementById('passage-container');
   const p = PASSAGES[passageId];
@@ -2257,6 +2312,112 @@ function renderPassage(passageId) {
   if (p.content) html += `<div class="q-block">${p.content}</div>`;
   slot.innerHTML = html;
 }
+// Optional: tiny helper for auto-underlining pattern “What does the word X mean…”
+function autoFormatQuestionHTML(qText) {
+  if (!qText) return "";
+  const m = qText.match(/what does the word\s+([A-Za-z’'\-]+)\s+mean/i);
+  if (m) {
+    const token = m[1];
+    const formatted = qText.replace(
+      new RegExp(`(what does the word\\s+)(${token})(\\s+mean)`, 'i'),
+      (_, a, w, b) => `${a}<span class="underlined">${w}</span>${b}`
+    );
+    return `<p>${formatted}</p>`; // no extra '?'
+  }
+  return `<p>${qText}</p>`;
+}
+
+
+// Exact per-question HTML so formatting matches the source’s intent
+const QUESTION_HTML_OVERRIDES = {
+  // Turtle Brothers (vocab in the question)
+  q80:  `<p>What is the meaning of <span class="underlined">contemplated</span> in the story?</p>`,
+
+  // Avalanche / debris
+  q82:  `<p><strong>Tell me</strong> in your own words, what has happened as a result of the avalanche?</p>`,
+  q83:  `<p>What does the word <span class="underlined">debris</span> mean in this sentence?</p>`,
+
+  // Fancy
+  q85:  `<p>What does the word <span class="underlined">fancy</span> mean in this sentence?</p>`,
+
+  // Inclement
+  q87:  `<p>Why did the track meet end earlier than expected?</p>`,
+  q88:  `<p>What does the word <span class="underlined">inclement</span> mean in this sentence?</p>`,
+
+  // Yukon Gold (keep movie title as the doc emphasizes the title; we’ll use bold smallcaps)
+  q89:  `<p>What were two dangers encountered by the family on their journey in <strong>YUKON GOLD</strong>?</p>`,
+  q90:  `<p>According to <strong>Diana</strong>, why doesn't Charlie want to go to Yukon?</p>`,
+  q91:  `<p>According to the reviewers, what are two main themes or ideas in <strong>YUKON GOLD</strong>?</p>`,
+  q92:  `<p>Diana gave <strong>YUKON GOLD</strong> four stars although Gary gave it two. What did Gary dislike about the movie?</p>`,
+  q93:  `<p>What is the meaning of the word <span class="underlined">hackneyed</span> in Gary’s review?</p>`,
+
+  // Words of Wisdom
+  q94:  `<p>What is the meaning of the word <span class="underlined">records</span> in the first paragraph?</p>`,
+  q95:  `<p>Where do you think Ben Franklin found the proverbs he included in the <em>Poor Richard’s Almanack</em>?</p>`,
+  q96:  `<p>What do you think <q>Haste makes waste</q> might mean?</p>`,
+  q97:  `<p>Why do you think most people like proverbs?</p>`,
+  q98:  `<p>Which of the proverbs mentioned in the passage is a comment on modern technology?</p>`,
+
+  // Mammals vs saurian
+  q100: `<p>How are mammals and saurian different?</p>`,
+
+  // Dust Bowl
+  q102: `<p>What does the sentence tell you that the great Dust Bowl was?</p>`,
+
+  // Kristi Yamaguchi (underline “routine” like the passage does)
+  q103: `<p>For what primary reason did Kristi’s mother want her daughter to skate?</p>`,
+  q104: `<p>How does the definition of <span class="underlined">routine</span> in the first paragraph differ from that in the next paragraph?</p>`,
+  q105: `<p>Why was Kristi’s workload double that of other skaters?</p>`,
+  q106: `<p>Who won the pairs gold medal at the 1990 Nationals?</p>`,
+  q107: `<p>How was Kristi able to compensate for her athletic limitations?</p>`,
+
+  // Humpback whales (underline “demise”)
+  q108: `<p>What is the meaning of the word <span class="underlined">demise</span> in this story?</p>`,
+  q109: `<p>In what two ways have people been the primary reason for the whales’ demise?</p>`,
+  q110: `<p>Why is it important for us to know about the struggles of the humpback whales?</p>`,
+  q111: `<p>What two things might happen if a whale is caught in a fishing net?</p>`,
+  q112: `<p>According to current studies, what is likely to happen to the humpback whale in the future?</p>`,
+
+  // Peaches prices
+  q114: `<p>What is the most likely reason for the changes in the peach prices during the year?</p>`,
+
+  // City Zoo letters (quote the exact phrases)
+  q115: `<p>If today’s zoo admission is $4.00, what was zoo admission in January 1993?</p>`,
+  q116: `<p>What is the main reason Tom gives to support his position?</p>`,
+  q117: `<p>When he says <q>take up the slack</q> in his sentence, what does Tom mean?</p>`,
+  q118: `<p>Tanisha uses the word <q>acquisitions</q> in her letter. What does it mean?</p>`,
+  q119: `<p>According to Tanisha, what three things might happen if zoo prices are not raised?</p>`,
+
+  // King
+  q121: `<p>What has happened to the king?</p>`,
+  q122: `<p>What would you predict might happen as a result of the event described?</p>`,
+
+  // Gobi (quote key terms where helpful)
+  q123: `<p>What was the first discovery of the Central Asiatic Expedition?</p>`,
+  q124: `<p>Tell three adventures Andrews had experienced before going to the Gobi Desert.</p>`,
+  q125: `<p>Where did the scientists discover the dinosaur eggs?</p>`,
+  q126: `<p>How did Andrews’ expedition alter scientific knowledge?</p>`,
+  q127: `<p>What is the meaning of the word <span class="underlined">brigands</span> as used in the passage?</p>`,
+
+  // Longevity
+  q129: `<p>What is the meaning of the word <span class="underlined">longevity</span> in this sentence?</p>`,
+  q130: `<p>Describe the trend reported in this sentence.</p>`,
+
+  // Life stages
+  q131: `<p>At what life stage is a person likely to begin a career?</p>`,
+  q132: `<p>What is the main theme of the <q>Mid-life Rebirth</q> developmental tasks?</p>`,
+  q133: `<p>Although Rachel was recently promoted to manager of her office, she is questioning her choice of careers and regrets that she never pursued her dream of composing music. At the same time, she is reluctant to quit her job because she recently bought a new home. What developmental stage is Rachel probably in?</p>`,
+  q134: `<p>What might happen if a person did not accomplish the developmental tasks of the <q>Breaking Loose</q> stage?</p>`,
+  q135: `<p>If the last life stage called <q>Deepening Wisdom</q> were added to the chart, what would you predict two of the developmental tasks would be?</p>`,
+
+  // The Rock
+  q136: `<p>What is the <span class="underlined">fissure</span> as described in the passage?</p>`,
+  q137: `<p>What suddenly made this rock climb so difficult?</p>`,
+  q138: `<p>What was the most important thing the women had to overcome in order to scale the rock?</p>`,
+  q139: `<p>What kept the women from turning back when they saw the sheer surface of the rock?</p>`,
+  q140: `<p>Why did Angela refuse to look at Sherry as she approached the summit?</p>`
+};
+
 
 function renderQAFields(trial) {
   const holder = document.getElementById('qa-fields');
@@ -2264,12 +2425,28 @@ function renderQAFields(trial) {
   if (!trial.questions || !trial.questions.length) return;
 
   trial.questions.forEach((q, idx) => {
-    const id = `ans_${trial.item}_${idx}`;
+    const inputId = `ans_${trial.item}_${idx}`;
+    const hintId  = `hint_${trial.item}_${idx}`;
+
+    // Build rich HTML for the prompt
+    const override = QUESTION_HTML_OVERRIDES[q.id];
+    const htmlPrompt = override || autoFormatQuestionHTML(q.text || '');
+
     const block = document.createElement('div');
     block.className = 'q-block';
     block.innerHTML = `
-      <label for="${id}">${q.text}</label>
-      <textarea id="${id}" data-scoring-key="${q.scoringKey || ''}" placeholder="Type your answer here..."></textarea>
+      <div class="q-text" id="qtext_${trial.item}_${idx}">
+        ${htmlPrompt || `<p>${q.text}</p>`}
+      </div>
+
+      <label for="${inputId}" class="sr-only">${q.text}</label>
+      <textarea id="${inputId}"
+        data-scoring-key="${q.scoringKey || ''}"
+        placeholder="Type your answer here…"
+        aria-describedby="${hintId}"
+        autocomplete="off" autocapitalize="sentences" spellcheck="true"></textarea>
+
+      <div id="${hintId}" class="muted">Answer in your own words.</div>
     `;
     holder.appendChild(block);
   });
@@ -2462,13 +2639,11 @@ function handleReadingDone() {
 
 
 async function handleStartRecording() {
-  // Ensure we have a stream; if we don't, try to get one
+  // If we don't have a stream yet, try to get one (don’t block progress forever)
   if (!state.stream) {
-    const mode = state.useVideoRecording ? 'video' : 'audio';
-    const ok = mode === 'video' ? await setupVideo() : await setupAudio();
-
+    const ok = state.useVideoRecording ? await setupVideo() : await setupAudio();
     if (!ok) {
-      // Do NOT auto-advance; show inline alert + focus Skip
+      // Show inline alert + focus Skip instead of silently failing
       announceToScreenReader('Recording not available. You can allow access or skip recording.', 'assertive');
       const unavailableBox = document.getElementById('recording-unavailable');
       const skipBtn = document.getElementById('skip-recording');
@@ -2478,10 +2653,10 @@ async function handleStartRecording() {
     }
   }
 
-  // Start UI + timer
+  // Toggle UI
   const startBtn = document.getElementById('start-recording');
-  const stopBtn = document.getElementById('stop-recording');
-  const timerEl = document.getElementById('recording-timer');
+  const stopBtn  = document.getElementById('stop-recording');
+  const timerEl  = document.getElementById('recording-timer');
 
   startBtn.classList.add('hidden');
   stopBtn.classList.remove('hidden');
@@ -2506,35 +2681,10 @@ async function handleStartRecording() {
       durationSec: sec,
       mediaPresent: true
     });
+    saveLocal();
   });
 }
 
-
-  const startBtn = document.getElementById('start-recording');
-  const stopBtn = document.getElementById('stop-recording');
-  const timerEl = document.getElementById('recording-timer');
-
-  startBtn.classList.add('hidden');
-  stopBtn.classList.remove('hidden');
-  timerEl.classList.remove('hidden');
-  timerEl.textContent = '00:00';
-
-  document.getElementById('rec-indicator').classList.remove('hidden');
-  document.getElementById('rec-type').textContent = state.useVideoRecording ? 'Recording video' : 'Recording audio';
-
-  let sec = 0;
-  Timers.start('recording', t => { sec = t; document.getElementById('recording-timer').textContent = formatMMSS(t); });
-
-  startMediaRecorder(blob => {
-    const trial = currentTrial();
-    state.results.push({
-      item: trial.item,
-      type: 'read-aloud',
-      passageId: trial.passageId,
-      durationSec: sec,
-      mediaPresent: true
-    });
-  });
 
 
 function handleStopRecording() {
@@ -2939,19 +3089,6 @@ function handleQASubmit(e) {
 }
 
 
-(function(){
-  const orig = handleQASubmit;
-  handleQASubmit = function() { const r = orig.apply(this, arguments); saveLocal(); return r; };
-})();
-(function(){
-  const orig = handleStopRecording;
-  handleStopRecording = function() { const r = orig.apply(this, arguments); saveLocal(); return r; };
-})();
-(function(){
-  const orig = goNextOrFinish;
-  goNextOrFinish = function() { const r = orig.apply(this, arguments); saveLocal(); return r; };
-})();
-
 /* ===========================
    Wire up DOM events
    =========================== */
@@ -3066,11 +3203,70 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ——— Initial ———
-  loadLocal();
-  checkWelcomeReady();
-  setConnectionStatus(false);
-  window.addEventListener('beforeunload', () => { saveLocal(); stopMedia(); });
-});
+  // Restore any prior snapshot first
+loadLocal();
+
+// Core listeners
+document.getElementById('start-recording')?.addEventListener('click', handleStartRecording);
+document.getElementById('stop-recording')?.addEventListener('click', handleStopRecording);
+document.getElementById('skip-recording')?.addEventListener('click', handleSkipRecording);
+
+document.getElementById('start-reading')?.addEventListener('click', () => { handleReadingStart(); saveLocal(); });
+document.getElementById('done-reading')?.addEventListener('click', () => { handleReadingDone(); saveLocal(); });
+
+document.getElementById('qa-form')?.addEventListener('submit', (e) => { handleQASubmit(e); saveLocal(); });
+document.getElementById('skip')?.addEventListener('click', () => { handleQASkip(); saveLocal(); });
+
+// Defensive snapshot on navigation
+window.addEventListener('beforeunload', saveLocal);
+
+    /* ===========================
+   Large Print Mode toggle
+   =========================== */
+(function () {
+  const STORAGE_KEY = 'largePrintOn';
+
+  function setLargePrint(on) {
+    document.body.classList.toggle('large-print', !!on);
+    const btn = document.getElementById('toggle-large-print');
+    if (btn) {
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      btn.textContent = on ? 'Large Print: On' : 'Large Print: Off';
+    }
+    try { localStorage.setItem(STORAGE_KEY, on ? '1' : '0'); } catch {}
+  }
+
+  function getInitial() {
+    try { return localStorage.getItem(STORAGE_KEY) === '1'; }
+    catch { return false; }
+  }
+
+  // Initialize once DOM is ready enough for the button to exist
+  function initLP() {
+    setLargePrint(getInitial());
+    document.addEventListener('click', (e) => {
+      if (e.target && e.target.id === 'toggle-large-print') {
+        setLargePrint(!document.body.classList.contains('large-print'));
+      }
+    });
+    // Keyboard shortcut: Alt+L (or Option+L on macOS)
+    document.addEventListener('keydown', (e) => {
+      const key = (e.key || '').toLowerCase();
+      if ((e.altKey || e.metaKey) && key === 'l') {
+        e.preventDefault();
+        setLargePrint(!document.body.classList.contains('large-print'));
+      }
+    });
+  }
+
+  // Run asap
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initLP);
+  } else {
+    initLP();
+  }
+})();
+
 </script>
 </body>
 </html>
