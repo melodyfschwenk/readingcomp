@@ -2952,17 +2952,12 @@ Timers.stopAll();
 
   showScreen('screen-finish');
   const msg = document.getElementById('finish-msg');
-  msg.textContent = reason ? `Thank you. ${reason}` : 'Thank you for participating.';
-
-  // Minimal session stats
+  msg.textContent = 'Thank you.';
+  // Ensure no stats or scores are shown
   const stats = document.getElementById('final-stats');
-  const content = document.getElementById('stats-content');
-  content.innerHTML = `
-    <div>Total items: <strong>${state.results.length}</strong></div>
-    <div>Total points: <strong>${state.totalPoints}</strong></div>
-    <div>Session: <strong>${SESSION_ID}</strong></div>
-  `;
-  stats.classList.remove('hidden');
+  if (stats) {
+    stats.classList.add('hidden');
+  }
 
   // Attempt upload
   document.getElementById('upload-progress').textContent = 'Saving your data...';
