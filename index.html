@@ -500,8 +500,19 @@
 
     <div class="row">
       <div>
+        <label for="initials">Initials</label>
+        <input id="initials" type="text" placeholder="e.g., AB" required
+               maxlength="5"
+               pattern="[A-Za-z]{1,5}"
+               title="Enter 1-5 letters"
+               inputmode="text"
+               autocomplete="off"
+               autocapitalize="characters"
+               spellcheck="false" />
+      </div>
+      <div>
         <label for="pid">Participant Code</label>
-        <input id="pid" type="text" placeholder="Enter initials" required
+        <input id="pid" type="text" placeholder="Enter participant code" required
                maxlength="20"
                pattern="[A-Za-z0-9_-]{1,20}"
                title="Use letters, numbers, underscores, and hyphens only (max 20)"
@@ -978,6 +989,7 @@ function announceToScreenReader(message, priority = 'polite') {
 
 let state = {
   pid: '',
+  initials: '',
   edu: '',
   participantGroup: '',
   readModality: '',
@@ -2195,12 +2207,14 @@ function determineRecordingNeeds() {
 
 function checkWelcomeReady() {
   const hasPid = document.getElementById('pid').value.trim().length > 0;
+  const hasInitials = document.getElementById('initials').value.trim().length > 0;
   const hasEdu = document.getElementById('edu').value.trim().length > 0;
   const group = document.querySelector('input[name="participant-group"]:checked');
   const consent = document.getElementById('consent').checked;
   const finalAck = document.getElementById('final-ack').checked;
 
   state.pid = document.getElementById('pid').value.trim();
+  state.initials = document.getElementById('initials').value.trim();
   state.edu = document.getElementById('edu').value.trim();
   state.participantGroup = group ? group.value : '';
 
@@ -2215,7 +2229,7 @@ function checkWelcomeReady() {
   }
 
   // Enable continue only if everything required is present
-  const ready = hasPid && hasEdu && !!group && consent && finalAck;
+  const ready = hasPid && hasInitials && hasEdu && !!group && consent && finalAck;
   document.getElementById('begin').disabled = !ready;
 }
 
@@ -2300,6 +2314,7 @@ async function uploadBlob(kind, blob, meta = {}) {
       action: 'upload_blob',
       sessionId: SESSION_ID,
       pid: state.pid,
+      initials: state.initials,
       itemNumber: currentTrial()?.item,
       kind, mime: blob.type, data,
       ...meta
@@ -2523,6 +2538,7 @@ function renderTrial(trial) {
   // 🔹 TRIAL-BY-TRIAL: item_started
   gsPost('item_started', {
     pid: state.pid,
+    initials: state.initials,
     itemNumber: trial.item,
     imageFile: '', // text-only now
     questionText: (trial.questions && trial.questions[0]) ? trial.questions[0].text : '',
@@ -2618,6 +2634,7 @@ function handleReadingDone() {
 
   gsPost('reading_time', {
     pid: state.pid,
+    initials: state.initials,
     itemNumber: trial.item,
     imageFile: '',
     readingType: 'silent',
@@ -2729,6 +2746,7 @@ function handleStopRecording() {
 
     gsPost('item_completed', {
   pid: state.pid,
+  initials: state.initials,
   itemNumber: trial.item,
   endTime: new Date().toISOString(),
   duration: durSec,
@@ -2770,6 +2788,7 @@ function handleSkipRecording() {
 
   gsPost('item_completed', {
     pid: state.pid,
+    initials: state.initials,
     itemNumber: trial.item,
     endTime: new Date().toISOString(),
     duration: 0,
@@ -2802,6 +2821,7 @@ function handleSkipRecording() {
 
   gsPost('item_skipped', {
     pid: state.pid,
+    initials: state.initials,
     itemNumber: trial.item,
     timestamp: new Date().toISOString(),
     itemType: 'question',
@@ -2867,6 +2887,7 @@ async function uploadAll() {
     action: 'study_completed',
     sessionId: SESSION_ID,
     pid: state.pid,
+    initials: state.initials,
     edu: state.edu,
     group: state.participantGroup,
     modality: state.readModality,
@@ -2971,6 +2992,7 @@ Timers.stopAll();
     // 🔹 TRIAL-BY-TRIAL: session_complete
 gsPost('session_complete', {
   pid: state.pid,
+  initials: state.initials,
   timestamp: new Date().toISOString(),
   duration: Math.round((Date.now() - (state.sessionStartTime || Date.now())) / 60000),
   itemsCompleted: state.results.length,
@@ -3073,6 +3095,7 @@ function handleQASubmit(e) {
 
   gsPost('item_completed', {
     pid: state.pid,
+    initials: state.initials,
     itemNumber: trial.item,
     endTime: new Date().toISOString(),
     duration: '',
@@ -3122,6 +3145,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Periodically check connection (optional)
   setInterval(testConnection, 30000); // Every 30 seconds
   // ——— Welcome form events ———
+  document.getElementById('initials').addEventListener('input', checkWelcomeReady);
   document.getElementById('pid').addEventListener('input', checkWelcomeReady);
   document.getElementById('edu').addEventListener('change', checkWelcomeReady);
   document.getElementById('consent').addEventListener('change', checkWelcomeReady);
@@ -3190,6 +3214,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     gsPost('session_start', {
       pid: state.pid,
+      initials: state.initials,
       education: state.edu,
       timestamp: new Date().toISOString(),
       adminMode: !!state.adminMode,
