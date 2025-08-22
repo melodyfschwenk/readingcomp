@@ -2293,8 +2293,19 @@ const Timers = {
 
     function pickMime() {
   const candidates = state.useVideoRecording
-    ? ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm']
-    : ['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/ogg'];
+    ? [
+        'video/mp4;codecs=h264,aac',
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm'
+      ]
+    : [
+        'audio/mpeg',
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/ogg;codecs=opus',
+        'audio/ogg'
+      ];
   return (MediaRecorder.isTypeSupported
     ? candidates.find(m => MediaRecorder.isTypeSupported(m))
     : null) || '';
@@ -2401,12 +2412,19 @@ function startMediaRecorder(onStop) {
     state.recordedChunks = [];
     const mime = pickMime();
     state.recordMime = mime;
-    const mr = mime ? new MediaRecorder(state.stream, { mimeType: mime }) : new MediaRecorder(state.stream);
+    const opts = mime ? { mimeType: mime } : {};
+    if (state.useVideoRecording) {
+      opts.audioBitsPerSecond = 128000;
+      opts.videoBitsPerSecond = 2500000;
+    } else {
+      opts.audioBitsPerSecond = 128000;
+    }
+    const mr = new MediaRecorder(state.stream, opts);
     state.mediaRecorder = mr;
 
     mr.ondataavailable = e => { if (e.data && e.data.size > 0) state.recordedChunks.push(e.data); };
     mr.onstop = async () => {
-      const blob = new Blob(state.recordedChunks, { type: state.recordMime || (state.useVideoRecording ? 'video/webm' : 'audio/webm') });
+      const blob = new Blob(state.recordedChunks, { type: state.recordMime || (state.useVideoRecording ? 'video/mp4' : 'audio/mpeg') });
       try { if (typeof onStop === 'function') onStop(blob); } catch {}
       // Upload the blob “best effort”
       uploadBlob(state.useVideoRecording ? 'video' : 'audio', blob).catch(()=>{});

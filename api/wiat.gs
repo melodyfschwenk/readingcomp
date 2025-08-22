@@ -5,7 +5,7 @@
 
 // CONFIGURATION - Update these as you like
 const CONFIG = {
-  RECORDINGS_FOLDER_NAME: 'WIAT-2 Video Recordings',
+  RECORDINGS_FOLDER_NAME: 'WIAT-2 Recordings',
   DATA_BACKUP_FOLDER_NAME: 'WIAT-2 Data Backups',
   ITEM_IMAGES_FOLDER_NAME: 'WIAT-2 Stimuli'
 };
@@ -45,6 +45,9 @@ function doPost(e) {
 
       case 'video_upload':
         return handleVideoUpload(data);
+
+      case 'upload_blob':
+        return handleBlobUpload(data);
 
       case 'session_complete':
         return handleSessionComplete(ss, data);
@@ -341,9 +344,9 @@ function handleVideoUpload(data) {
     );
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `${data.pid}_item${data.itemNumber || 'full'}_${timestamp}.webm`;
+    const filename = `${data.pid}_item${data.itemNumber || 'full'}_${timestamp}.mp4`;
 
-    const blob = Utilities.newBlob(videoBytes, 'video/webm', filename);
+    const blob = Utilities.newBlob(videoBytes, 'video/mp4', filename);
     const file = participantFolder.createFile(blob);
 
     const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -387,6 +390,83 @@ function handleVideoUpload(data) {
       data.itemNumber || '',
       error.toString(),
       'Video Upload'
+    ]);
+
+    return createResponse({ status: 'error', message: error.toString() });
+  }
+}
+
+// ===============================================
+// GENERIC BLOB UPLOAD (VIDEO/ AUDIO)
+// ===============================================
+function handleBlobUpload(data) {
+  try {
+    console.log(`📦 Processing ${data.kind || 'unknown'} upload for:`, data.pid);
+
+    if (!data.pid || !data.data) throw new Error('Missing required fields');
+
+    const bytes = Utilities.base64Decode(data.data);
+    const maxSize = 25 * 1024 * 1024; // 25MB
+    if (bytes.length > maxSize) {
+      throw new Error(`${data.kind || 'blob'} too large (${Math.round(bytes.length / 1024 / 1024)}MB)`);
+    }
+
+    const recordingsFolder = getOrCreateFolder(CONFIG.RECORDINGS_FOLDER_NAME);
+    const participantFolder = getOrCreateFolder(
+      `${data.pid}_${data.sessionDate || new Date().toISOString().split('T')[0]}`,
+      recordingsFolder
+    );
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const extension = data.kind === 'video' ? '.mp4' : '.mp3';
+    const mime = data.mime || (data.kind === 'video' ? 'video/mp4' : 'audio/mpeg');
+    const filename = `${data.pid}_item${data.itemNumber || 'full'}_${timestamp}${extension}`;
+
+    const blob = Utilities.newBlob(bytes, mime, filename);
+    const file = participantFolder.createFile(blob);
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheetName = data.kind === 'video' ? 'Video_Recordings' : 'Audio_Recordings';
+    const sheet = getOrCreateSheet(ss, sheetName, [
+      'Timestamp', 'PID', 'Initials', 'Item Number', 'Filename',
+      'File ID', 'File URL', 'File Size (KB)', 'Upload Status'
+    ]);
+
+    sheet.appendRow([
+      new Date(),
+      data.pid,
+      data.initials || '',
+      data.itemNumber || 'Full Session',
+      filename,
+      file.getId(),
+      file.getUrl(),
+      Math.round(file.getSize() / 1024),
+      'Success'
+    ]);
+
+    console.log('✅ Blob uploaded:', filename);
+
+    return createResponse({
+      status: 'success',
+      fileId: file.getId(),
+      fileUrl: file.getUrl(),
+      filename: filename
+    });
+  } catch (error) {
+    console.error('❌ Blob upload error:', error);
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const errorSheet = getOrCreateSheet(ss, 'Upload_Errors', [
+      'Timestamp', 'PID', 'Initials', 'Item', 'Error', 'Type'
+    ]);
+
+    errorSheet.appendRow([
+      new Date(),
+      data.pid || 'unknown',
+      data.initials || '',
+      data.itemNumber || '',
+      error.toString(),
+      data.kind === 'video' ? 'Video Upload' : 'Audio Upload'
     ]);
 
     return createResponse({ status: 'error', message: error.toString() });
@@ -819,6 +899,11 @@ function initialSetup() {
     'File ID', 'File URL', 'File Size (KB)', 'Upload Status'
   ]);
 
+  getOrCreateSheet(ss, 'Audio_Recordings', [
+    'Timestamp', 'PID', 'Initials', 'Item Number', 'Filename',
+    'File ID', 'File URL', 'File Size (KB)', 'Upload Status'
+  ]);
+
   getOrCreateSheet(ss, 'Upload_Errors', [
     'Timestamp', 'PID', 'Initials', 'Item', 'Error', 'Type'
   ]);
@@ -861,6 +946,7 @@ function createDashboard(ss) {
     ['Total Items Recorded', '=COUNTA(Item_Responses!A:A)-1'],
     ['Items Needing Review', '=COUNTIF(Item_Responses!N:N,"YES")'],
     ['Videos Uploaded', '=COUNTA(Video_Recordings!A:A)-1'],
+    ['Audio Uploaded', '=COUNTA(Audio_Recordings!A:A)-1'],
     ['Upload Errors', '=COUNTA(Upload_Errors!A:A)-1'],
     ['Average Reading Time', '=AVERAGE(Reading_Times!H:H)']
   ];
