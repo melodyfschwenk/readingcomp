@@ -77,7 +77,7 @@ function doPost(e) {
 // ===============================================
 function handleSessionStart(ss, data) {
   const sessionsSheet = getOrCreateSheet(ss, 'Sessions', [
-    'PID', 'Education', 'Start Time', 'End Time', 'Duration (min)',
+    'PID', 'Initials', 'Education', 'Start Time', 'End Time', 'Duration (min)',
     'Items Completed', 'Total Score', 'Consecutive Zeros',
     'Status', 'Discontinued', 'Gate Items Failed', 'Admin Mode',
     'Recording', 'IP Address', 'User Agent', 'Notes'
@@ -85,8 +85,8 @@ function handleSessionStart(ss, data) {
 
   const existingRow = findRowByPID(sessionsSheet, data.pid);
   if (existingRow > 0) {
-    sessionsSheet.getRange(existingRow, 9).setValue('Active');
-    sessionsSheet.getRange(existingRow, 16).setValue('Session resumed at ' + data.timestamp);
+    sessionsSheet.getRange(existingRow, 10).setValue('Active');
+    sessionsSheet.getRange(existingRow, 17).setValue('Session resumed at ' + data.timestamp);
 
     logEvent(ss, { ...data, eventType: 'Session Resumed' });
 
@@ -99,6 +99,7 @@ function handleSessionStart(ss, data) {
 
   sessionsSheet.appendRow([
     data.pid,
+    data.initials || '',
     data.education,
     data.timestamp,
     '', // End time
@@ -129,7 +130,7 @@ function handleSessionStart(ss, data) {
 // ===============================================
 function handleItemStarted(ss, data) {
   const itemsSheet = getOrCreateSheet(ss, 'Item_Responses', [
-    'Timestamp', 'PID', 'Item Number', 'Image File', 'Question Text',
+    'Timestamp', 'PID', 'Initials', 'Item Number', 'Image File', 'Question Text',
     'Item Type', 'Start Time', 'End Time', 'Duration (sec)',
     'Response', 'Explanation', 'Auto Score', 'Score Confidence',
     'Needs Review', 'Scoring Notes', 'Final Score', 'Skip Reason'
@@ -138,6 +139,7 @@ function handleItemStarted(ss, data) {
   itemsSheet.appendRow([
     new Date(),
     data.pid,
+    data.initials || '',
     data.itemNumber,
     data.imageFile || '',
     data.questionText || '',
@@ -156,11 +158,12 @@ function handleItemStarted(ss, data) {
   ]);
 
   const progressSheet = getOrCreateSheet(ss, 'Item_Progress', [
-    'Timestamp', 'PID', 'Item', 'Event', 'Details'
+    'Timestamp', 'PID', 'Initials', 'Item', 'Event', 'Details'
   ]);
   progressSheet.appendRow([
     new Date(),
     data.pid,
+    data.initials || '',
     data.itemNumber,
     'Started',
     `Type: ${data.itemType || 'question'}, Image: ${data.imageFile || ''}`
@@ -172,7 +175,7 @@ function handleItemStarted(ss, data) {
 
 function handleItemCompleted(ss, data) {
   const itemsSheet = getOrCreateSheet(ss, 'Item_Responses', [
-    'Timestamp', 'PID', 'Item Number', 'Image File', 'Question Text',
+    'Timestamp', 'PID', 'Initials', 'Item Number', 'Image File', 'Question Text',
     'Item Type', 'Start Time', 'End Time', 'Duration (sec)',
     'Response', 'Explanation', 'Auto Score', 'Score Confidence',
     'Needs Review', 'Scoring Notes', 'Final Score', 'Skip Reason'
@@ -182,8 +185,8 @@ function handleItemCompleted(ss, data) {
   let targetRow = -1;
   for (let i = values.length - 1; i >= 1; i--) {
     if (String(values[i][1]) === String(data.pid) &&
-        String(values[i][2]) === String(data.itemNumber) &&
-        !values[i][7]) {
+        String(values[i][3]) === String(data.itemNumber) &&
+        !values[i][8]) {
       targetRow = i + 1;
       break;
     }
@@ -196,19 +199,20 @@ function handleItemCompleted(ss, data) {
   const needsReview = String(data.needsReview).toLowerCase() === 'true';
 
   if (targetRow > 0) {
-    itemsSheet.getRange(targetRow, 8).setValue(data.endTime || new Date().toISOString());
-    itemsSheet.getRange(targetRow, 9).setValue(Number(data.duration) || 0);
-    itemsSheet.getRange(targetRow, 10).setValue(data.response || '');
-    itemsSheet.getRange(targetRow, 11).setValue(data.explanation || '');
-    itemsSheet.getRange(targetRow, 12).setValue(autoScore);
-    itemsSheet.getRange(targetRow, 13).setValue(data.scoreConfidence || '');
-    itemsSheet.getRange(targetRow, 14).setValue(needsReview ? 'YES' : 'NO');
-    itemsSheet.getRange(targetRow, 15).setValue(data.scoringNotes || '');
-    itemsSheet.getRange(targetRow, 16).setValue(finalScore);
+    itemsSheet.getRange(targetRow, 9).setValue(data.endTime || new Date().toISOString());
+    itemsSheet.getRange(targetRow, 10).setValue(Number(data.duration) || 0);
+    itemsSheet.getRange(targetRow, 11).setValue(data.response || '');
+    itemsSheet.getRange(targetRow, 12).setValue(data.explanation || '');
+    itemsSheet.getRange(targetRow, 13).setValue(autoScore);
+    itemsSheet.getRange(targetRow, 14).setValue(data.scoreConfidence || '');
+    itemsSheet.getRange(targetRow, 15).setValue(needsReview ? 'YES' : 'NO');
+    itemsSheet.getRange(targetRow, 16).setValue(data.scoringNotes || '');
+    itemsSheet.getRange(targetRow, 17).setValue(finalScore);
   } else {
     itemsSheet.appendRow([
       new Date(),
       data.pid,
+      data.initials || '',
       data.itemNumber,
       data.imageFile || '',
       data.questionText || '',
@@ -228,11 +232,12 @@ function handleItemCompleted(ss, data) {
   }
 
   const progressSheet = getOrCreateSheet(ss, 'Item_Progress', [
-    'Timestamp', 'PID', 'Item', 'Event', 'Details'
+    'Timestamp', 'PID', 'Initials', 'Item', 'Event', 'Details'
   ]);
   progressSheet.appendRow([
     new Date(),
     data.pid,
+    data.initials || '',
     data.itemNumber,
     'Completed',
     `Score: ${autoScore}, Confidence: ${data.scoreConfidence}, Review: ${needsReview ? 'YES' : 'NO'}`
@@ -247,7 +252,7 @@ function handleItemCompleted(ss, data) {
 
 function handleItemSkipped(ss, data) {
   const itemsSheet = getOrCreateSheet(ss, 'Item_Responses', [
-    'Timestamp', 'PID', 'Item Number', 'Image File', 'Question Text',
+    'Timestamp', 'PID', 'Initials', 'Item Number', 'Image File', 'Question Text',
     'Item Type', 'Start Time', 'End Time', 'Duration (sec)',
     'Response', 'Explanation', 'Auto Score', 'Score Confidence',
     'Needs Review', 'Scoring Notes', 'Final Score', 'Skip Reason'
@@ -256,6 +261,7 @@ function handleItemSkipped(ss, data) {
   itemsSheet.appendRow([
     new Date(),
     data.pid,
+    data.initials || '',
     data.itemNumber,
     data.imageFile || '',
     data.questionText || '',
@@ -274,11 +280,12 @@ function handleItemSkipped(ss, data) {
   ]);
 
   const progressSheet = getOrCreateSheet(ss, 'Item_Progress', [
-    'Timestamp', 'PID', 'Item', 'Event', 'Details'
+    'Timestamp', 'PID', 'Initials', 'Item', 'Event', 'Details'
   ]);
   progressSheet.appendRow([
     new Date(),
     data.pid,
+    data.initials || '',
     data.itemNumber,
     'Skipped',
     data.reason || 'User choice'
@@ -294,13 +301,14 @@ function handleItemSkipped(ss, data) {
 // ===============================================
 function handleReadingTime(ss, data) {
   const readingSheet = getOrCreateSheet(ss, 'Reading_Times', [
-    'Timestamp', 'PID', 'Item', 'Image', 'Reading Type',
+    'Timestamp', 'PID', 'Initials', 'Item', 'Image', 'Reading Type',
     'Start Time', 'End Time', 'Duration (sec)', 'Words Count'
   ]);
 
   readingSheet.appendRow([
     new Date(),
     data.pid,
+    data.initials || '',
     data.itemNumber,
     data.imageFile || '',
     data.readingType || 'silent',
@@ -340,13 +348,14 @@ function handleVideoUpload(data) {
 
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const videoSheet = getOrCreateSheet(ss, 'Video_Recordings', [
-      'Timestamp', 'PID', 'Item Number', 'Filename',
+      'Timestamp', 'PID', 'Initials', 'Item Number', 'Filename',
       'File ID', 'File URL', 'File Size (KB)', 'Upload Status'
     ]);
 
     videoSheet.appendRow([
       new Date(),
       data.pid,
+      data.initials || '',
       data.itemNumber || 'Full Session',
       filename,
       file.getId(),
@@ -368,12 +377,13 @@ function handleVideoUpload(data) {
 
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const errorSheet = getOrCreateSheet(ss, 'Upload_Errors', [
-      'Timestamp', 'PID', 'Item', 'Error', 'Type'
+      'Timestamp', 'PID', 'Initials', 'Item', 'Error', 'Type'
     ]);
 
     errorSheet.appendRow([
       new Date(),
       data.pid || 'unknown',
+      data.initials || '',
       data.itemNumber || '',
       error.toString(),
       'Video Upload'
@@ -388,7 +398,7 @@ function handleVideoUpload(data) {
 // ===============================================
 function handleSessionComplete(ss, data) {
   const sessionsSheet = getOrCreateSheet(ss, 'Sessions', [
-    'PID', 'Education', 'Start Time', 'End Time', 'Duration (min)',
+    'PID', 'Initials', 'Education', 'Start Time', 'End Time', 'Duration (min)',
     'Items Completed', 'Total Score', 'Consecutive Zeros',
     'Status', 'Discontinued', 'Gate Items Failed', 'Admin Mode',
     'Recording', 'IP Address', 'User Agent', 'Notes'
@@ -396,14 +406,14 @@ function handleSessionComplete(ss, data) {
 
   const row = findRowByPID(sessionsSheet, data.pid);
   if (row > 0) {
-    sessionsSheet.getRange(row, 4).setValue(data.timestamp || new Date());
-    sessionsSheet.getRange(row, 5).setValue(Number(data.duration) || 0);
-    sessionsSheet.getRange(row, 6).setValue(Number(data.itemsCompleted) || 0);
-    sessionsSheet.getRange(row, 7).setValue(Number(data.totalScore) || 0);
-    sessionsSheet.getRange(row, 8).setValue(Number(data.consecutiveZeros) || 0);
-    sessionsSheet.getRange(row, 9).setValue('Complete');
-    sessionsSheet.getRange(row, 10).setValue(data.discontinued ? 'Yes' : 'No');
-    sessionsSheet.getRange(row, 11).setValue(data.gateItemsFailed || '');
+    sessionsSheet.getRange(row, 5).setValue(data.timestamp || new Date());
+    sessionsSheet.getRange(row, 6).setValue(Number(data.duration) || 0);
+    sessionsSheet.getRange(row, 7).setValue(Number(data.itemsCompleted) || 0);
+    sessionsSheet.getRange(row, 8).setValue(Number(data.totalScore) || 0);
+    sessionsSheet.getRange(row, 9).setValue(Number(data.consecutiveZeros) || 0);
+    sessionsSheet.getRange(row, 10).setValue('Complete');
+    sessionsSheet.getRange(row, 11).setValue(data.discontinued ? 'Yes' : 'No');
+    sessionsSheet.getRange(row, 12).setValue(data.gateItemsFailed || '');
   }
 
   saveBackupData(ss, data);
@@ -418,7 +428,7 @@ function handleSessionComplete(ss, data) {
 // ===============================================
 function handleStudyCompleted(ss, data) {
   const sessions = getOrCreateSheet(ss, 'Sessions', [
-    'PID','Education','Start Time','End Time','Duration (min)',
+    'PID','Initials','Education','Start Time','End Time','Duration (min)',
     'Items Completed','Total Score','Consecutive Zeros',
     'Status','Discontinued','Gate Items Failed','Admin Mode',
     'Recording','IP Address','User Agent','Notes'
@@ -432,18 +442,20 @@ function handleStudyCompleted(ss, data) {
 
   const row = findRowByPID(sessions, data.pid);
   if (row > 0) {
-    sessions.getRange(row, 2).setValue(data.edu || '');
-    sessions.getRange(row, 3).setValue(start || new Date());
-    sessions.getRange(row, 4).setValue(end || new Date());
-    sessions.getRange(row, 5).setValue(durationMin);
-    sessions.getRange(row, 6).setValue(itemsCompleted);
-    sessions.getRange(row, 7).setValue(totalScore);
-    sessions.getRange(row, 8).setValue(0);
-    sessions.getRange(row, 9).setValue('Complete');
-    sessions.getRange(row,10).setValue('No');
+    sessions.getRange(row, 2).setValue(data.initials || '');
+    sessions.getRange(row, 3).setValue(data.edu || '');
+    sessions.getRange(row, 4).setValue(start || new Date());
+    sessions.getRange(row, 5).setValue(end || new Date());
+    sessions.getRange(row, 6).setValue(durationMin);
+    sessions.getRange(row, 7).setValue(itemsCompleted);
+    sessions.getRange(row, 8).setValue(totalScore);
+    sessions.getRange(row, 9).setValue(0);
+    sessions.getRange(row,10).setValue('Complete');
+    sessions.getRange(row,11).setValue('No');
   } else {
     sessions.appendRow([
       data.pid || '',
+      data.initials || '',
       data.edu || '',
       start || new Date(),
       end || new Date(),
@@ -463,7 +475,7 @@ function handleStudyCompleted(ss, data) {
   }
 
   const itemsSheet = getOrCreateSheet(ss, 'Item_Responses', [
-    'Timestamp', 'PID', 'Item Number', 'Image File', 'Question Text',
+    'Timestamp', 'PID', 'Initials', 'Item Number', 'Image File', 'Question Text',
     'Item Type', 'Start Time', 'End Time', 'Duration (sec)',
     'Response', 'Explanation', 'Auto Score', 'Score Confidence',
     'Needs Review', 'Scoring Notes', 'Final Score', 'Skip Reason'
@@ -478,6 +490,7 @@ function handleStudyCompleted(ss, data) {
           itemsSheet.appendRow([
             now,
             data.pid,
+            data.initials || '',
             r.item,
             '',
             a.key || '',
@@ -496,7 +509,7 @@ function handleStudyCompleted(ss, data) {
         });
       } else {
         itemsSheet.appendRow([
-          now, data.pid, r.item, '', '', 'question',
+          now, data.pid, data.initials || '', r.item, '', '', 'question',
           '', '', '', 'SKIPPED', '', 0, 'N/A', 'NO', 'Item skipped', 0, 'User choice'
         ]);
       }
@@ -504,6 +517,7 @@ function handleStudyCompleted(ss, data) {
       itemsSheet.appendRow([
         now,
         data.pid,
+        data.initials || '',
         r.item,
         '',
         '',
@@ -535,7 +549,7 @@ function handleStudyCompleted(ss, data) {
 function saveDetailedScoring(ss, data) {
   if (!data || !data.scoringDetails) return;
   const scoringSheet = getOrCreateSheet(ss, 'Scoring_Details', [
-    'Timestamp', 'PID', 'Item', 'Question', 'Response',
+    'Timestamp', 'PID', 'Initials', 'Item', 'Question', 'Response',
     'Matched Patterns', 'Matched Concepts', 'Found Concepts',
     'Required Both', 'Count Based', 'Auto Score',
     'Confidence', 'Needs Review', 'Notes'
@@ -545,6 +559,7 @@ function saveDetailedScoring(ss, data) {
   scoringSheet.appendRow([
     new Date(),
     data.pid,
+    data.initials || '',
     data.itemNumber,
     data.questionText || '',
     data.response || '',
@@ -622,17 +637,18 @@ function getSessionDataFromRow(sheet, row) {
   const data = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0];
   return {
     pid: data[0],
-    education: data[1],
-    itemsCompleted: data[5],
-    totalScore: data[6],
-    consecutiveZeros: data[7],
-    status: data[8]
+    initials: data[1],
+    education: data[2],
+    itemsCompleted: data[6],
+    totalScore: data[7],
+    consecutiveZeros: data[8],
+    status: data[9]
   };
 }
 
 function getSessionData(ss, pid) {
   const sheet = getOrCreateSheet(ss, 'Sessions', [
-    'PID', 'Education', 'Start Time', 'End Time', 'Duration (min)',
+    'PID', 'Initials', 'Education', 'Start Time', 'End Time', 'Duration (min)',
     'Items Completed', 'Total Score', 'Consecutive Zeros',
     'Status', 'Discontinued', 'Gate Items Failed', 'Admin Mode',
     'Recording', 'IP Address', 'User Agent', 'Notes'
@@ -647,42 +663,43 @@ function getSessionData(ss, pid) {
 
 function updateSessionActivity(ss, pid, timestamp) {
   const sheet = getOrCreateSheet(ss, 'Sessions', [
-    'PID', 'Education', 'Start Time', 'End Time', 'Duration (min)',
+    'PID', 'Initials', 'Education', 'Start Time', 'End Time', 'Duration (min)',
     'Items Completed', 'Total Score', 'Consecutive Zeros',
     'Status', 'Discontinued', 'Gate Items Failed', 'Admin Mode',
     'Recording', 'IP Address', 'User Agent', 'Notes'
   ]);
   const row = findRowByPID(sheet, pid);
-  if (row > 0) sheet.getRange(row, 16).setValue('Last activity: ' + (timestamp || new Date().toISOString()));
+  if (row > 0) sheet.getRange(row, 17).setValue('Last activity: ' + (timestamp || new Date().toISOString()));
 }
 
 function updateSessionTotals(ss, pid, score, consecutiveZeros) {
   const sheet = getOrCreateSheet(ss, 'Sessions', [
-    'PID', 'Education', 'Start Time', 'End Time', 'Duration (min)',
+    'PID', 'Initials', 'Education', 'Start Time', 'End Time', 'Duration (min)',
     'Items Completed', 'Total Score', 'Consecutive Zeros',
     'Status', 'Discontinued', 'Gate Items Failed', 'Admin Mode',
     'Recording', 'IP Address', 'User Agent', 'Notes'
   ]);
   const row = findRowByPID(sheet, pid);
   if (row > 0) {
-    const currentItems = Number(sheet.getRange(row, 6).getValue()) || 0;
-    sheet.getRange(row, 6).setValue(currentItems + 1);
+    const currentItems = Number(sheet.getRange(row, 7).getValue()) || 0;
+    sheet.getRange(row, 7).setValue(currentItems + 1);
 
-    const currentScore = Number(sheet.getRange(row, 7).getValue()) || 0;
-    sheet.getRange(row, 7).setValue(currentScore + (Number(score) || 0));
+    const currentScore = Number(sheet.getRange(row, 8).getValue()) || 0;
+    sheet.getRange(row, 8).setValue(currentScore + (Number(score) || 0));
 
-    sheet.getRange(row, 8).setValue(Number(consecutiveZeros) || 0);
+    sheet.getRange(row, 9).setValue(Number(consecutiveZeros) || 0);
   }
 }
 
 function logEvent(ss, data) {
   const eventSheet = getOrCreateSheet(ss, 'Events_Log', [
-    'Timestamp', 'PID', 'Event Type', 'Details', 'Data'
+    'Timestamp', 'PID', 'Initials', 'Event Type', 'Details', 'Data'
   ]);
 
   eventSheet.appendRow([
     new Date(),
     data.pid || 'unknown',
+    data.initials || '',
     data.eventType || data.action || 'unknown',
     data.details || '',
     JSON.stringify(data)
@@ -699,13 +716,13 @@ function createResponse(data) {
 // ===============================================
 function generateParticipantSummary(ss, pid) {
   const summarySheet = getOrCreateSheet(ss, 'Participant_Summary', [
-    'PID', 'Education', 'Total Items', 'Total Score', 'Avg Score',
+    'PID', 'Initials', 'Education', 'Total Items', 'Total Score', 'Avg Score',
     'Items Needing Review', 'Reading Time Avg (sec)',
     'Discontinued', 'Gate Items Failed', 'Completion Date'
   ]);
 
   const itemsSheet = getOrCreateSheet(ss, 'Item_Responses', [
-    'Timestamp', 'PID', 'Item Number', 'Image File', 'Question Text',
+    'Timestamp', 'PID', 'Initials', 'Item Number', 'Image File', 'Question Text',
     'Item Type', 'Start Time', 'End Time', 'Duration (sec)',
     'Response', 'Explanation', 'Auto Score', 'Score Confidence',
     'Needs Review', 'Scoring Notes', 'Final Score', 'Skip Reason'
@@ -721,35 +738,36 @@ function generateParticipantSummary(ss, pid) {
   for (let i = 1; i < itemsData.length; i++) {
     if (itemsData[i][1] === pid) {
       totalItems++;
-      totalScore += Number(itemsData[i][15] || 0);
-      if (itemsData[i][13] === 'YES') needsReview++;
-      if (Number(itemsData[i][8] || 0) > 0) {
-        totalReadingTime += Number(itemsData[i][8] || 0);
+      totalScore += Number(itemsData[i][16] || 0);
+      if (itemsData[i][14] === 'YES') needsReview++;
+      if (Number(itemsData[i][9] || 0) > 0) {
+        totalReadingTime += Number(itemsData[i][9] || 0);
         readingCount++;
       }
     }
   }
 
   const sessionsSheet = getOrCreateSheet(ss, 'Sessions', [
-    'PID', 'Education', 'Start Time', 'End Time', 'Duration (min)',
+    'PID', 'Initials', 'Education', 'Start Time', 'End Time', 'Duration (min)',
     'Items Completed', 'Total Score', 'Consecutive Zeros',
     'Status', 'Discontinued', 'Gate Items Failed', 'Admin Mode',
     'Recording', 'IP Address', 'User Agent', 'Notes'
   ]);
   const sessionRow = findRowByPID(sessionsSheet, pid);
-  const sessionData = sessionRow > 0 ? sessionsSheet.getRange(sessionRow, 1, 1, 16).getValues()[0] : [];
+  const sessionData = sessionRow > 0 ? sessionsSheet.getRange(sessionRow, 1, 1, 17).getValues()[0] : [];
 
   const row = findRowByPID(summarySheet, pid);
   const summaryValues = [
     pid,
     sessionData[1] || '',
+    sessionData[2] || '',
     totalItems,
     totalScore,
     totalItems > 0 ? (totalScore / totalItems).toFixed(2) : 0,
     needsReview,
     readingCount > 0 ? (totalReadingTime / readingCount).toFixed(1) : 0,
-    sessionData[9] || 'No',
-    sessionData[10] || '',
+    sessionData[10] || 'No',
+    sessionData[11] || '',
     new Date()
   ];
 
@@ -767,50 +785,50 @@ function initialSetup() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
   getOrCreateSheet(ss, 'Sessions', [
-    'PID', 'Education', 'Start Time', 'End Time', 'Duration (min)',
+    'PID', 'Initials', 'Education', 'Start Time', 'End Time', 'Duration (min)',
     'Items Completed', 'Total Score', 'Consecutive Zeros',
     'Status', 'Discontinued', 'Gate Items Failed', 'Admin Mode',
     'Recording', 'IP Address', 'User Agent', 'Notes'
   ]);
 
   getOrCreateSheet(ss, 'Item_Responses', [
-    'Timestamp', 'PID', 'Item Number', 'Image File', 'Question Text',
+    'Timestamp', 'PID', 'Initials', 'Item Number', 'Image File', 'Question Text',
     'Item Type', 'Start Time', 'End Time', 'Duration (sec)',
     'Response', 'Explanation', 'Auto Score', 'Score Confidence',
     'Needs Review', 'Scoring Notes', 'Final Score', 'Skip Reason'
   ]);
 
   getOrCreateSheet(ss, 'Item_Progress', [
-    'Timestamp', 'PID', 'Item', 'Event', 'Details'
+    'Timestamp', 'PID', 'Initials', 'Item', 'Event', 'Details'
   ]);
 
   getOrCreateSheet(ss, 'Reading_Times', [
-    'Timestamp', 'PID', 'Item', 'Image', 'Reading Type',
+    'Timestamp', 'PID', 'Initials', 'Item', 'Image', 'Reading Type',
     'Start Time', 'End Time', 'Duration (sec)', 'Words Count'
   ]);
 
   getOrCreateSheet(ss, 'Scoring_Details', [
-    'Timestamp', 'PID', 'Item', 'Question', 'Response',
+    'Timestamp', 'PID', 'Initials', 'Item', 'Question', 'Response',
     'Matched Patterns', 'Matched Concepts', 'Found Concepts',
     'Required Both', 'Count Based', 'Auto Score',
     'Confidence', 'Needs Review', 'Notes'
   ]);
 
   getOrCreateSheet(ss, 'Video_Recordings', [
-    'Timestamp', 'PID', 'Item Number', 'Filename',
+    'Timestamp', 'PID', 'Initials', 'Item Number', 'Filename',
     'File ID', 'File URL', 'File Size (KB)', 'Upload Status'
   ]);
 
   getOrCreateSheet(ss, 'Upload_Errors', [
-    'Timestamp', 'PID', 'Item', 'Error', 'Type'
+    'Timestamp', 'PID', 'Initials', 'Item', 'Error', 'Type'
   ]);
 
   getOrCreateSheet(ss, 'Events_Log', [
-    'Timestamp', 'PID', 'Event Type', 'Details', 'Data'
+    'Timestamp', 'PID', 'Initials', 'Event Type', 'Details', 'Data'
   ]);
 
   getOrCreateSheet(ss, 'Participant_Summary', [
-    'PID', 'Education', 'Total Items', 'Total Score', 'Avg Score',
+    'PID', 'Initials', 'Education', 'Total Items', 'Total Score', 'Avg Score',
     'Items Needing Review', 'Reading Time Avg (sec)',
     'Discontinued', 'Gate Items Failed', 'Completion Date'
   ]);
@@ -870,7 +888,7 @@ function createDashboard(ss) {
 function generateItemStats() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const itemsSheet = getOrCreateSheet(ss, 'Item_Responses', [
-    'Timestamp', 'PID', 'Item Number', 'Image File', 'Question Text',
+    'Timestamp', 'PID', 'Initials', 'Item Number', 'Image File', 'Question Text',
     'Item Type', 'Start Time', 'End Time', 'Duration (sec)',
     'Response', 'Explanation', 'Auto Score', 'Score Confidence',
     'Needs Review', 'Scoring Notes', 'Final Score', 'Skip Reason'
@@ -879,14 +897,14 @@ function generateItemStats() {
 
   const itemStats = {};
   for (let i = 1; i < data.length; i++) {
-    const itemNum = data[i][2];
+    const itemNum = data[i][3];
     if (!itemStats[itemNum]) {
       itemStats[itemNum] = { attempts: 0, totalScore: 0, skipped: 0, needsReview: 0 };
     }
     itemStats[itemNum].attempts++;
-    itemStats[itemNum].totalScore += Number(data[i][15] || 0);
-    if (data[i][9] === 'SKIPPED') itemStats[itemNum].skipped++;
-    if (data[i][13] === 'YES') itemStats[itemNum].needsReview++;
+    itemStats[itemNum].totalScore += Number(data[i][16] || 0);
+    if (data[i][10] === 'SKIPPED') itemStats[itemNum].skipped++;
+    if (data[i][14] === 'YES') itemStats[itemNum].needsReview++;
   }
 
   const statsSheet = getOrCreateSheet(ss, 'Item_Statistics', [
@@ -920,6 +938,7 @@ function testSetup() {
   const testData = {
     action: 'session_start',
     pid: 'TEST001',
+    initials: 'TT',
     education: '10',
     timestamp: new Date().toISOString(),
     adminMode: true,
