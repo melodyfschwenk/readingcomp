@@ -579,6 +579,11 @@
     </div>
 
     <div style="margin-top: 20px;">
+      <p>Please be careful, all answers are final. Just try your best.</p>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+        <input type="checkbox" id="final-ack" />
+        <span>I have read and understand this statement.</span>
+      </label>
       <label style="display:flex;gap:8px;align-items:center;margin-top:8px;">
         <input type="checkbox" id="consent" />
         <span>I consent to audio/video recording and secure storage for this study.</span>
@@ -2193,6 +2198,7 @@ function checkWelcomeReady() {
   const hasEdu = document.getElementById('edu').value.trim().length > 0;
   const group = document.querySelector('input[name="participant-group"]:checked');
   const consent = document.getElementById('consent').checked;
+  const finalAck = document.getElementById('final-ack').checked;
 
   state.pid = document.getElementById('pid').value.trim();
   state.edu = document.getElementById('edu').value.trim();
@@ -2209,7 +2215,7 @@ function checkWelcomeReady() {
   }
 
   // Enable continue only if everything required is present
-  const ready = hasPid && hasEdu && !!group && consent;
+  const ready = hasPid && hasEdu && !!group && consent && finalAck;
   document.getElementById('begin').disabled = !ready;
 }
 
@@ -3119,6 +3125,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('pid').addEventListener('input', checkWelcomeReady);
   document.getElementById('edu').addEventListener('change', checkWelcomeReady);
   document.getElementById('consent').addEventListener('change', checkWelcomeReady);
+  document.getElementById('final-ack').addEventListener('change', checkWelcomeReady);
   document.querySelectorAll('input[name="participant-group"]').forEach(el => {
     el.addEventListener('change', checkWelcomeReady);
   });
