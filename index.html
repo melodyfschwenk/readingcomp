@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
     <title>WIAT-2 Reading Comprehension Study</title>
     <style>
   /* Light theme */
@@ -199,7 +200,7 @@
   /* Inputs */
   input[type="text"], select, textarea {
     width: 100%;
-    background: #0f141b;
+    background: var(--bg-tertiary);
     color: var(--text-primary);
     border: 1px solid var(--border-secondary);
     border-radius: 10px;
@@ -236,7 +237,7 @@
   .radio-group { display: grid; gap: 12px; }
   .radio-group label {
     display: flex; align-items: center; gap: 12px;
-    background: #0f141b;
+    background: var(--bg-tertiary);
     border: 1px solid var(--border-secondary);
     border-radius: 10px;
     padding: 14px 16px;
@@ -244,18 +245,18 @@
     font-size: 16px;
     transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
   }
-  .radio-group label:hover { border-color: var(--border-focus); background: #101724; transform: translateX(2px); }
+  .radio-group label:hover { border-color: var(--border-focus); background: var(--bg-secondary); transform: translateX(2px); }
   .radio-group input[type="radio"]:checked + span { color: var(--primary-400); font-weight: 700; }
   /* :has is supported in current Chrome and Firefox, ignored elsewhere without breaking layout */
   .radio-group label:has(input:checked) {
     border-color: var(--primary-600);
     box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
-    background: #101724;
+    background: var(--bg-secondary);
   }
 
   /* Status boxes */
   .status-box {
-    background: #0f141b;
+    background: var(--bg-tertiary);
     border: 1px solid var(--border-secondary);
     color: var(--text-primary);
     border-radius: 10px;
@@ -372,7 +373,7 @@
 
   /* Q blocks */
   .q-block {
-    background: #0f141b;
+    background: var(--bg-tertiary);
     border: 1px solid var(--border-secondary);
     border-radius: 10px;
     padding: 20px;
@@ -406,12 +407,12 @@
   .kbd {
     font: 600 13px Arial, Helvetica, sans-serif;
     padding: 2px 6px; border-radius: 6px;
-    background: #0b0f16; border: 1px solid var(--border-secondary); color: var(--text-secondary);
+    background: var(--bg-tertiary); border: 1px solid var(--border-secondary); color: var(--text-secondary);
   }
 
   /* Read aloud and setup panels */
   .read-aloud-box {
-    background: #0f141b;
+    background: var(--bg-tertiary);
     border: 1px solid var(--border-secondary);
     border-radius: 10px;
     padding: 18px;
@@ -479,7 +480,7 @@
   /* Admin panel and connection status */
   .admin-panel {
     position: fixed; bottom: 12px; right: 12px;
-    background: #0f141b;
+    background: var(--bg-tertiary);
     border: 1px solid var(--border-secondary);
     border-radius: 10px;
     padding: 10px 12px;
@@ -632,10 +633,6 @@
       </fieldset>
     </div>
 
-    <div class="instructions">
-      <h2>EEG Scheduling</h2>
-      <p>EEG sessions will open for scheduling in late September. EEG, or electroencephalography, uses small sensors on the scalp to record brain activity. Check back soon to reserve a time.</p>
-    </div>
 
     <div id="config-warning" class="status-box error hidden" role="alert" aria-live="assertive" aria-atomic="true">
       <div class="status-message">
