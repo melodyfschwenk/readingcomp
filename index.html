@@ -5,48 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WIAT-2 Reading Comprehension Study</title>
     <style>
-  /* ================================
-     Fixed Dark Theme - Drop-in CSS
-     ================================ */
-
-  /* Minimal token set that matches your existing class usage */
+  /* Light theme */
   :root {
-    /* Surfaces */
-    --bg: #0b0e11;            /* page background */
-    --bg-secondary: #12161c;  /* cards, panels */
-    --bg-tertiary: #0e141b;   /* subtle sections and strips */
-    --bg-card: #12161c;
+    /* Light theme colors */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --bg-tertiary: #f1f5f9;
+    --bg-card: #ffffff;
 
-    /* Text */
-    --text-primary: #e8eef6;   /* main text */
-    --text-secondary: #c8d3e0; /* headings and subheads */
-    --text-muted: #9fb0c0;     /* helper text */
+    /* Text colors */
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
     --text-on-dark: #ffffff;
 
-    /* Brand and states */
-    --primary-600: #8b5cf6;
-    --primary-500: #a78bfa;
-    --primary-400: #c4b5fd;
+    /* Brand colors - warmer, more engaging */
+    --primary-600: #3b82f6;
+    --primary-500: #6366f1;
+    --primary-400: #818cf8;
+    --accent: #06b6d4;
 
-    --success-600: #22c55e;
-    --success-500: #34d399;
+    /* Status colors */
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #3b82f6;
 
-    --warning-600: #f59e0b;
-    --warning-100: #1a1200;   /* darkened background chip for warnings */
+    /* Borders and surfaces */
+    --border: #e2e8f0;
+    --border-hover: #cbd5e1;
+    --shadow: 0 1px 3px rgba(0,0,0,0.1);
+    --shadow-lg: 0 4px 6px rgba(0,0,0,0.1);
 
-    --danger-500: #ef4444;
-    --danger-400: #f87171;
-
-    /* Neutrals and borders */
-    --border-primary: #1f2630;
-    --border-secondary: #2a3240;
-    --border-focus: #8b5cf6;
-
-    /* Shadows */
-    --shadow-sm: rgba(0, 0, 0, 0.25);
-    --shadow-md: rgba(0, 0, 0, 0.35);
-    --shadow-lg: rgba(0, 0, 0, 0.45);
-    --shadow-xl: rgba(0, 0, 0, 0.6);
+    /* Legacy variables for compatibility */
+    --bg: var(--bg-primary);
+    --border-primary: var(--border);
+    --border-secondary: var(--border);
+    --border-focus: var(--primary-600);
+    --shadow-xl: var(--shadow-lg);
+    --success-600: var(--success);
+    --success-500: var(--success);
+    --danger-500: var(--danger);
+    --danger-400: var(--danger);
+    --warning-600: var(--warning);
+    --warning-100: #fef3c7;
   }
 
   /* Base reset */
@@ -54,13 +56,11 @@
 
   body {
     font-family: Arial, Helvetica, sans-serif;
-    background:
-      radial-gradient(1000px 700px at 20% 0%, #121622 0%, #0b0e11 60%),
-      #0b0e11;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     color: var(--text-primary);
     min-height: 100vh;
     line-height: 1.8;
-    font-size: 18px;
+    font-size: 16px;
   }
 
   /* Global focus ring for keyboard nav */
@@ -80,12 +80,11 @@
   }
 
   .card {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
     padding: 32px;
-    box-shadow: 0 12px 40px var(--shadow-xl);
-    margin: 14px 0;
   }
 
   /* Headings */
@@ -143,32 +142,41 @@
   /* Buttons */
   button {
     -webkit-tap-highlight-color: transparent;
-    border: 0;
-    border-radius: 10px;
-    padding: 14px 20px;
-    font-size: 1.1rem;
-    font-weight: 650;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 600;
     letter-spacing: 0.2px;
     cursor: pointer;
-    transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease, opacity 120ms ease;
-    color: var(--text-on-dark);
+    transition: all 0.2s ease;
+    color: var(--text-primary);
     min-height: 48px;
     font-family: Arial, Helvetica, sans-serif;
   }
 
-  button.primary, button:not([class]) {
-    background: linear-gradient(180deg, var(--primary-600), var(--primary-500));
-    box-shadow: 0 8px 24px var(--shadow-md);
+  button.primary {
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
   }
-  button.primary:hover, button:not([class]):hover { transform: translateY(-1px); box-shadow: 0 12px 30px var(--shadow-lg); }
-  button.primary:active, button:not([class]):active { transform: translateY(0); }
+  button.primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+  }
 
   button.secondary {
     background: transparent;
-    color: var(--primary-500);
+    color: var(--primary-600);
     border: 2px solid var(--primary-600);
+    border-radius: 8px;
+    padding: 12px 24px;
   }
-  button.secondary:hover { background: rgba(139, 92, 246, 0.12); }
+  button.secondary:hover { background: rgba(99, 102, 241, 0.1); }
 
   button.danger {
     background: linear-gradient(180deg, var(--danger-500), var(--danger-400));
@@ -181,7 +189,7 @@
   }
 
   button:disabled {
-    background: #202735 !important;
+    background: var(--bg-tertiary) !important;
     color: var(--text-muted) !important;
     opacity: 0.6;
     cursor: not-allowed;
@@ -260,23 +268,29 @@
 
   /* Item header and timer */
   .item-header {
-    display: flex; justify-content: space-between; align-items: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     background: var(--bg-tertiary);
-    border: 1px solid var(--border-primary);
-    border-radius: 10px;
-    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
     margin-bottom: 20px;
   }
-  .item-info { 
-    color: var(--text-secondary); 
+  .item-info {
+    color: var(--text-secondary);
     font-size: 18px;
     font-weight: 600;
   }
-  .timer-display { 
-    font-family: Arial, Helvetica, sans-serif; 
-    color: var(--primary-400); 
-    font-weight: 800; 
-    font-size: 18px;
+  .timer-display {
+    background: var(--accent);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    min-width: 60px;
+    text-align: center;
   }
 
   /* Recording indicator */
@@ -295,16 +309,15 @@
 
   /* Reading Passage Styles - NO SCROLLBOX */
   .reading-passage {
-    background: #0f141b;
-    border: 1px solid var(--border-secondary);
-    border-radius: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
     padding: 32px;
     margin: 24px 0;
-    font-size: 1.3rem;
-    line-height: 2;
+    font-size: 18px;
+    line-height: 1.7;
     color: var(--text-primary);
     font-family: Arial, Helvetica, sans-serif;
-    /* Removed max-height and overflow-y */
   }
 
   .reading-passage h3 {
@@ -413,12 +426,55 @@
   }
 
   .video-preview-wrapper { text-align: center; }
-  .video-preview {
+  .video-preview { 
     width: 100%; max-width: 520px; height: auto; background: #000;
     border: 2px solid var(--primary-600);
     border-radius: 12px;
     box-shadow: 0 16px 40px var(--shadow-md);
   }
+
+  .pause-fab {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 64px;
+    height: 64px;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 1000;
+    transition: all 0.3s ease;
+  }
+  .pause-fab:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+  }
+  .pause-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+  }
+  .pause-content {
+    background: white;
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+    max-width: 400px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  }
+  .pause-actions { margin-top: 24px; display: flex; gap: 12px; justify-content: center; }
+  .pause-info { margin: 16px 0; line-height: 1.6; color: var(--text-secondary); }
 
   /* Admin panel and connection status */
   .admin-panel {
@@ -1002,6 +1058,10 @@ let state = {
 
   results: [],
   sequence: [],
+
+  isPaused: false,
+  pauseStartTime: null,
+  totalPausedTime: 0,
   
   timers: {
     reading: null,
@@ -1037,12 +1097,22 @@ let testTimerSec = 0;
 
     function saveLocal() {
   try {
+    const timersSnapshot = {};
+    Object.entries(Timers.timers).forEach(([name, t]) => {
+      timersSnapshot[name] = {
+        startTime: t.startTime,
+        elapsed: t.elapsed,
+        isPaused: t.isPaused
+      };
+    });
+
     const snapshot = {
       state: {
         ...state,
         stream: null,          // don't try to serialize MediaStream
         mediaRecorder: null,   // don't serialize
-        recordedChunks: []     // discard in-memory chunks here
+        recordedChunks: [],    // discard in-memory chunks here
+        timersSnapshot
       },
       timestamp: Date.now(),
       version: '1.0'
@@ -1078,6 +1148,12 @@ function loadLocal() {
         const age = Date.now() - (s.timestamp || 0);
         if (age < 24 * 60 * 60 * 1000) {
           Object.assign(state, s.state);
+          if (s.state.timersSnapshot) {
+            Object.keys(s.state.timersSnapshot).forEach(name => {
+              const t = s.state.timersSnapshot[name];
+              Timers.timers[name] = { ...t, interval: null, tickCb: null };
+            });
+          }
         }
       }
     }
@@ -2256,25 +2332,115 @@ function formatMMSS(sec) {
    Timers
    =========================== */
 const Timers = {
+  timers: {},
   start(name, tickCb) {
     this.stop(name);
-    let t = 0;
-    state.timers[name] = setInterval(() => {
-      t += 1;
-      if (typeof tickCb === 'function') tickCb(t);
-    }, 1000);
-    return () => this.stop(name);
+    this.timers[name] = {
+      startTime: Date.now(),
+      elapsed: 0,
+      isPaused: false,
+      tickCb,
+      interval: setInterval(() => {
+        const t = this.timers[name];
+        if (t && !t.isPaused) {
+          const elapsed = Math.floor((Date.now() - t.startTime + t.elapsed) / 1000);
+          if (typeof t.tickCb === 'function') t.tickCb(elapsed);
+        }
+      }, 1000)
+    };
   },
-  stop(name) {
-    if (state.timers[name]) {
-      clearInterval(state.timers[name]);
-      state.timers[name] = null;
+  pause(name) {
+    const t = this.timers[name];
+    if (t && !t.isPaused) {
+      t.elapsed += Date.now() - t.startTime;
+      t.isPaused = true;
     }
   },
+  resume(name) {
+    const t = this.timers[name];
+    if (t && t.isPaused) {
+      t.startTime = Date.now();
+      t.isPaused = false;
+    }
+  },
+  stop(name) {
+    const t = this.timers[name];
+    if (t) {
+      clearInterval(t.interval);
+      delete this.timers[name];
+    }
+  },
+  pauseAll() {
+    Object.keys(this.timers).forEach(n => this.pause(n));
+  },
+  resumeAll() {
+    Object.keys(this.timers).forEach(n => this.resume(n));
+  },
   stopAll() {
-    Object.keys(state.timers).forEach(k => this.stop(k));
+    Object.keys(this.timers).forEach(n => this.stop(n));
   }
 };
+
+/* ===========================
+   Pause functionality
+   =========================== */
+
+function updatePauseOverlay() {
+  document.getElementById('pause-session-id').textContent = SESSION_ID;
+  document.getElementById('pause-current-item').textContent = `${state.currentIndex + 1} of ${state.sequence.length}`;
+  const elapsed = Math.floor((Date.now() - state.sessionStartTime - state.totalPausedTime) / 1000);
+  document.getElementById('pause-time-elapsed').textContent = formatMMSS(elapsed);
+}
+
+function togglePause() {
+  state.isPaused ? resumeStudy() : pauseStudy();
+}
+
+function pauseStudy() {
+  if (state.isPaused) return;
+  state.isPaused = true;
+  state.pauseStartTime = Date.now();
+
+  Timers.pauseAll();
+
+  if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
+    state.mediaRecorder.pause();
+  }
+
+  saveLocal();
+  updatePauseOverlay();
+
+  document.getElementById('pause-modal').classList.remove('hidden');
+  const r = document.querySelector('.resume-btn');
+  if (r) r.focus();
+
+  announceToScreenReader('Study paused. Take your time.', 'polite');
+}
+
+function resumeStudy() {
+  if (!state.isPaused) return;
+  if (state.pauseStartTime) {
+    state.totalPausedTime += Date.now() - state.pauseStartTime;
+    state.pauseStartTime = null;
+  }
+  state.isPaused = false;
+
+  Timers.resumeAll();
+
+  if (state.mediaRecorder && state.mediaRecorder.state === 'paused') {
+    state.mediaRecorder.resume();
+  }
+
+  document.getElementById('pause-modal').classList.add('hidden');
+
+  announceToScreenReader('Study resumed.', 'polite');
+}
+
+function saveAndExit() {
+  saveLocal();
+  stopMedia();
+  window.location.href = window.location.href;
+}
 
 /* ===========================
    Media setup and recording
@@ -3159,9 +3325,34 @@ function handleQASubmit(e) {
 document.addEventListener('DOMContentLoaded', () => {
       // Remove connection test calls
   // testConnection();
-  
+
   // Periodically check connection (optional)
   setInterval(testConnection, 30000); // Every 30 seconds
+
+  // Pause controls
+  const pauseBtn = document.getElementById('pause-btn');
+  if (pauseBtn) pauseBtn.addEventListener('click', togglePause);
+  const resumeBtn = document.querySelector('.resume-btn');
+  if (resumeBtn) resumeBtn.addEventListener('click', resumeStudy);
+  const saveExitBtn = document.querySelector('.save-exit-btn');
+  if (saveExitBtn) saveExitBtn.addEventListener('click', saveAndExit);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && !['INPUT', 'TEXTAREA'].includes(e.target.tagName)) {
+      e.preventDefault();
+      togglePause();
+    }
+    if (e.code === 'Escape') {
+      e.preventDefault();
+      if (!state.isPaused) pauseStudy();
+    }
+  });
+
+  if (state.isPaused) {
+    state.pauseStartTime = Date.now();
+    document.getElementById('pause-modal').classList.remove('hidden');
+    updatePauseOverlay();
+  }
   // ——— Welcome form events ———
   document.getElementById('initials').addEventListener('input', checkWelcomeReady);
   document.getElementById('pid').addEventListener('input', checkWelcomeReady);
@@ -3230,6 +3421,9 @@ document.addEventListener('DOMContentLoaded', () => {
     state.totalPoints = 0;
     state.consecutiveZeros = 0;
 
+    const pb = document.getElementById('pause-btn');
+    if (pb) pb.classList.remove('hidden');
+
     gsPost('session_start', {
       pid: state.pid,
       initials: state.initials,
@@ -3243,8 +3437,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     showScreen('screen-item');
-    renderTrial(currentTrial());
-  });
+      renderTrial(currentTrial());
+    });
 
   // ——— Reading controls ———
   document.getElementById('start-reading').addEventListener('click', handleReadingStart);
@@ -3273,10 +3467,27 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ——— Initial ———
- loadLocal(); 
-    checkWelcomeReady(); 
-    setConnectionStatus(false); 
-    window.addEventListener('beforeunload', () => { saveLocal(); stopMedia(); }); }); 
-</script> 
-</body> 
+ loadLocal();
+    checkWelcomeReady();
+    setConnectionStatus(false);
+    window.addEventListener('beforeunload', () => { saveLocal(); stopMedia(); }); });
+</script>
+
+<button id="pause-btn" class="pause-fab hidden" aria-label="Pause Study">⏸️</button>
+<div id="pause-modal" class="pause-overlay hidden" role="dialog" aria-labelledby="pause-title">
+  <div class="pause-content">
+    <h2 id="pause-title">Study Paused</h2>
+    <p>Take your time. Your progress is automatically saved.</p>
+    <div class="pause-info">
+      <div>Session: <span id="pause-session-id"></span></div>
+      <div>Current Item: <span id="pause-current-item"></span></div>
+      <div>Time Elapsed: <span id="pause-time-elapsed"></span></div>
+    </div>
+    <div class="pause-actions">
+      <button class="resume-btn primary">▶️ Resume Study</button>
+      <button class="save-exit-btn secondary">💾 Save & Exit</button>
+    </div>
+  </div>
+</div>
+</body>
 </html>
