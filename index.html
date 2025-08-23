@@ -1176,19 +1176,6 @@ function loadLocal() {
    WIAT-2 Scoring Reference (same as original)
    =========================== */
 const SCORING_REFERENCE = {
-  q75: {
-    twoPoint: {
-      patterns: [/great\s+spirit/i, /\bgod\b/i, /deity/i, /creator/i, /divine\s+being/i, /supreme\s+being/i]
-    },
-    onePoint: {
-      patterns: [/spirit\b/i, /supernatural/i]
-    },
-    notes: "Must indicate a divine/supreme being for 2 points."
-  },
-  q76: {
-    twoPoint: { patterns: [/\b7\b/, /\bseven\b/i] },
-    notes: "Must be exactly 7."
-  },
   q77: {
     twoPoint: { patterns: [/soil.*turtle/i, /turtle.*soil/i, /earth.*turtle/i] },
     onePoint: { patterns: [/earth/i, /brush/i, /bush/i] }
@@ -1205,43 +1192,9 @@ const SCORING_REFERENCE = {
     twoPoint: { patterns: [/think\s+about/i, /form.*plan/i, /ponder/i] },
     onePoint: { patterns: [/think\s+hard/i, /\bthink\b/i] }
   },
-  q82: {
-    twoPoint: { patterns: [/road.*covered.*debris/i, /traffic.*stop/i] },
-    onePoint: { patterns: [/snow.*covered.*road/i, /avalanche.*covered/i] }
-  },
   q83: {
     twoPoint: { patterns: [/tree.*branch/i, /\bdirt\b/i, /\brock/i, /\bmud\b/i, /junk/i] },
     onePoint: { patterns: [/\bsnow\b/i, /rubbish/i] }
-  },
-  q85: {
-    twoPoint: { patterns: [/like.*better/i, /prefer/i, /\blike\b/i] },
-    onePoint: { patterns: [/adore/i, /enjoy/i] }
-  },
-  q87: {
-    twoPoint: { patterns: [/bad.*weather.*cancel/i, /weather.*long.*distance/i] },
-    onePoint: { patterns: [/bad.*weather/i, /cancel/i] }
-  },
-  q88: {
-    twoPoint: {
-      patterns: [
-        /\binclement\b/i,
-        /(bad|severe|stormy|harsh|rough|foul|nasty)\s+(weather|storm|conditions)/i,
-        /(unpleasant|poor)\s+weather/i
-      ]
-    },
-    notes: "Full = clearly 'bad/severe/stormy weather'. Partial = mentions weather conditions without stating severity."
-  },
-  q89: {
-    onePoint: {
-      patterns: [
-        /(cold|freez|blizzard|snowstorm)/i,
-        /(bear|wolf|wolves|animal attack|wildlife)/i,
-        /(starv|hunger|food shortage|lack of food)/i,
-        /(rapid|river|ice.*break|thin ice|avalanche|landslide)/i,
-        /(sick|illness|injur|exhaustion|fatigue)/i
-      ]
-    },
-    notes: "Give 2 if two clear journey dangers are named; 1 for one credible danger. Often needs review."
   },
   q90: {
     twoPoint: {
@@ -1252,16 +1205,6 @@ const SCORING_REFERENCE = {
     },
     onePoint: { patterns: [/(does\s*not|doesn't|didn't)\s+want.*go/i, /(afraid|fear|scared)/i, /(cold|freez)/i] },
     notes: "Full credit if his reason is the cold/dangers/hardship noted by Diana."
-  },
-  q91: {
-    onePoint: {
-      patterns: [
-        /(surviv|persever|endure|overcome)/i,
-        /(family|together|teamwork|loyalty)/i,
-        /(courage|brave|risk|adventure)/i
-      ]
-    },
-    notes: "Give 2 for two accurate themes tied to the text; 1 for one plausible theme (review recommended)."
   },
   q92: {
     twoPoint: { patterns: [/(predictabl|hackneyed|clich[eé]|unoriginal|stale|trite)/i, /(same old|formula(ic)?)/i] },
@@ -2654,7 +2597,7 @@ function renderQAFields(trial) {
 }
 const MANUAL_REVIEW = new Set(['q98']); // technology proverb (manual)
 
-function scoreAnswer(scoringKey, text) {
+function legacyScore(scoringKey, text) {
   const val = (text || '').trim();
   if (!scoringKey || !SCORING_REFERENCE[scoringKey]) return { points: 0, note: 'no-key' };
   const ref = SCORING_REFERENCE[scoringKey];
@@ -2702,6 +2645,292 @@ if (scoringKey === 'q119') {
     return { points: 1, note: 'pattern-1' };
   }
   return { points: 0, note: 'no-match' };
+}
+
+// Synonym groups for broader matching
+const SYNONYM_GROUPS = {
+  bad_weather: ["terrible", "awful", "horrible", "severe", "harsh", "nasty", "poor", "foul"],
+  large_amount: ["huge", "enormous", "massive", "giant", "tremendous", "vast", "immense"],
+  understand: ["comprehend", "grasp", "realize", "recognize", "see", "get"],
+  important: ["crucial", "vital", "essential", "significant", "key", "major"],
+  scary: ["frightening", "terrifying", "fearful", "afraid", "worried", "concerned"]
+};
+
+function expandWithSynonyms(baseWords, synonymGroup) {
+  const synonyms = SYNONYM_GROUPS[synonymGroup] || [];
+  return [...baseWords, ...synonyms];
+}
+
+// Flexible semantic scoring configurations
+const FLEXIBLE_SCORING = {
+  q75: {
+    concept: 'divine_being',
+    fullCredit: [
+      ['great', 'spirit'], ['god'], ['deity'], ['creator'],
+      ['divine', 'being'], ['supreme', 'being'], ['higher', 'power']
+    ],
+    partialCredit: [
+      ['spirit'], ['supernatural'], ['mystical'], ['powerful']
+    ],
+    keywords: ['kwawar', 'great spirit', 'god', 'creator', 'divine'],
+    acceptSynonyms: true
+  },
+  q76: {
+    concept: 'number_seven',
+    exactNumber: 7,
+    acceptedForms: ['7', 'seven', 'VII', 'seven brothers', '7 brothers'],
+    flexible: false
+  },
+  q87: {
+    concept: 'weather_cancellation',
+    fullCredit: [
+      expandWithSynonyms(['bad', 'weather'], 'bad_weather').map(w => [w, 'weather']).flat(),
+      ['weather', 'cancelled'], ['storm', 'cancelled'], ['rain', 'cancelled']
+    ],
+    contextClues: ['track meet', 'events', 'cancelled', 'ended early'],
+    requiresContext: true
+  },
+  q88: {
+    concept: 'bad_weather',
+    fullCredit: [
+      ['bad', 'weather'], ['severe', 'weather'], ['stormy'],
+      ['harsh', 'weather'], ['terrible', 'weather'], ['awful', 'weather'],
+      ['poor', 'weather'], ['nasty', 'weather']
+    ],
+    partialCredit: [
+      ['weather'], ['storm'], ['rain'], ['cold'], ['wind']
+    ],
+    acceptSynonyms: true,
+    contextualHints: ['cancel', 'track meet', 'events']
+  }
+};
+
+// Alternate phrasing patterns
+const FLEXIBLE_PATTERNS = {
+  q82: {
+    concepts: [
+      {
+        idea: 'traffic_stopped',
+        expressions: ['traffic stopped', 'cars stopped', 'vehicles stopped', 'road blocked', "can't drive"]
+      },
+      {
+        idea: 'road_covered',
+        expressions: ['road covered', 'street covered', 'path blocked', 'debris on road', 'stuff on road']
+      }
+    ],
+    scoringRule: 'needs_both_concepts_for_full_credit'
+  },
+  q85: {
+    concepts: [
+      {
+        idea: 'preference',
+        expressions: ['like better', 'prefer', 'choose', 'want more', 'enjoy more', 'favor']
+      }
+    ],
+    acceptPartial: ['like', 'want', 'enjoy']
+  }
+};
+
+// Multi-part question scoring
+function scoreMultiPartQuestion(questionKey, answer) {
+  const multiPartQuestions = {
+    q89: {
+      dangers: [
+        ['cold', 'freezing', 'winter', 'ice', 'snow'],
+        ['animals', 'bear', 'wolf', 'wildlife', 'creature'],
+        ['starvation', 'hunger', 'food', 'starving', 'eat'],
+        ['river', 'water', 'rapid', 'drowning', 'stream'],
+        ['illness', 'sick', 'injury', 'hurt', 'medical'],
+        ['bandits', 'robbers', 'thieves', 'criminals', 'outlaws']
+      ],
+      minForFull: 2,
+      minForPartial: 1
+    },
+    q91: {
+      themes: [
+        ['family', 'together', 'unity', 'bond', 'relationship'],
+        ['survival', 'endure', 'persevere', 'overcome', 'struggle'],
+        ['courage', 'brave', 'fear', 'risk', 'adventure'],
+        ['independence', 'growing', 'teenager', 'adult', 'mature'],
+        ['dreams', 'goals', 'ambition', 'hope', 'future']
+      ],
+      minForFull: 2,
+      minForPartial: 1
+    }
+  };
+
+  const config = multiPartQuestions[questionKey];
+  if (!config) return { points: 0, method: 'not_configured' };
+
+  const text = answer.toLowerCase();
+  let matchedThemes = 0;
+
+  const sets = config.dangers || config.themes || [];
+  sets.forEach(themeWords => {
+    const hasTheme = themeWords.some(word => text.includes(word));
+    if (hasTheme) matchedThemes++;
+  });
+
+  if (matchedThemes >= config.minForFull) {
+    return { points: 2, method: 'multi_theme_full', concept: questionKey, themes: matchedThemes };
+  } else if (matchedThemes >= config.minForPartial) {
+    return { points: 1, method: 'multi_theme_partial', concept: questionKey, themes: matchedThemes };
+  }
+
+  return { points: 0, method: 'insufficient_themes', concept: questionKey, themes: matchedThemes };
+}
+
+function flexibleScore(questionKey, answer) {
+  // Check multi-part questions first
+  const multi = scoreMultiPartQuestion(questionKey, answer);
+  if (multi.method !== 'not_configured') return multi;
+
+  const scoring = FLEXIBLE_SCORING[questionKey];
+  if (!scoring) {
+    // Handle flexible pattern questions
+    const patternCfg = FLEXIBLE_PATTERNS[questionKey];
+    if (!patternCfg) return { points: 0, method: 'no_match', concept: undefined };
+
+    const text = answer.toLowerCase();
+    if (questionKey === 'q82') {
+      let hits = 0;
+      patternCfg.concepts.forEach(c => {
+        if (c.expressions.some(expr => text.includes(expr))) hits++;
+      });
+      if (hits >= 2) return { points: 2, method: 'flex_both_concepts', concept: 'avalanche_result' };
+      if (hits === 1) return { points: 1, method: 'flex_one_concept', concept: 'avalanche_result' };
+      return { points: 0, method: 'flex_none', concept: 'avalanche_result' };
+    }
+    if (questionKey === 'q85') {
+      const hasFull = patternCfg.concepts[0].expressions.some(expr => text.includes(expr));
+      if (hasFull) return { points: 2, method: 'flex_full', concept: 'fancy_preference' };
+      if (patternCfg.acceptPartial.some(expr => text.includes(expr))) {
+        return { points: 1, method: 'flex_partial', concept: 'fancy_preference' };
+      }
+      return { points: 0, method: 'flex_none', concept: 'fancy_preference' };
+    }
+
+    return { points: 0, method: 'no_match', concept: undefined };
+  }
+
+  const text = answer.toLowerCase().trim();
+
+  // Exact number handling
+  if (scoring.exactNumber !== undefined) {
+    const hasNumber = scoring.acceptedForms.some(form => text.includes(form.toLowerCase()));
+    return { points: hasNumber ? 2 : 0, method: 'exact_match', concept: scoring.concept };
+  }
+
+  let bestScore = 0;
+  let matchMethod = 'no_match';
+
+  for (const pattern of (scoring.fullCredit || [])) {
+    if (Array.isArray(pattern)) {
+      if (pattern.every(word => text.includes(word.toLowerCase()))) {
+        bestScore = Math.max(bestScore, 2);
+        matchMethod = 'full_concept';
+      }
+    } else if (text.includes(pattern.toLowerCase())) {
+      bestScore = Math.max(bestScore, 2);
+      matchMethod = 'full_concept';
+    }
+  }
+
+  if (bestScore < 2) {
+    for (const pattern of (scoring.partialCredit || [])) {
+      if (Array.isArray(pattern)) {
+        if (pattern.every(word => text.includes(word.toLowerCase()))) {
+          bestScore = Math.max(bestScore, 1);
+          matchMethod = 'partial_concept';
+        }
+      } else if (text.includes(pattern.toLowerCase())) {
+        bestScore = Math.max(bestScore, 1);
+        matchMethod = 'partial_concept';
+      }
+    }
+  }
+
+  if (bestScore === 0 && scoring.keywords) {
+    const hasKeyword = scoring.keywords.some(kw => text.includes(kw.toLowerCase()));
+    if (hasKeyword) {
+      bestScore = 1;
+      matchMethod = 'keyword_recognition';
+    }
+  }
+
+  return { points: bestScore, method: matchMethod, concept: scoring.concept };
+}
+
+function adjustForResponseLength(baseScore, answer, questionType) {
+  const wordCount = answer.trim().split(/\s+/).length;
+  if (questionType === 'explanation' && wordCount > 15 && baseScore === 1) {
+    const thoughtfulIndicators = [
+      'because', 'therefore', 'however', 'although', 'since', 'due to',
+      'as a result', 'this means', 'in other words', 'for example'
+    ];
+    const hasThoughtfulLanguage = thoughtfulIndicators.some(phrase =>
+      answer.toLowerCase().includes(phrase)
+    );
+    if (hasThoughtfulLanguage) {
+      return { points: Math.min(baseScore + 1, 2), bonus: 'thoughtful_explanation' };
+    }
+  }
+  if (questionType === 'vocabulary' && wordCount <= 3 && baseScore >= 1) {
+    return { points: baseScore, bonus: 'concise_correct' };
+  }
+  return { points: baseScore };
+}
+
+function assessScoringConfidence(score, method, questionKey) {
+  const confidence = {
+    HIGH: ['exact_match', 'full_concept', 'clear_pattern'],
+    MEDIUM: ['partial_concept', 'keyword_recognition', 'synonym_match'],
+    LOW: ['unclear_response', 'ambiguous_answer', 'needs_context'],
+    MANUAL: ['complex_reasoning', 'subjective_interpretation', 'multiple_valid_answers']
+  };
+
+  const alwaysManual = ['q98', 'q124', 'q135'];
+  if (alwaysManual.includes(questionKey)) {
+    return { confidence: 'MANUAL', needsReview: true };
+  }
+
+  for (const [level, methods] of Object.entries(confidence)) {
+    if (methods.includes(method)) {
+      return { confidence: level, needsReview: ['LOW', 'MANUAL'].includes(level) };
+    }
+  }
+
+  return { confidence: 'MEDIUM', needsReview: false };
+}
+
+const QUESTION_TYPES = {
+  q75: 'vocabulary',
+  q76: 'vocabulary',
+  q82: 'explanation',
+  q85: 'vocabulary',
+  q87: 'explanation',
+  q88: 'explanation',
+  q89: 'explanation',
+  q91: 'explanation'
+};
+
+function getQuestionType(key) {
+  return QUESTION_TYPES[key] || 'vocabulary';
+}
+
+function scoreAnswer(scoringKey, text) {
+  const flexResult = flexibleScore(scoringKey, text);
+  if (flexResult.points > 0 || flexResult.method !== 'no_match') {
+    const confidence = assessScoringConfidence(flexResult.points, flexResult.method, scoringKey);
+    const lengthAdjusted = adjustForResponseLength(flexResult.points, text, getQuestionType(scoringKey));
+    return {
+      points: lengthAdjusted.points,
+      note: `${flexResult.method} (confidence: ${confidence.confidence})`,
+      needsReview: confidence.needsReview,
+      concept: flexResult.concept
+    };
+  }
+  return legacyScore(scoringKey, text);
 }
 
 /* ===========================
