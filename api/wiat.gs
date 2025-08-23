@@ -22,6 +22,8 @@ function doPost(e) {
     }
 
     const data = JSON.parse(e.postData.contents);
+    // Allow requests without PID by falling back to initials
+    if (!data.pid && data.initials) data.pid = data.initials;
     console.log('📋 Action:', data.action);
 
     const ss = SpreadsheetApp.getActiveSpreadsheet();

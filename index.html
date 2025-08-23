@@ -573,17 +573,6 @@
                spellcheck="false" />
       </div>
       <div>
-        <label for="pid">Participant Code</label>
-        <input id="pid" type="text" placeholder="Enter participant code" required
-               maxlength="20"
-               pattern="[A-Za-z0-9_-]{1,20}"
-               title="Use letters, numbers, underscores, and hyphens only (max 20)"
-               inputmode="text"
-               autocomplete="off"
-               autocapitalize="off"
-               spellcheck="false" />
-      </div>
-      <div>
         <label for="edu">Education Level</label>
         <select id="edu" required>
           <option value="">Select...</option>
@@ -783,6 +772,10 @@
         <button type="button" id="skip" class="secondary">Skip</button>
       </div>
     </form>
+
+    <div class="center" style="margin-top: 16px;">
+      <button id="end-assessment" class="secondary">End Assessment</button>
+    </div>
   </div>
 
   <!-- Finish Screen -->
@@ -1012,7 +1005,6 @@ const BACKUP_TIMEOUT_MS = IS_GITHUB_PAGES ? 5000 : 3500;
 const BACKUP_REPO_OWNER = 'melodyfschwenk';
 const BACKUP_REPO_NAME = 'readingcomp';
 const BACKUP_DIR_HINT = 'data/sessions';
-const DISCONTINUE_AFTER_ZEROS = 6;
 
 const SESSION_ID = (() => {
   try { 
@@ -1054,7 +1046,6 @@ function announceToScreenReader(message, priority = 'polite') {
 }
 
 let state = {
-  pid: '',
   initials: '',
   edu: '',
   participantGroup: '',
@@ -2235,14 +2226,12 @@ function determineRecordingNeeds() {
 }
 
 function checkWelcomeReady() {
-  const hasPid = document.getElementById('pid').value.trim().length > 0;
   const hasInitials = document.getElementById('initials').value.trim().length > 0;
   const hasEdu = document.getElementById('edu').value.trim().length > 0;
   const group = document.querySelector('input[name="participant-group"]:checked');
   const consent = document.getElementById('consent').checked;
   const finalAck = document.getElementById('final-ack').checked;
 
-  state.pid = document.getElementById('pid').value.trim();
   state.initials = document.getElementById('initials').value.trim();
   state.edu = document.getElementById('edu').value.trim();
   state.participantGroup = group ? group.value : '';
@@ -2258,7 +2247,7 @@ function checkWelcomeReady() {
   }
 
   // Enable continue only if everything required is present
-  const ready = hasPid && hasInitials && hasEdu && !!group && consent && finalAck;
+  const ready = hasInitials && hasEdu && !!group && consent && finalAck;
   document.getElementById('begin').disabled = !ready;
 }
 
@@ -2443,7 +2432,6 @@ async function uploadBlob(kind, blob, meta = {}) {
     return postWithTimeout(GOOGLE_SCRIPT_URL, {
       action: 'upload_blob',
       sessionId: SESSION_ID,
-      pid: state.pid,
       initials: state.initials,
       itemNumber: currentTrial()?.item,
       kind, mime: blob.type, data,
@@ -2960,7 +2948,6 @@ function renderTrial(trial) {
   
   // 🔹 TRIAL-BY-TRIAL: item_started
   gsPost('item_started', {
-    pid: state.pid,
     initials: state.initials,
     itemNumber: trial.item,
     imageFile: '', // text-only now
@@ -3056,7 +3043,6 @@ function handleReadingDone() {
   const wc = text ? text.split(/\s+/).filter(Boolean).length : 0;
 
   gsPost('reading_time', {
-    pid: state.pid,
     initials: state.initials,
     itemNumber: trial.item,
     imageFile: '',
@@ -3168,7 +3154,6 @@ function handleStopRecording() {
   const durSec = durText.split(':').reduce((m, s) => m * 60 + (+s || 0), 0);
 
     gsPost('item_completed', {
-  pid: state.pid,
   initials: state.initials,
   itemNumber: trial.item,
   endTime: new Date().toISOString(),
@@ -3183,13 +3168,6 @@ function handleStopRecording() {
   itemType: 'read-aloud'
 });
 
-
-  // Discontinue rule
-  if (DISCONTINUE_AFTER_ZEROS > 0 && state.consecutiveZeros >= DISCONTINUE_AFTER_ZEROS) {
-    announceToScreenReader('Assessment will end early due to repeated zero scores.', 'assertive');
-    finishAssessment('Stopped early due to scoring rule.');
-    return;
-  }
 
   goNextOrFinish();
 }
@@ -3210,7 +3188,6 @@ function handleSkipRecording() {
   });
 
   gsPost('item_completed', {
-    pid: state.pid,
     initials: state.initials,
     itemNumber: trial.item,
     endTime: new Date().toISOString(),
@@ -3243,7 +3220,6 @@ function handleSkipRecording() {
   });
 
   gsPost('item_skipped', {
-    pid: state.pid,
     initials: state.initials,
     itemNumber: trial.item,
     timestamp: new Date().toISOString(),
@@ -3252,10 +3228,6 @@ function handleSkipRecording() {
     consecutiveZeros: state.consecutiveZeros
   });
 
-  if (DISCONTINUE_AFTER_ZEROS > 0 && state.consecutiveZeros >= DISCONTINUE_AFTER_ZEROS) {
-    finishAssessment('Stopped early due to scoring rule.');
-    return;
-  }
   goNextOrFinish();
 }
 
@@ -3309,7 +3281,6 @@ async function uploadAll() {
   const payload = {
     action: 'study_completed',
     sessionId: SESSION_ID,
-    pid: state.pid,
     initials: state.initials,
     edu: state.edu,
     group: state.participantGroup,
@@ -3373,7 +3344,7 @@ async function uploadAll() {
 function downloadLocalBackup() {
   const data = {
     sessionId: SESSION_ID,
-    pid: state.pid,
+    initials: state.initials,
     edu: state.edu,
     group: state.participantGroup,
     modality: state.readModality,
@@ -3414,14 +3385,12 @@ Timers.stopAll();
   await uploadAll();
     // 🔹 TRIAL-BY-TRIAL: session_complete
 gsPost('session_complete', {
-  pid: state.pid,
   initials: state.initials,
   timestamp: new Date().toISOString(),
   duration: Math.round((Date.now() - (state.sessionStartTime || Date.now())) / 60000),
   itemsCompleted: state.results.length,
   totalScore: state.totalPoints,
   consecutiveZeros: state.consecutiveZeros,
-  discontinued: !!reason && /stopp?ed/i.test(reason),
   gateItemsFailed: (state.gateItemsFailed || []).join(', ')
 });
     }
@@ -3517,7 +3486,6 @@ function handleQASubmit(e) {
   const conf = trialPoints >= 2 ? 'High' : (trialPoints > 0 ? 'Medium' : 'Low');
 
   gsPost('item_completed', {
-    pid: state.pid,
     initials: state.initials,
     itemNumber: trial.item,
     endTime: new Date().toISOString(),
@@ -3533,13 +3501,6 @@ function handleQASubmit(e) {
     questionText: qText,
     itemType: 'question'
   });
-
-  // discontinue rule
-  if (DISCONTINUE_AFTER_ZEROS > 0 && state.consecutiveZeros >= DISCONTINUE_AFTER_ZEROS) {
-    announceToScreenReader('Assessment will end early due to repeated zero scores.', 'assertive');
-    finishAssessment('Stopped early due to scoring rule.');
-    return;
-  }
 
   goNextOrFinish();
 }
@@ -3594,7 +3555,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   // ——— Welcome form events ———
   document.getElementById('initials').addEventListener('input', checkWelcomeReady);
-  document.getElementById('pid').addEventListener('input', checkWelcomeReady);
   document.getElementById('edu').addEventListener('change', checkWelcomeReady);
   document.getElementById('consent').addEventListener('change', checkWelcomeReady);
   document.getElementById('final-ack').addEventListener('change', checkWelcomeReady);
@@ -3664,7 +3624,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (pb) pb.classList.remove('hidden');
 
     gsPost('session_start', {
-      pid: state.pid,
       initials: state.initials,
       education: state.edu,
       timestamp: new Date().toISOString(),
@@ -3691,6 +3650,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ——— QA form ———
   document.getElementById('qa-form').addEventListener('submit', handleQASubmit);
   document.getElementById('skip').addEventListener('click', handleQASkip);
+  document.getElementById('end-assessment').addEventListener('click', () => finishAssessment('Participant ended early.'));
 
   // ——— Finish actions ———
   document.getElementById('retry-upload').addEventListener('click', uploadAll);
