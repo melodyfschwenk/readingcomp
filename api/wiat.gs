@@ -1056,7 +1056,7 @@ function generateItemStats() {
       s.attempts > 0 ? (s.totalScore / s.attempts).toFixed(2) : 0,
       s.attempts > 0 ? (s.skipped / s.attempts * 100).toFixed(1) + '%' : '0%',
       s.attempts > 0 ? (s.needsReview / s.attempts * 100).toFixed(1) + '%' : '0%'
-    ]]]);
+    ]]);
   });
 }
 
