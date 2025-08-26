@@ -401,7 +401,9 @@ function handleBlobUpload(data) {
     );
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const extension = data.kind === 'video' ? '.mp4' : '.mp3';
+    const extension = data.kind === 'video'
+      ? '.mp4'
+      : (data.mime && data.mime.indexOf('audio/mp4') !== -1 ? '.m4a' : '.mp3');
     const mime = data.mime || (data.kind === 'video' ? 'video/mp4' : 'audio/mpeg');
     const filename = `${idKey}_item${data.itemNumber || 'full'}_${timestamp}${extension}`;
 

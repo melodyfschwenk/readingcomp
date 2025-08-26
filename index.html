@@ -2409,6 +2409,7 @@ function saveAndExit() {
         'video/webm'
       ]
     : [
+        'audio/mp4',
         'audio/mpeg',
         'audio/webm;codecs=opus',
         'audio/webm',
@@ -2532,7 +2533,7 @@ function startMediaRecorder(onStop) {
 
     mr.ondataavailable = e => { if (e.data && e.data.size > 0) state.recordedChunks.push(e.data); };
     mr.onstop = async () => {
-      const blob = new Blob(state.recordedChunks, { type: state.recordMime || (state.useVideoRecording ? 'video/mp4' : 'audio/mpeg') });
+      const blob = new Blob(state.recordedChunks, { type: state.recordMime || (state.useVideoRecording ? 'video/mp4' : 'audio/mp4') });
       try { if (typeof onStop === 'function') onStop(blob); } catch {}
       // Upload the blob “best effort”
       uploadBlob(state.useVideoRecording ? 'video' : 'audio', blob).catch(()=>{});
