@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light">
-    <title>WIAT-2 Reading Comprehension Study</title>
+    <title>Reading Comprehension Study</title>
     <style>
   /* Light theme */
   :root {
@@ -546,7 +546,7 @@
 
   <!-- Welcome Screen -->
   <div id="screen-welcome" class="card">
-    <h1>WIAT-2 Reading Comprehension Study</h1>
+    <h1>Reading Comprehension Study</h1>
     <p class="muted">Please enter your information to begin.</p>
     <div class="warning-box" role="alert">
       <span class="warning-icon" aria-hidden="true">⚠️</span>
@@ -1123,11 +1123,11 @@ let testTimerSec = 0;
     
     // Try localStorage first
     try {
-      localStorage.setItem('wiat2_session', JSON.stringify(snapshot));
+      localStorage.setItem('readingcomp_session', JSON.stringify(snapshot));
     } catch (e) {
       // If localStorage fails (quota exceeded), try sessionStorage
       console.warn('localStorage failed, using sessionStorage:', e);
-      sessionStorage.setItem('wiat2_session', JSON.stringify(snapshot));
+      sessionStorage.setItem('readingcomp_session', JSON.stringify(snapshot));
     }
   } catch (e) {
     console.error('Failed to save session:', e);
@@ -1137,11 +1137,11 @@ let testTimerSec = 0;
 function loadLocal() {
   try {
     // Try localStorage first
-    let data = localStorage.getItem('wiat2_session');
+    let data = localStorage.getItem('readingcomp_session');
     
     // Fallback to sessionStorage
     if (!data) {
-      data = sessionStorage.getItem('wiat2_session');
+      data = sessionStorage.getItem('readingcomp_session');
     }
     
     if (data) {
@@ -1166,7 +1166,7 @@ function loadLocal() {
 }
 
 /* ===========================
-   WIAT-2 Scoring Reference (same as original)
+   Scoring Reference (same as original)
    =========================== */
 const SCORING_REFERENCE = {
   q77: {

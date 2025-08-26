@@ -1,6 +1,6 @@
-# WIAT-2 Reading Comprehension Study
+# Reading Comprehension Study
 
-This repository contains materials related to the WIAT-2 Reading Comprehension Study. It provides the web interface, stimulus assets, and scripts used to manage participant data.
+This repository contains materials related to a reading comprehension study. It provides the web interface, stimulus assets, and scripts used to manage participant data.
 
 ## Repository Structure
 - `index.html` – Landing page for the study interface.
