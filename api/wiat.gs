@@ -1,6 +1,6 @@
 // ===============================================
 // WIAT-2 READING COMPREHENSION - GOOGLE APPS SCRIPT
-// (Initials-only edition; PID removed end-to-end)
+// (Merged-ID edition: stores Initials _and_ PID in a single "Initials" value)
 // ===============================================
 
 // ---------- CONFIG ----------
@@ -18,6 +18,23 @@ const CENTRAL_SYNC = {
 };
 
 // ===============================================
+// ID helpers (merge PID + Initials without losing either)
+// ===============================================
+function _norm_(s){ return String(s || '').trim(); }
+function makeIdKey_(initials, pid){
+  const i = _norm_(initials), p = _norm_(pid);
+  if (i && p) {
+    // avoid double-joining if user already sent merged
+    if (i === p || i.indexOf(p) !== -1 || p.indexOf(i) !== -1) return i.length >= p.length ? i : p;
+    return i + '_' + p;
+  }
+  return i || p || 'UNKNOWN';
+}
+function idFromPayload_(data){
+  return makeIdKey_(data.initials, data.pid);
+}
+
+// ===============================================
 // MAIN HANDLER
 // ===============================================
 function doPost(e) {
@@ -30,39 +47,23 @@ function doPost(e) {
 
     switch (data.action) {
       // Trial-by-trial
-      case 'session_start':
-        return handleSessionStart(ss, data);
+      case 'session_start':     return handleSessionStart(ss, data);
+      case 'item_started':      return handleItemStarted(ss, data);
+      case 'item_completed':    return handleItemCompleted(ss, data);
+      case 'item_skipped':      return handleItemSkipped(ss, data);
+      case 'reading_time':      return handleReadingTime(ss, data);
 
-      case 'item_started':
-        return handleItemStarted(ss, data);
+      // Upload
+      case 'video_upload':      return handleVideoUpload(data);
+      case 'upload_blob':       return handleBlobUpload(data);
 
-      case 'item_completed':
-        return handleItemCompleted(ss, data);
+      // Session control
+      case 'session_complete':  return handleSessionComplete(ss, data);
+      case 'get_session':       return getSessionData(ss, idFromPayload_(data));
 
-      case 'item_skipped':
-        return handleItemSkipped(ss, data);
-
-      case 'reading_time':
-        return handleReadingTime(ss, data);
-
-      case 'video_upload':
-        return handleVideoUpload(data);
-
-      case 'upload_blob':
-        return handleBlobUpload(data);
-
-      case 'session_complete':
-        return handleSessionComplete(ss, data);
-
-      case 'get_session':
-        return getSessionData(ss, data.initials || data.pid || '');
-
-      case 'save_backup':
-        return saveBackupData(ss, data);
-
-      // Single-payload summary mode (text-only frontend)
-      case 'study_completed':
-        return handleStudyCompleted(ss, data);
+      // Backup / summary ingest
+      case 'save_backup':       return saveBackupData(ss, data);
+      case 'study_completed':   return handleStudyCompleted(ss, data);
 
       default:
         logEvent(ss, data);
@@ -75,25 +76,19 @@ function doPost(e) {
 }
 
 // ===============================================
-// SESSION MANAGEMENT (Initials as key)
+// SESSION MANAGEMENT (Merged ID as key)
 // ===============================================
 function handleSessionStart(ss, data) {
-  const sessionsSheet = getOrCreateSheet(ss, 'Sessions', [
-    'Initials', 'Education', 'Start Time', 'End Time', 'Duration (min)',
-    'Items Completed', 'Total Score', 'Consecutive Zeros',
-    'Status', 'Discontinued', 'Gate Items Failed', 'Admin Mode',
-    'Recording', 'IP Address', 'User Agent', 'Notes'
-  ]);
+  const sessionsSheet = getOrCreateSheet(ss, 'Sessions', SESSIONS_HEADERS());
+  const idKey = idFromPayload_(data);
+  if (idKey === 'UNKNOWN') return createResponse({ status: 'error', message: 'Missing initials / pid' });
 
-  const initials = (data.initials || data.pid || '').trim(); // fallback if old client sends pid
-  if (!initials) return createResponse({ status: 'error', message: 'Missing initials' });
-
-  const existingRow = findRowByInitials(sessionsSheet, initials);
+  const existingRow = findRowByInitials(sessionsSheet, idKey);
   if (existingRow > 0) {
     sessionsSheet.getRange(existingRow, 9).setValue('Active'); // Status
     sessionsSheet.getRange(existingRow, 16).setValue('Session resumed at ' + (data.timestamp || new Date().toISOString()));
-    wiat_central__touchSession(initials, data.timestamp);
-    wiat_central__logEvent(initials, 'WIAT: Session Resumed', '', data.timestamp);
+    wiat_central__touchSession(idKey, data.timestamp);
+    wiat_central__logEvent(idKey, 'WIAT: Session Resumed', '', data.timestamp);
 
     return createResponse({
       status: 'success',
@@ -103,7 +98,7 @@ function handleSessionStart(ss, data) {
   }
 
   sessionsSheet.appendRow([
-    initials,
+    idKey,
     data.education || '',
     data.timestamp || new Date().toISOString(),
     '', // End time
@@ -122,11 +117,11 @@ function handleSessionStart(ss, data) {
   ]);
 
   const recordingsFolder = getOrCreateFolder(CONFIG.RECORDINGS_FOLDER_NAME);
-  getOrCreateFolder(`${initials}_${(data.timestamp || new Date().toISOString()).split('T')[0]}`, recordingsFolder);
+  getOrCreateFolder(`${idKey}_${(data.timestamp || new Date().toISOString()).split('T')[0]}`, recordingsFolder);
 
-  logEvent(ss, { ...data, initials, eventType: 'Session Started' });
-  wiat_central__touchSession(initials, data.timestamp);
-  wiat_central__logEvent(initials, 'WIAT: Session Started', '', data.timestamp);
+  logEvent(ss, { ...data, initials: idKey, eventType: 'Session Started' });
+  wiat_central__touchSession(idKey, data.timestamp);
+  wiat_central__logEvent(idKey, 'WIAT: Session Started', '', data.timestamp);
 
   return createResponse({ status: 'success', message: 'Session created' });
 }
@@ -135,19 +130,14 @@ function handleSessionStart(ss, data) {
 // ITEM TRACKING
 // ===============================================
 function handleItemStarted(ss, data) {
-  const initials = (data.initials || data.pid || '').trim();
-  if (!initials) return createResponse({ status: 'error', message: 'Missing initials' });
+  const idKey = idFromPayload_(data);
+  if (idKey === 'UNKNOWN') return createResponse({ status: 'error', message: 'Missing initials / pid' });
 
-  const itemsSheet = getOrCreateSheet(ss, 'Item_Responses', [
-    'Timestamp', 'Initials', 'Item Number', 'Image File', 'Question Text',
-    'Item Type', 'Start Time', 'End Time', 'Duration (sec)',
-    'Response', 'Explanation', 'Auto Score', 'Score Confidence',
-    'Needs Review', 'Scoring Notes', 'Final Score', 'Skip Reason'
-  ]);
+  const itemsSheet = getOrCreateSheet(ss, 'Item_Responses', ITEM_RESP_HEADERS());
 
   itemsSheet.appendRow([
     new Date(),
-    initials,
+    idKey,
     data.itemNumber,
     data.imageFile || '',
     data.questionText || '',
@@ -159,39 +149,31 @@ function handleItemStarted(ss, data) {
     '', '', '', ''
   ]);
 
-  const progressSheet = getOrCreateSheet(ss, 'Item_Progress', [
-    'Timestamp', 'Initials', 'Item', 'Event', 'Details'
-  ]);
+  const progressSheet = getOrCreateSheet(ss, 'Item_Progress', ['Timestamp','Initials','Item','Event','Details']);
   progressSheet.appendRow([
     new Date(),
-    initials,
+    idKey,
     data.itemNumber,
     'Started',
     `Type: ${data.itemType || 'question'}, Image: ${data.imageFile || ''}`
   ]);
 
-  updateSessionActivity(ss, initials, data.timestamp || new Date().toISOString());
-  wiat_central__touchSession(initials, data.timestamp);
-  wiat_central__logEvent(initials, 'WIAT: Item Started', 'Item ' + data.itemNumber, data.timestamp);
+  updateSessionActivity(ss, idKey, data.timestamp || new Date().toISOString());
+  wiat_central__touchSession(idKey, data.timestamp);
+  wiat_central__logEvent(idKey, 'WIAT: Item Started', 'Item ' + data.itemNumber, data.timestamp);
 
   return createResponse({ status: 'success' });
 }
 
 function handleItemCompleted(ss, data) {
-  const initials = (data.initials || data.pid || '').trim();
-  if (!initials) return createResponse({ status: 'error', message: 'Missing initials' });
+  const idKey = idFromPayload_(data);
+  if (idKey === 'UNKNOWN') return createResponse({ status: 'error', message: 'Missing initials / pid' });
 
-  const itemsSheet = getOrCreateSheet(ss, 'Item_Responses', [
-    'Timestamp', 'Initials', 'Item Number', 'Image File', 'Question Text',
-    'Item Type', 'Start Time', 'End Time', 'Duration (sec)',
-    'Response', 'Explanation', 'Auto Score', 'Score Confidence',
-    'Needs Review', 'Scoring Notes', 'Final Score', 'Skip Reason'
-  ]);
-
+  const itemsSheet = getOrCreateSheet(ss, 'Item_Responses', ITEM_RESP_HEADERS());
   const values = itemsSheet.getDataRange().getValues();
   let targetRow = -1;
   for (let i = values.length - 1; i >= 1; i--) {
-    if (String(values[i][1]) === initials &&
+    if (String(values[i][1]) === idKey &&
         String(values[i][2]) === String(data.itemNumber) &&
         !values[i][7]) { // End Time blank
       targetRow = i + 1;
@@ -218,7 +200,7 @@ function handleItemCompleted(ss, data) {
   } else {
     itemsSheet.appendRow([
       new Date(),
-      initials,
+      idKey,
       data.itemNumber,
       data.imageFile || '',
       data.questionText || '',
@@ -237,24 +219,22 @@ function handleItemCompleted(ss, data) {
     ]);
   }
 
-  const progressSheet = getOrCreateSheet(ss, 'Item_Progress', [
-    'Timestamp', 'Initials', 'Item', 'Event', 'Details'
-  ]);
+  const progressSheet = getOrCreateSheet(ss, 'Item_Progress', ['Timestamp','Initials','Item','Event','Details']);
   progressSheet.appendRow([
     new Date(),
-    initials,
+    idKey,
     data.itemNumber,
     'Completed',
     `Score: ${autoScore}, Confidence: ${data.scoreConfidence}, Review: ${needsReview ? 'YES' : 'NO'}`
   ]);
 
-  updateSessionTotals(ss, initials, Number(finalScore) || 0, Number(data.consecutiveZeros) || 0);
+  updateSessionTotals(ss, idKey, Number(finalScore) || 0, Number(data.consecutiveZeros) || 0);
 
-  saveDetailedScoring(ss, { ...data, initials, autoScore: autoScore, needsReview: needsReview });
+  saveDetailedScoring(ss, { ...data, initials: idKey, autoScore: autoScore, needsReview: needsReview });
 
-  wiat_central__touchSession(initials, data.endTime || data.timestamp);
+  wiat_central__touchSession(idKey, data.endTime || data.timestamp);
   wiat_central__logEvent(
-    initials,
+    idKey,
     'WIAT: Item Completed',
     'Item ' + data.itemNumber + ' | autoScore=' + (data.autoScore !== undefined ? data.autoScore : ''),
     data.endTime || data.timestamp
@@ -264,20 +244,14 @@ function handleItemCompleted(ss, data) {
 }
 
 function handleItemSkipped(ss, data) {
-  const initials = (data.initials || data.pid || '').trim();
-  if (!initials) return createResponse({ status: 'error', message: 'Missing initials' });
+  const idKey = idFromPayload_(data);
+  if (idKey === 'UNKNOWN') return createResponse({ status: 'error', message: 'Missing initials / pid' });
 
-  const itemsSheet = getOrCreateSheet(ss, 'Item_Responses', [
-    'Timestamp', 'Initials', 'Item Number', 'Image File', 'Question Text',
-    'Item Type', 'Start Time', 'End Time', 'Duration (sec)',
-    'Response', 'Explanation', 'Auto Score', 'Score Confidence',
-    'Needs Review', 'Scoring Notes', 'Final Score', 'Skip Reason'
-  ]);
-
+  const itemsSheet = getOrCreateSheet(ss, 'Item_Responses', ITEM_RESP_HEADERS());
   const ts = data.timestamp || new Date().toISOString();
   itemsSheet.appendRow([
     new Date(),
-    initials,
+    idKey,
     data.itemNumber,
     data.imageFile || '',
     data.questionText || '',
@@ -295,21 +269,19 @@ function handleItemSkipped(ss, data) {
     data.reason || 'User choice'
   ]);
 
-  const progressSheet = getOrCreateSheet(ss, 'Item_Progress', [
-    'Timestamp', 'Initials', 'Item', 'Event', 'Details'
-  ]);
+  const progressSheet = getOrCreateSheet(ss, 'Item_Progress', ['Timestamp','Initials','Item','Event','Details']);
   progressSheet.appendRow([
     new Date(),
-    initials,
+    idKey,
     data.itemNumber,
     'Skipped',
     data.reason || 'User choice'
   ]);
 
-  updateSessionTotals(ss, initials, 0, Number(data.consecutiveZeros) || 0);
+  updateSessionTotals(ss, idKey, 0, Number(data.consecutiveZeros) || 0);
 
-  wiat_central__touchSession(initials, ts);
-  wiat_central__logEvent(initials, 'WIAT: Item Skipped', 'Item ' + data.itemNumber + ' | ' + (data.reason || 'User choice'), ts);
+  wiat_central__touchSession(idKey, ts);
+  wiat_central__logEvent(idKey, 'WIAT: Item Skipped', 'Item ' + data.itemNumber + ' | ' + (data.reason || 'User choice'), ts);
 
   return createResponse({ status: 'success' });
 }
@@ -318,8 +290,8 @@ function handleItemSkipped(ss, data) {
 // READING TIME TRACKING
 // ===============================================
 function handleReadingTime(ss, data) {
-  const initials = (data.initials || data.pid || '').trim();
-  if (!initials) return createResponse({ status: 'error', message: 'Missing initials' });
+  const idKey = idFromPayload_(data);
+  if (idKey === 'UNKNOWN') return createResponse({ status: 'error', message: 'Missing initials / pid' });
 
   const readingSheet = getOrCreateSheet(ss, 'Reading_Times', [
     'Timestamp', 'Initials', 'Item', 'Image', 'Reading Type',
@@ -328,7 +300,7 @@ function handleReadingTime(ss, data) {
 
   readingSheet.appendRow([
     new Date(),
-    initials,
+    idKey,
     data.itemNumber,
     data.imageFile || '',
     data.readingType || 'silent',
@@ -346,8 +318,8 @@ function handleReadingTime(ss, data) {
 // ===============================================
 function handleVideoUpload(data) {
   try {
-    const initials = (data.initials || data.pid || '').trim();
-    if (!initials || !data.videoData) throw new Error('Missing required fields');
+    const idKey = idFromPayload_(data);
+    if (idKey === 'UNKNOWN' || !data.videoData) throw new Error('Missing required fields');
 
     const videoBytes = Utilities.base64Decode(data.videoData);
     const maxSize = 25 * 1024 * 1024; // 25MB
@@ -355,12 +327,12 @@ function handleVideoUpload(data) {
 
     const recordingsFolder = getOrCreateFolder(CONFIG.RECORDINGS_FOLDER_NAME);
     const participantFolder = getOrCreateFolder(
-      `${initials}_${data.sessionDate || new Date().toISOString().split('T')[0]}`,
+      `${idKey}_${data.sessionDate || new Date().toISOString().split('T')[0]}`,
       recordingsFolder
     );
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `${initials}_item${data.itemNumber || 'full'}_${timestamp}.mp4`;
+    const filename = `${idKey}_item${data.itemNumber || 'full'}_${timestamp}.mp4`;
 
     const blob = Utilities.newBlob(videoBytes, 'video/mp4', filename);
     const file = participantFolder.createFile(blob);
@@ -373,7 +345,7 @@ function handleVideoUpload(data) {
 
     videoSheet.appendRow([
       new Date(),
-      initials,
+      idKey,
       data.itemNumber || 'Full Session',
       filename,
       file.getId(),
@@ -382,7 +354,7 @@ function handleVideoUpload(data) {
       'Success'
     ]);
 
-    wiat_central__logVideo(initials, data.itemNumber, {
+    wiat_central__logVideo(idKey, data.itemNumber, {
       filename: filename,
       id: file.getId(),
       url: file.getUrl(),
@@ -402,7 +374,7 @@ function handleVideoUpload(data) {
     ]);
     errorSheet.appendRow([
       new Date(),
-      (data && (data.initials || data.pid)) || 'unknown',
+      (idFromPayload_(data) || 'unknown'),
       (data && data.itemNumber) || '',
       error.toString(),
       'Video Upload'
@@ -413,8 +385,8 @@ function handleVideoUpload(data) {
 
 function handleBlobUpload(data) {
   try {
-    const initials = (data.initials || data.pid || '').trim();
-    if (!initials || !data.data) throw new Error('Missing required fields');
+    const idKey = idFromPayload_(data);
+    if (idKey === 'UNKNOWN' || !data.data) throw new Error('Missing required fields');
 
     const bytes = Utilities.base64Decode(data.data);
     const maxSize = 25 * 1024 * 1024; // 25MB
@@ -424,14 +396,14 @@ function handleBlobUpload(data) {
 
     const recordingsFolder = getOrCreateFolder(CONFIG.RECORDINGS_FOLDER_NAME);
     const participantFolder = getOrCreateFolder(
-      `${initials}_${data.sessionDate || new Date().toISOString().split('T')[0]}`,
+      `${idKey}_${data.sessionDate || new Date().toISOString().split('T')[0]}`,
       recordingsFolder
     );
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const extension = data.kind === 'video' ? '.mp4' : '.mp3';
     const mime = data.mime || (data.kind === 'video' ? 'video/mp4' : 'audio/mpeg');
-    const filename = `${initials}_item${data.itemNumber || 'full'}_${timestamp}${extension}`;
+    const filename = `${idKey}_item${data.itemNumber || 'full'}_${timestamp}${extension}`;
 
     const blob = Utilities.newBlob(bytes, mime, filename);
     const file = participantFolder.createFile(blob);
@@ -445,7 +417,7 @@ function handleBlobUpload(data) {
 
     sheet.appendRow([
       new Date(),
-      initials,
+      idKey,
       data.itemNumber || 'Full Session',
       filename,
       file.getId(),
@@ -455,7 +427,7 @@ function handleBlobUpload(data) {
     ]);
 
     if ((data.kind || '').toLowerCase() === 'video') {
-      wiat_central__logVideo(initials, data.itemNumber, {
+      wiat_central__logVideo(idKey, data.itemNumber, {
         filename: filename,
         id: file.getId(),
         url: file.getUrl(),
@@ -477,7 +449,7 @@ function handleBlobUpload(data) {
 
     errorSheet.appendRow([
       new Date(),
-      (data && (data.initials || data.pid)) || 'unknown',
+      (idFromPayload_(data) || 'unknown'),
       (data && data.itemNumber) || '',
       error.toString(),
       (data && data.kind === 'video') ? 'Video Upload' : 'Audio Upload'
@@ -491,17 +463,12 @@ function handleBlobUpload(data) {
 // SESSION COMPLETION
 // ===============================================
 function handleSessionComplete(ss, data) {
-  const initials = (data.initials || data.pid || '').trim();
-  if (!initials) return createResponse({ status: 'error', message: 'Missing initials' });
+  const idKey = idFromPayload_(data);
+  if (idKey === 'UNKNOWN') return createResponse({ status: 'error', message: 'Missing initials / pid' });
 
-  const sessionsSheet = getOrCreateSheet(ss, 'Sessions', [
-    'Initials', 'Education', 'Start Time', 'End Time', 'Duration (min)',
-    'Items Completed', 'Total Score', 'Consecutive Zeros',
-    'Status', 'Discontinued', 'Gate Items Failed', 'Admin Mode',
-    'Recording', 'IP Address', 'User Agent', 'Notes'
-  ]);
+  const sessionsSheet = getOrCreateSheet(ss, 'Sessions', SESSIONS_HEADERS());
 
-  const row = findRowByInitials(sessionsSheet, initials);
+  const row = findRowByInitials(sessionsSheet, idKey);
   if (row > 0) {
     sessionsSheet.getRange(row, 4).setValue(data.timestamp || new Date());                 // End Time
     sessionsSheet.getRange(row, 5).setValue(Number(data.duration) || 0);                   // Duration (min)
@@ -513,22 +480,22 @@ function handleSessionComplete(ss, data) {
     sessionsSheet.getRange(row,11).setValue(data.gateItemsFailed || '');                   // Gate Items Failed
   }
 
-  saveBackupData(ss, { ...data, initials });
-  generateParticipantSummary(ss, initials);
-  logEvent(ss, { ...data, initials, eventType: 'Session Complete' });
+  saveBackupData(ss, { ...data, initials: idKey });
+  generateParticipantSummary(ss, idKey);
+  logEvent(ss, { ...data, initials: idKey, eventType: 'Session Complete' });
 
   // Central: write one consolidated completion row
   const endTs = data.timestamp || new Date().toISOString();
   const elapsedSec = toSeconds_(data.duration); // minutes→seconds if it looks like minutes
-  wiat_central__logTask(initials, 'Completed', {
+  wiat_central__logTask(idKey, 'Completed', {
     timestamp: endTs,
     endTime: endTs,
     elapsed: elapsedSec,
     active: elapsedSec,
     details: 'WIAT totalScore=' + (Number(data.totalScore) || 0)
   });
-  wiat_central__touchSession(initials, endTs);
-  wiat_central__logEvent(initials, 'WIAT: Session Completed',
+  wiat_central__touchSession(idKey, endTs);
+  wiat_central__logEvent(idKey, 'WIAT: Session Completed',
     'items=' + (Number(data.itemsCompleted)||0) + ', score=' + (Number(data.totalScore)||0),
     endTs);
 
@@ -539,15 +506,10 @@ function handleSessionComplete(ss, data) {
 // SINGLE-PAYLOAD SUMMARY INGEST
 // ===============================================
 function handleStudyCompleted(ss, data) {
-  const initials = (data.initials || data.pid || '').trim();
-  if (!initials) return createResponse({ status: 'error', message: 'Missing initials' });
+  const idKey = makeIdKey_(data.initials, data.pid);
+  if (idKey === 'UNKNOWN') return createResponse({ status: 'error', message: 'Missing initials / pid' });
 
-  const sessions = getOrCreateSheet(ss, 'Sessions', [
-    'Initials','Education','Start Time','End Time','Duration (min)',
-    'Items Completed','Total Score','Consecutive Zeros',
-    'Status','Discontinued','Gate Items Failed','Admin Mode',
-    'Recording','IP Address','User Agent','Notes'
-  ]);
+  const sessions = getOrCreateSheet(ss, 'Sessions', SESSIONS_HEADERS());
 
   const start = data.startedAt ? new Date(data.startedAt) : null;
   const end   = data.finishedAt ? new Date(data.finishedAt) : null;
@@ -555,10 +517,10 @@ function handleStudyCompleted(ss, data) {
   const itemsCompleted = Number((data.totals && data.totals.items) || (data.results ? data.results.length : 0));
   const totalScore = Number((data.totals && data.totals.points) || 0);
 
-  const row = findRowByInitials(sessions, initials);
+  const row = findRowByInitials(sessions, idKey);
   if (row > 0) {
     sessions.getRange(row, 1, 1, 16).setValues([[
-      initials,
+      idKey,
       data.edu || '',
       start || new Date(),
       end || new Date(),
@@ -577,7 +539,7 @@ function handleStudyCompleted(ss, data) {
     ]]);
   } else {
     sessions.appendRow([
-      initials,
+      idKey,
       data.edu || '',
       start || new Date(),
       end || new Date(),
@@ -597,13 +559,7 @@ function handleStudyCompleted(ss, data) {
   }
 
   // Write result rows
-  const itemsSheet = getOrCreateSheet(ss, 'Item_Responses', [
-    'Timestamp', 'Initials', 'Item Number', 'Image File', 'Question Text',
-    'Item Type', 'Start Time', 'End Time', 'Duration (sec)',
-    'Response', 'Explanation', 'Auto Score', 'Score Confidence',
-    'Needs Review', 'Scoring Notes', 'Final Score', 'Skip Reason'
-  ]);
-
+  const itemsSheet = getOrCreateSheet(ss, 'Item_Responses', ITEM_RESP_HEADERS());
   const now = new Date();
   (data.results || []).forEach(r => {
     if (r.type === 'qa') {
@@ -612,7 +568,7 @@ function handleStudyCompleted(ss, data) {
           const review = (a.note || '').toLowerCase().includes('review');
           itemsSheet.appendRow([
             now,
-            initials,
+            idKey,
             r.item,
             '',
             a.key || '',
@@ -631,14 +587,14 @@ function handleStudyCompleted(ss, data) {
         });
       } else {
         itemsSheet.appendRow([
-          now, initials, r.item, '', '', 'question',
+          now, idKey, r.item, '', '', 'question',
           '', '', '', 'SKIPPED', '', 0, 'N/A', 'NO', 'Item skipped', 0, 'User choice'
         ]);
       }
     } else if (r.type === 'read-aloud') {
       itemsSheet.appendRow([
         now,
-        initials,
+        idKey,
         r.item,
         '',
         '',
@@ -657,9 +613,9 @@ function handleStudyCompleted(ss, data) {
     }
   });
 
-  saveBackupData(ss, { ...data, initials });
-  generateParticipantSummary(ss, initials);
-  logEvent(ss, { ...data, initials, eventType: 'Study Completed (summary ingest)' });
+  saveBackupData(ss, { ...data, initials: idKey });
+  generateParticipantSummary(ss, idKey);
+  logEvent(ss, { ...data, initials: idKey, eventType: 'Study Completed (summary ingest)' });
 
   // Central: single completion row
   const endTs2 = new Date().toISOString();
@@ -670,15 +626,15 @@ function handleStudyCompleted(ss, data) {
     const st = new Date(data.startedAt), en = new Date(data.finishedAt);
     if (!isNaN(st) && !isNaN(en)) elapsedSec2 = Math.max(0, Math.round((en - st)/1000));
   }
-  wiat_central__logTask(initials, 'Completed', {
+  wiat_central__logTask(idKey, 'Completed', {
     timestamp: endTs2,
     endTime: endTs2,
     elapsed: elapsedSec2,
     active: elapsedSec2,
     details: 'WIAT summary ingest; items=' + itemsCompleted
   });
-  wiat_central__touchSession(initials, endTs2);
-  wiat_central__logEvent(initials, 'WIAT: Study Completed (summary)', '', endTs2);
+  wiat_central__touchSession(idKey, endTs2);
+  wiat_central__logEvent(idKey, 'WIAT: Study Completed (summary)', '', endTs2);
 
   return createResponse({ status: 'success', message: 'Summary ingested' });
 }
@@ -698,7 +654,7 @@ function saveDetailedScoring(ss, data) {
   const details = data.scoringDetails || {};
   scoringSheet.appendRow([
     new Date(),
-    data.initials,
+    idFromPayload_(data),
     data.itemNumber,
     data.questionText || '',
     data.response || '',
@@ -721,7 +677,7 @@ function saveBackupData(ss, data) {
   try {
     const backupFolder = getOrCreateFolder(CONFIG.DATA_BACKUP_FOLDER_NAME);
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `${(data.initials || 'unknown')}_backup_${timestamp}.json`;
+    const filename = `${(idFromPayload_(data) || 'unknown')}_backup_${timestamp}.json`;
 
     const blob = Utilities.newBlob(JSON.stringify(data, null, 2), 'application/json', filename);
     const file = backupFolder.createFile(blob);
@@ -737,7 +693,7 @@ function saveBackupData(ss, data) {
 }
 
 // ===============================================
-// HELPERS (Initials as key)
+// HELPERS (Initials column holds merged ID)
 // ===============================================
 function getOrCreateSheet(ss, sheetName, headers) {
   let sheet = ss.getSheetByName(sheetName);
@@ -791,14 +747,9 @@ function getSessionDataFromRow(sheet, row) {
   };
 }
 
-function getSessionData(ss, initials) {
-  const sheet = getOrCreateSheet(ss, 'Sessions', [
-    'Initials', 'Education', 'Start Time', 'End Time', 'Duration (min)',
-    'Items Completed', 'Total Score', 'Consecutive Zeros',
-    'Status', 'Discontinued', 'Gate Items Failed', 'Admin Mode',
-    'Recording', 'IP Address', 'User Agent', 'Notes'
-  ]);
-  const row = findRowByInitials(sheet, initials);
+function getSessionData(ss, initialsMerged) {
+  const sheet = getOrCreateSheet(ss, 'Sessions', SESSIONS_HEADERS());
+  const row = findRowByInitials(sheet, initialsMerged);
   if (row > 0) {
     return createResponse({ status: 'success', session: getSessionDataFromRow(sheet, row) });
   } else {
@@ -806,25 +757,15 @@ function getSessionData(ss, initials) {
   }
 }
 
-function updateSessionActivity(ss, initials, timestamp) {
-  const sheet = getOrCreateSheet(ss, 'Sessions', [
-    'Initials', 'Education', 'Start Time', 'End Time', 'Duration (min)',
-    'Items Completed', 'Total Score', 'Consecutive Zeros',
-    'Status', 'Discontinued', 'Gate Items Failed', 'Admin Mode',
-    'Recording', 'IP Address', 'User Agent', 'Notes'
-  ]);
-  const row = findRowByInitials(sheet, initials);
+function updateSessionActivity(ss, initialsMerged, timestamp) {
+  const sheet = getOrCreateSheet(ss, 'Sessions', SESSIONS_HEADERS());
+  const row = findRowByInitials(sheet, initialsMerged);
   if (row > 0) sheet.getRange(row, 16).setValue('Last activity: ' + (timestamp || new Date().toISOString()));
 }
 
-function updateSessionTotals(ss, initials, score, consecutiveZeros) {
-  const sheet = getOrCreateSheet(ss, 'Sessions', [
-    'Initials', 'Education', 'Start Time', 'End Time', 'Duration (min)',
-    'Items Completed', 'Total Score', 'Consecutive Zeros',
-    'Status', 'Discontinued', 'Gate Items Failed', 'Admin Mode',
-    'Recording', 'IP Address', 'User Agent', 'Notes'
-  ]);
-  const row = findRowByInitials(sheet, initials);
+function updateSessionTotals(ss, initialsMerged, score, consecutiveZeros) {
+  const sheet = getOrCreateSheet(ss, 'Sessions', SESSIONS_HEADERS());
+  const row = findRowByInitials(sheet, initialsMerged);
   if (row > 0) {
     const currentItems = Number(sheet.getRange(row, 6).getValue()) || 0;
     sheet.getRange(row, 6).setValue(currentItems + 1);
@@ -837,12 +778,10 @@ function updateSessionTotals(ss, initials, score, consecutiveZeros) {
 }
 
 function logEvent(ss, data) {
-  const eventSheet = getOrCreateSheet(ss, 'Events_Log', [
-    'Timestamp', 'Initials', 'Event Type', 'Details', 'Data'
-  ]);
+  const eventSheet = getOrCreateSheet(ss, 'Events_Log', ['Timestamp', 'Initials', 'Event Type', 'Details', 'Data']);
   eventSheet.appendRow([
     new Date(),
-    (data.initials || data.pid || 'unknown'),
+    idFromPayload_(data) || 'unknown',
     data.eventType || data.action || 'unknown',
     data.details || '',
     JSON.stringify(data)
@@ -857,19 +796,14 @@ function createResponse(data) {
 // ===============================================
 // SUMMARY GENERATION
 // ===============================================
-function generateParticipantSummary(ss, initials) {
+function generateParticipantSummary(ss, initialsMerged) {
   const summarySheet = getOrCreateSheet(ss, 'Participant_Summary', [
     'Initials', 'Education', 'Total Items', 'Total Score', 'Avg Score',
     'Items Needing Review', 'Reading Time Avg (sec)',
     'Discontinued', 'Gate Items Failed', 'Completion Date'
   ]);
 
-  const itemsSheet = getOrCreateSheet(ss, 'Item_Responses', [
-    'Timestamp', 'Initials', 'Item Number', 'Image File', 'Question Text',
-    'Item Type', 'Start Time', 'End Time', 'Duration (sec)',
-    'Response', 'Explanation', 'Auto Score', 'Score Confidence',
-    'Needs Review', 'Scoring Notes', 'Final Score', 'Skip Reason'
-  ]);
+  const itemsSheet = getOrCreateSheet(ss, 'Item_Responses', ITEM_RESP_HEADERS());
   const itemsData = itemsSheet.getDataRange().getValues();
 
   let totalItems = 0;
@@ -879,7 +813,7 @@ function generateParticipantSummary(ss, initials) {
   let readingCount = 0;
 
   for (let i = 1; i < itemsData.length; i++) {
-    if (itemsData[i][1] === initials) {
+    if (itemsData[i][1] === initialsMerged) {
       totalItems++;
       totalScore += Number(itemsData[i][15] || 0);
       if (itemsData[i][13] === 'YES') needsReview++;
@@ -890,18 +824,13 @@ function generateParticipantSummary(ss, initials) {
     }
   }
 
-  const sessionsSheet = getOrCreateSheet(ss, 'Sessions', [
-    'Initials', 'Education', 'Start Time', 'End Time', 'Duration (min)',
-    'Items Completed', 'Total Score', 'Consecutive Zeros',
-    'Status', 'Discontinued', 'Gate Items Failed', 'Admin Mode',
-    'Recording', 'IP Address', 'User Agent', 'Notes'
-  ]);
-  const sessionRow = findRowByInitials(sessionsSheet, initials);
+  const sessionsSheet = getOrCreateSheet(ss, 'Sessions', SESSIONS_HEADERS());
+  const sessionRow = findRowByInitials(sessionsSheet, initialsMerged);
   const sdat = sessionRow > 0 ? sessionsSheet.getRange(sessionRow, 1, 1, 16).getValues()[0] : [];
 
-  const row = findRowByInitials(summarySheet, initials);
+  const row = findRowByInitials(summarySheet, initialsMerged);
   const summaryValues = [
-    initials,
+    initialsMerged,
     sdat[1] || '',
     totalItems,
     totalScore,
@@ -923,57 +852,53 @@ function generateParticipantSummary(ss, initials) {
 // ===============================================
 // SETUP / DASHBOARD / ANALYTICS
 // ===============================================
-function initialSetup() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-
-  getOrCreateSheet(ss, 'Sessions', [
+function SESSIONS_HEADERS() {
+  return [
     'Initials', 'Education', 'Start Time', 'End Time', 'Duration (min)',
     'Items Completed', 'Total Score', 'Consecutive Zeros',
     'Status', 'Discontinued', 'Gate Items Failed', 'Admin Mode',
     'Recording', 'IP Address', 'User Agent', 'Notes'
-  ]);
-
-  getOrCreateSheet(ss, 'Item_Responses', [
+  ];
+}
+function ITEM_RESP_HEADERS() {
+  return [
     'Timestamp', 'Initials', 'Item Number', 'Image File', 'Question Text',
     'Item Type', 'Start Time', 'End Time', 'Duration (sec)',
     'Response', 'Explanation', 'Auto Score', 'Score Confidence',
     'Needs Review', 'Scoring Notes', 'Final Score', 'Skip Reason'
-  ]);
+  ];
+}
 
-  getOrCreateSheet(ss, 'Item_Progress', [
-    'Timestamp', 'Initials', 'Item', 'Event', 'Details'
-  ]);
+function initialSetup() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
 
+  getOrCreateSheet(ss, 'Sessions', SESSIONS_HEADERS());
+  getOrCreateSheet(ss, 'Item_Responses', ITEM_RESP_HEADERS());
+  getOrCreateSheet(ss, 'Item_Progress', ['Timestamp', 'Initials', 'Item', 'Event', 'Details']);
   getOrCreateSheet(ss, 'Reading_Times', [
     'Timestamp', 'Initials', 'Item', 'Image', 'Reading Type',
     'Start Time', 'End Time', 'Duration (sec)', 'Words Count'
   ]);
-
   getOrCreateSheet(ss, 'Scoring_Details', [
     'Timestamp', 'Initials', 'Item', 'Question', 'Response',
     'Matched Patterns', 'Matched Concepts', 'Found Concepts',
     'Required Both', 'Count Based', 'Auto Score',
     'Confidence', 'Needs Review', 'Notes'
   ]);
-
   getOrCreateSheet(ss, 'Video_Recordings', [
     'Timestamp', 'Initials', 'Item Number', 'Filename',
     'File ID', 'File URL', 'File Size (KB)', 'Upload Status'
   ]);
-
   getOrCreateSheet(ss, 'Audio_Recordings', [
     'Timestamp', 'Initials', 'Item Number', 'Filename',
     'File ID', 'File URL', 'File Size (KB)', 'Upload Status'
   ]);
-
   getOrCreateSheet(ss, 'Upload_Errors', [
     'Timestamp', 'Initials', 'Item', 'Error', 'Type'
   ]);
-
   getOrCreateSheet(ss, 'Events_Log', [
     'Timestamp', 'Initials', 'Event Type', 'Details', 'Data'
   ]);
-
   getOrCreateSheet(ss, 'Participant_Summary', [
     'Initials', 'Education', 'Total Items', 'Total Score', 'Avg Score',
     'Items Needing Review', 'Reading Time Avg (sec)',
@@ -1020,12 +945,7 @@ function createDashboard(ss) {
 
 function generateItemStats() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const itemsSheet = getOrCreateSheet(ss, 'Item_Responses', [
-    'Timestamp', 'Initials', 'Item Number', 'Image File', 'Question Text',
-    'Item Type', 'Start Time', 'End Time', 'Duration (sec)',
-    'Response', 'Explanation', 'Auto Score', 'Score Confidence',
-    'Needs Review', 'Scoring Notes', 'Final Score', 'Skip Reason'
-  ]);
+  const itemsSheet = getOrCreateSheet(ss, 'Item_Responses', ITEM_RESP_HEADERS());
   const data = itemsSheet.getDataRange().getValues();
 
   const itemStats = {};
@@ -1069,6 +989,7 @@ function testSetup() {
   const testData = {
     action: 'session_start',
     initials: 'TT',
+    pid: 'TEST001',
     education: '10',
     timestamp: new Date().toISOString(),
     adminMode: true,
@@ -1081,10 +1002,6 @@ function testSetup() {
 
 // ===============================================
 // -------- Central Sync Bridge (optional) --------
-// Uses INITIALS to look up or create sessions in master workbook
-// A "Session Map" sheet in the master workbook may be used:
-//   Headers: Initials | Session Code | Email
-// If not found, Session Code = Initials.
 // ===============================================
 function central_(cb) {
   if (!CENTRAL_SYNC.ENABLED || !CENTRAL_SYNC.SPREADSHEET_ID) return null;
@@ -1135,15 +1052,15 @@ function wiat_central__findRowBySessionCode(sh, code){
   for (var r=1;r<vals.length;r++){ if (String(vals[r][0]) === String(code)) return r+1; }
   return 0;
 }
-function wiat_central__getSessionCode(css, initials){
+function wiat_central__getSessionCode(css, initialsMerged){
   var map = wiat_central__ensureSheet(css, 'Session Map', ['Initials','Session Code','Email']);
   var vals = map.getDataRange().getValues();
   for (var i=1;i<vals.length;i++){
-    if (String(vals[i][0]) === String(initials)) return String(vals[i][1] || initials);
+    if (String(vals[i][0]) === String(initialsMerged)) return String(vals[i][1] || initialsMerged);
   }
-  return String(initials);
+  return String(initialsMerged);
 }
-function wiat_central__touchSession(initials, timestamp){
+function wiat_central__touchSession(initialsMerged, timestamp){
   central_(function(css){
     var sh = wiat_central__ensureSheet(css,'Sessions',[
       'Session Code','Participant ID','Email','Created Date','Last Activity',
@@ -1151,13 +1068,13 @@ function wiat_central__touchSession(initials, timestamp){
       'Device Type','Consent Status','Consent Source','Consent Code','Consent Timestamp',
       'EEG Status','EEG Scheduled At','EEG Scheduling Source','Hearing Status','Fluency','State JSON'
     ]);
-    var code = wiat_central__getSessionCode(css, initials);
+    var code = wiat_central__getSessionCode(css, initialsMerged);
     var row = wiat_central__findRowBySessionCode(sh, code);
     if (!row){
       row = sh.getLastRow() + 1;
       sh.insertRowsAfter(sh.getLastRow() || 1, 1);
       wiat_central__setByHeader(sh,row,'Session Code',code);
-      wiat_central__setByHeader(sh,row,'Participant ID',initials);
+      wiat_central__setByHeader(sh,row,'Participant ID',initialsMerged);
       wiat_central__setByHeader(sh,row,'Status','Active');
       wiat_central__setByHeader(sh,row,'Device Type','Desktop');
       wiat_central__setByHeader(sh,row,'Created Date', timestamp || new Date().toISOString());
@@ -1165,11 +1082,11 @@ function wiat_central__touchSession(initials, timestamp){
     wiat_central__setByHeader(sh,row,'Last Activity', timestamp || new Date().toISOString());
   });
 }
-function wiat_central__logEvent(initials, type, details, timestamp){
+function wiat_central__logEvent(initialsMerged, type, details, timestamp){
   central_(function(css){
     var ses = wiat_central__ensureSheet(css,'Session Events',
       ['Timestamp','Session Code','Event Type','Details','IP Address','User Agent']);
-    var code = wiat_central__getSessionCode(css,initials);
+    var code = wiat_central__getSessionCode(css,initialsMerged);
     ses.appendRow([ timestamp || new Date().toISOString(), code, type, details || '', '', '' ]);
   });
 }
@@ -1178,18 +1095,18 @@ function toSeconds_(val){
   // If val looks like minutes (<1000), treat as minutes; else as seconds
   return (n > 0 && n < 1000) ? Math.round(n * 60) : Math.round(n);
 }
-function wiat_central__logTask(initials, eventType, opts){
+function wiat_central__logTask(initialsMerged, eventType, opts){
   central_(function(css){
     var tp = wiat_central__ensureSheet(css,'Task Progress',[
       'Timestamp','Session Code','Participant ID','Task Name','Event Type',
       'Start Time','End Time','Elapsed Time (sec)','Active Time (sec)','Pause Count',
       'Inactive Time (sec)','Activity Score (%)','Details','Completed'
     ]);
-    var code = wiat_central__getSessionCode(css,initials);
+    var code = wiat_central__getSessionCode(css,initialsMerged);
     tp.appendRow([
       opts.timestamp || new Date().toISOString(),
       code,
-      initials,
+      initialsMerged,
       CENTRAL_SYNC.TASK_NAME,
       eventType,
       opts.startTime || '',
@@ -1204,13 +1121,13 @@ function wiat_central__logTask(initials, eventType, opts){
     ]);
   });
 }
-function wiat_central__logVideo(initials, itemNumber, file){
+function wiat_central__logVideo(initialsMerged, itemNumber, file){
   central_(function(css){
     var v = wiat_central__ensureSheet(css,'Video Tracking',[
       'Timestamp','Session Code','Image Number','Filename','File ID','File URL',
       'File Size (KB)','Upload Time','Upload Method','Dropbox Path','Upload Status','Error Message'
     ]);
-    var code = wiat_central__getSessionCode(css,initials);
+    var code = wiat_central__getSessionCode(css,initialsMerged);
     v.appendRow([
       new Date(),
       code,
@@ -1227,4 +1144,512 @@ function wiat_central__logVideo(initials, itemNumber, file){
       ''
     ]);
   });
+}
+
+/** ===========================================================
+ *  WIAT Housekeeping / Migration (Merged-ID, safe & idempotent)
+ *  - Backup workbook
+ *  - Normalize Sessions (merge PID→Initials by concatenation)
+ *  - Rename/Merge PID→Initials across WIAT sheets
+ *  - Consolidate duplicate Sessions rows for same merged ID
+ *  - (Optional) Migrate uploads → Media_Tracking
+ *  - Merge Item_Progress → Events_Log
+ *  - Prune empty legacy sheets
+ *  - Rebuild Dashboard
+ *  Adds "WIAT Admin" menu.
+ *  ===========================================================
+ */
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('WIAT Admin')
+    .addItem('Safe cleanup / migrate (recommended)', 'wiatSafeCleanup')
+    .addSeparator()
+    .addItem('Normalize Sessions (merge PID→Initials)', 'wiatNormalizeSessions')
+    .addItem('Consolidate duplicate Sessions rows', 'wiatConsolidateSessionsDuplicates')
+    .addItem('Migrate uploads → Media_Tracking', 'wiatMigrateMediaToUnified')
+    .addItem('Merge Item_Progress → Events_Log', 'wiatMergeItemProgress')
+    .addSeparator()
+    .addItem('Rebuild Dashboard', 'wiatRebuildDashboard')
+    .addItem('Prune empty legacy sheets', 'wiatPruneEmptySheets')
+    .addToUi();
+}
+
+/* ==============================
+   Orchestrator
+   ============================== */
+function wiatSafeCleanup() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  wiatBackupWorkbook_(ss);
+
+  // Ensure essential sheets exist
+  wiatEnsureSheetWithHeaders_(ss, 'Sessions', SESSIONS_HEADERS());
+  wiatEnsureSheetWithHeaders_(ss, 'Item_Responses', ITEM_RESP_HEADERS());
+  wiatEnsureSheetWithHeaders_(ss, 'Events_Log', ['Timestamp','Initials','Event Type','Details','Data','Item']);
+
+  // 1) Normalize Sessions + merge PID→Initials across known WIAT sheets
+  wiatNormalizeSessions();
+  wiatMergePidIntoInitialsAcross_([
+    'Sessions',
+    'Item_Responses',
+    'Item_Progress',
+    'Reading_Times',
+    'Scoring_Details',
+    'Video_Recordings',
+    'Audio_Recordings',
+    'Upload_Errors',
+    'Events_Log',
+    'Participant_Summary'
+  ]);
+
+  // 2) Consolidate duplicate Sessions rows to a single merged ID (with log)
+  wiatConsolidateSessionsDuplicates();
+
+  // 3) Media logs → Media_Tracking (optional)
+  wiatMigrateMediaToUnified();
+
+  // 4) Item_Progress → Events_Log
+  wiatMergeItemProgress();
+
+  // 5) Rebuild dashboard
+  wiatRebuildDashboard();
+
+  // 6) Prune truly empty legacy sheets
+  wiatPruneEmptySheets();
+
+  SpreadsheetApp.getUi().alert('WIAT cleanup/migration complete ✅');
+}
+
+/* ==============================
+   Sheet utils
+   ============================== */
+function wiatBackupWorkbook_(ss) {
+  var name = ss.getName();
+  var backup = SpreadsheetApp.create(
+    'BACKUP_WIAT_' + name + '_' + new Date().toISOString().replace(/[:.]/g,'-')
+  );
+  var sheets = ss.getSheets();
+  sheets.forEach(function(sh){
+    sh.copyTo(backup).setName(sh.getName());
+  });
+}
+
+function wiatEnsureSheetWithHeaders_(ss, name, headers) {
+  var sh = ss.getSheetByName(name);
+  if (!sh) {
+    sh = ss.insertSheet(name);
+    if (headers && headers.length) {
+      sh.getRange(1,1,1,headers.length).setValues([headers]);
+      sh.getRange(1,1,1,headers.length).setFontWeight('bold').setBackground('#f1f3f4');
+      sh.setFrozenRows(1);
+      sh.autoResizeColumns(1, headers.length);
+    }
+  } else if (headers && headers.length) {
+    // Ensure any missing headers are added at end (non-destructive)
+    var last = Math.max(headers.length, sh.getLastColumn() || headers.length);
+    var row = sh.getRange(1,1,1,last).getValues()[0].map(function(v){return String(v||'');});
+    headers.forEach(function(h){
+      if (row.indexOf(h) === -1) {
+        var newCol = sh.getLastColumn() + 1;
+        sh.insertColumnAfter(sh.getLastColumn());
+        sh.getRange(1, newCol)
+          .setValue(h)
+          .setFontWeight('bold')
+          .setBackground('#f1f3f4');
+      }
+    });
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+function wiatHeaderMap_(sh) {
+  var last = sh.getLastColumn();
+  if (last < 1) return {};
+  var hdrs = sh.getRange(1,1,1,last).getValues()[0].map(function(v){return String(v||'').trim();});
+  var map = {};
+  for (var i=0;i<hdrs.length;i++) if (hdrs[i]) map[hdrs[i]] = i+1;
+  return map;
+}
+function wiatSetByHeader_(sh, row, header, value) {
+  var map = wiatHeaderMap_(sh);
+  if (!map[header]) {
+    var newCol = sh.getLastColumn() + 1;
+    sh.insertColumnAfter(sh.getLastColumn());
+    sh.getRange(1, newCol).setValue(header).setFontWeight('bold').setBackground('#f1f3f4');
+    map = wiatHeaderMap_(sh);
+  }
+  sh.getRange(row, map[header]).setValue(value);
+}
+
+/* ==============================
+   Merge PID→Initials (concatenate safely)
+   ============================== */
+function wiatNormalizeSessions() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = wiatEnsureSheetWithHeaders_(ss, 'Sessions', SESSIONS_HEADERS());
+
+  // Merge PID into Initials by concatenation
+  wiatMergePidColumn_(sh, 'PID', 'Initials');
+
+  // Formats
+  var map = wiatHeaderMap_(sh);
+  var nRows = Math.max(1, sh.getMaxRows() - 1);
+  function fmt(h, f) { if (map[h]) sh.getRange(2, map[h], nRows).setNumberFormat(f); }
+
+  ['Initials','Education','Status','Discontinued','Gate Items Failed','Admin Mode','Recording','IP Address','User Agent','Notes']
+    .forEach(function(h){ if (map[h]) sh.getRange(2,map[h],nRows).setNumberFormat('@'); });
+
+  ['Start Time','End Time'].forEach(function(h){ fmt(h, 'yyyy-mm-dd"T"hh:mm:ss.000'); });
+  ['Duration (min)','Items Completed','Total Score','Consecutive Zeros']
+    .forEach(function(h){ fmt(h, '0'); });
+
+  sh.setFrozenRows(1);
+  sh.autoResizeColumns(1, Math.min(sh.getLastColumn(), 20));
+}
+function wiatMergePidIntoInitialsAcross_(sheetNames) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  sheetNames.forEach(function(name){
+    var sh = ss.getSheetByName(name);
+    if (!sh) return;
+    wiatMergePidColumn_(sh, 'PID', 'Initials');
+    // After migration, remove PID col (it’s preserved in the merged Initials string)
+    var map = wiatHeaderMap_(sh);
+    if (map['PID']) sh.deleteColumn(map['PID']);
+  });
+}
+// Merge data from oldName col into newName by concatenation without losing either
+function wiatMergePidColumn_(sh, oldName, newName) {
+  var last = sh.getLastColumn();
+  if (last < 1) return;
+  var hdrs = sh.getRange(1,1,1,last).getValues()[0].map(function(v){return String(v||'');});
+  var oldIdx = hdrs.indexOf(oldName);
+  if (oldIdx === -1) return;
+
+  var map = wiatHeaderMap_(sh);
+  if (!map[newName]) {
+    var newCol = sh.getLastColumn() + 1;
+    sh.insertColumnAfter(sh.getLastColumn());
+    sh.getRange(1, newCol).setValue(newName).setFontWeight('bold').setBackground('#f1f3f4');
+    map = wiatHeaderMap_(sh);
+  }
+
+  var n = sh.getLastRow();
+  for (var r=2;r<=n;r++) {
+    var oldVal = _norm_(sh.getRange(r, oldIdx+1).getValue());
+    var cur = _norm_(sh.getRange(r, map[newName]).getValue());
+    if (!cur && oldVal) {
+      sh.getRange(r, map[newName]).setValue(oldVal);
+    } else if (cur && oldVal) {
+      // If both exist and not already merged, merge safely
+      var merged = makeIdKey_(cur, oldVal);
+      if (merged !== cur) sh.getRange(r, map[newName]).setValue(merged);
+    }
+  }
+}
+
+/* ==============================
+   Consolidate duplicate Sessions rows to one per merged ID
+   (keeps a Merge_Log sheet so nothing is lost)
+   ============================== */
+function wiatConsolidateSessionsDuplicates() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName('Sessions');
+  if (!sh) return;
+
+  var headers = SESSIONS_HEADERS();
+  var map = wiatHeaderMap_(sh);
+  if (!map['Initials']) return;
+
+  var vals = sh.getDataRange().getValues();
+  if (vals.length <= 2) return;
+
+  var byId = {};      // id -> array of rows (2-based index)
+  for (var r=2; r<=sh.getLastRow(); r++){
+    var id = _norm_(sh.getRange(r, map['Initials']).getValue());
+    if (!id) continue;
+    if (!byId[id]) byId[id] = [];
+    byId[id].push(r);
+  }
+
+  var ids = Object.keys(byId).filter(function(k){return byId[k].length > 1;});
+  if (!ids.length) return;
+
+  // Merge log
+  var log = ss.getSheetByName('Merge_Log') || ss.insertSheet('Merge_Log');
+  if (log.getLastRow() === 0) {
+    log.getRange(1,1,1,5).setValues([['When','Sheet','Merged ID','Source Rows','Action']]);
+    log.setFrozenRows(1);
+  }
+
+  // Aggregation helpers
+  function num(v){ var n = Number(v); return isNaN(n) ? 0 : n; }
+  function earliest(a,b){ if (!a) return b; if (!b) return a; return new Date(a) < new Date(b) ? a : b; }
+  function latest(a,b){ if (!a) return b; if (!b) return a; return new Date(a) > new Date(b) ? a : b; }
+  function pickStatus(a,b){
+    var pri = {'Complete':3, 'Active':2, 'Discontinued':1, '':0};
+    var aa = a || '', bb = b || '';
+    return (pri[aa] >= pri[bb]) ? aa : bb;
+  }
+  function pickYes(a,b){ return (String(a).toLowerCase()==='yes' || String(b).toLowerCase()==='yes') ? 'Yes' : (a||b||''); }
+  function coalesce(a,b){ return a || b || ''; }
+  function joinNotes(a,b){ return [a,b].filter(Boolean).join(' | '); }
+
+  // Build a target map of merged rows
+  var mergedValues = {}; // id -> object with header -> value
+  ids.forEach(function(id){
+    var rows = byId[id];
+    var agg = {};
+    // seed with first
+    var first = rows[0];
+    headers.forEach(function(h){ agg[h] = sh.getRange(first, map[h]).getValue(); });
+
+    // merge others
+    for (var i=1;i<rows.length;i++){
+      var r = rows[i];
+      agg['Initials'] = id;
+      agg['Education'] = coalesce(agg['Education'], sh.getRange(r, map['Education']).getValue());
+      agg['Start Time'] = earliest(agg['Start Time'], sh.getRange(r, map['Start Time']).getValue());
+      agg['End Time']   = latest(agg['End Time'],   sh.getRange(r, map['End Time']).getValue());
+      agg['Duration (min)'] = num(agg['Duration (min)']) + num(sh.getRange(r, map['Duration (min)']).getValue());
+      agg['Items Completed'] = num(agg['Items Completed']) + num(sh.getRange(r, map['Items Completed']).getValue());
+      agg['Total Score'] = num(agg['Total Score']) + num(sh.getRange(r, map['Total Score']).getValue());
+      // Prefer latest consecutive zeros (or keep max)
+      agg['Consecutive Zeros'] = Math.max(num(agg['Consecutive Zeros']), num(sh.getRange(r, map['Consecutive Zeros']).getValue()));
+      agg['Status'] = pickStatus(agg['Status'], sh.getRange(r, map['Status']).getValue());
+      agg['Discontinued'] = pickYes(agg['Discontinued'], sh.getRange(r, map['Discontinued']).getValue());
+      agg['Gate Items Failed'] = coalesce(agg['Gate Items Failed'], sh.getRange(r, map['Gate Items Failed']).getValue());
+      agg['Admin Mode'] = coalesce(agg['Admin Mode'], sh.getRange(r, map['Admin Mode']).getValue());
+      agg['Recording']  = coalesce(agg['Recording'], sh.getRange(r, map['Recording']).getValue());
+      agg['IP Address'] = coalesce(agg['IP Address'], sh.getRange(r, map['IP Address']).getValue());
+      agg['User Agent'] = coalesce(agg['User Agent'], sh.getRange(r, map['User Agent']).getValue());
+      agg['Notes'] = joinNotes(agg['Notes'], sh.getRange(r, map['Notes']).getValue());
+    }
+    mergedValues[id] = agg;
+
+    // Log action
+    log.appendRow([new Date(), 'Sessions', id, rows.join(','), 'Merged rows into first; deleted extras']);
+  });
+
+  // Write merged values back into the first row, delete the rest
+  ids.forEach(function(id){
+    var rows = byId[id].sort(function(a,b){return a-b;});
+    var first = rows.shift();
+    var agg = mergedValues[id];
+    // write
+    var out = headers.map(function(h){ return agg[h]; });
+    sh.getRange(first, 1, 1, headers.length).setValues([out]);
+    // delete extra rows (bottom-up)
+    rows.sort(function(a,b){return b-a;}).forEach(function(r){ sh.deleteRow(r); });
+  });
+}
+
+/* ==============================
+   Media migration → Media_Tracking (optional)
+   ============================== */
+function MEDIA_HEADERS() {
+  return [
+    'Timestamp','Initials','Kind', // "video" | "audio"
+    'Item Number','Filename','File ID','File URL',
+    'File Size (KB)','Upload Status','Error Message'
+  ];
+}
+function wiatMigrateMediaToUnified() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var media = wiatEnsureSheetWithHeaders_(ss, 'Media_Tracking', MEDIA_HEADERS());
+  media.setFrozenRows(1);
+
+  function append(kind, row) {
+    media.appendRow([
+      row.ts || new Date(),
+      row.initials || '',
+      kind || '',
+      row.item || '',
+      row.filename || '',
+      row.id || '',
+      row.url || '',
+      row.kb != null ? row.kb : '',
+      row.status || 'Success',
+      row.error || ''
+    ]);
+  }
+
+  // Video_Recordings
+  var vr = ss.getSheetByName('Video_Recordings');
+  if (vr && vr.getLastRow() > 1) {
+    var v = vr.getDataRange().getValues();
+    var head = v[0].map(String);
+    var pidIdx = head.indexOf('Initials') > -1 ? head.indexOf('Initials') : head.indexOf('PID');
+    for (var i=1;i<v.length;i++){
+      // merge ID if needed
+      var rawId = v[i][pidIdx];
+      var mergedId = makeIdKey_(rawId, ''); // already merged if cleanup ran
+      append('video', {
+        ts: v[i][0],
+        initials: mergedId,
+        item: v[i][2],
+        filename: v[i][3],
+        id: v[i][4],
+        url: v[i][5],
+        kb: v[i][6],
+        status: v[i][7] || 'Success'
+      });
+    }
+    ss.deleteSheet(vr);
+  }
+
+  // Audio_Recordings
+  var ar = ss.getSheetByName('Audio_Recordings');
+  if (ar && ar.getLastRow() > 1) {
+    var a = ar.getDataRange().getValues();
+    var headA = a[0].map(String);
+    var pidIdxA = headA.indexOf('Initials') > -1 ? headA.indexOf('Initials') : headA.indexOf('PID');
+    for (var j=1;j<a.length;j++){
+      var rawIdA = a[j][pidIdxA];
+      var mergedIdA = makeIdKey_(rawIdA, '');
+      append('audio', {
+        ts: a[j][0],
+        initials: mergedIdA,
+        item: a[j][2],
+        filename: a[j][3],
+        id: a[j][4],
+        url: a[j][5],
+        kb: a[j][6],
+        status: a[j][7] || 'Success'
+      });
+    }
+    ss.deleteSheet(ar);
+  }
+
+  // Upload_Errors → Media_Tracking as "Error"
+  var ue = ss.getSheetByName('Upload_Errors');
+  if (ue && ue.getLastRow() > 1) {
+    var e = ue.getDataRange().getValues();
+    var headE = e[0].map(String);
+    var pidIdxE = headE.indexOf('Initials') > -1 ? headE.indexOf('Initials') : headE.indexOf('PID');
+    for (var k=1;k<e.length;k++){
+      var kind = (String(e[k][4] || '').toLowerCase().indexOf('audio') !== -1) ? 'audio' : 'video';
+      var rawIdE = e[k][pidIdxE];
+      var mergedIdE = makeIdKey_(rawIdE, '');
+      append(kind, {
+        ts: e[k][0],
+        initials: mergedIdE,
+        item: e[k][2],
+        filename: '',
+        id: '',
+        url: '',
+        kb: '',
+        status: 'Error',
+        error: e[k][3]
+      });
+    }
+    ss.deleteSheet(ue);
+  }
+
+  media.autoResizeColumns(1, media.getLastColumn());
+}
+
+/* ==============================
+   Merge Item_Progress → Events_Log
+   ============================== */
+function wiatMergeItemProgress() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var events = wiatEnsureSheetWithHeaders_(ss, 'Events_Log', ['Timestamp','Initials','Event Type','Details','Data','Item']);
+  var ip = ss.getSheetByName('Item_Progress');
+  if (!ip) return;
+
+  if (ip.getLastRow() > 1) {
+    var data = ip.getDataRange().getValues();
+    var H = data[0].map(String);
+    var pidIdx = H.indexOf('Initials') > -1 ? H.indexOf('Initials') : H.indexOf('PID');
+    var itemCol = H.indexOf('Item');
+    var eventCol = H.indexOf('Event');
+    var detailsCol = H.indexOf('Details');
+
+    for (var i=1;i<data.length;i++) {
+      var row = data[i];
+      var ts = row[0];
+      var rawId = row[pidIdx];
+      var mergedId = makeIdKey_(rawId, '');
+      var item = itemCol > -1 ? row[itemCol] : '';
+      var ev = eventCol > -1 ? row[eventCol] : 'Event';
+      var det = detailsCol > -1 ? row[detailsCol] : '';
+
+      events.appendRow([ ts || new Date(), mergedId || '', ev || '', det || '', 'source:Item_Progress', item || '' ]);
+    }
+  }
+  ss.deleteSheet(ip);
+}
+
+/* ==============================
+   Prune truly empty legacy sheets
+   ============================== */
+function wiatPruneEmptySheets() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  [
+    'Reading_Times',
+    'Scoring_Details',
+    'Item_Statistics',
+    'Video_Recordings',
+    'Audio_Recordings',
+    'Upload_Errors',
+    'Item_Progress'
+  ].forEach(function(name){
+    var sh = ss.getSheetByName(name);
+    if (!sh) return;
+    if (sh.getLastRow() <= 1) {
+      ss.deleteSheet(sh);
+    }
+  });
+}
+
+/* ==============================
+   Dashboard (re)build
+   ============================== */
+function wiatRebuildDashboard() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var dash = ss.getSheetByName('Dashboard') || ss.insertSheet('Dashboard');
+  dash.clear();
+
+  dash.getRange(1, 1).setValue('WIAT-2 Reading Comprehension Dashboard (Merged-ID)')
+      .setFontSize(20).setFontWeight('bold');
+  dash.getRange(2, 1).setValue('Last Updated: ' + new Date().toLocaleString());
+
+  dash.getRange(4, 1).setValue('Overall Statistics').setFontWeight('bold').setFontSize(14);
+
+  var stats = [
+    ['Metric', 'Value'],
+    ['Total Participants', '=COUNTA(Sessions!A:A)-1'],
+    ['Active Sessions', '=COUNTIF(Sessions!I:I,"Active")'],
+    ['Completed Sessions', '=COUNTIF(Sessions!I:I,"Complete")'],
+    ['Discontinued', '=COUNTIF(Sessions!J:J,"Yes")'],
+    ['Average Total Score', '=AVERAGE(Sessions!G:G)'],
+    ['Total Items Recorded', '=COUNTA(Item_Responses!A:A)-1'],
+    ['Items Needing Review', '=COUNTIF(Item_Responses!N:N,"YES")'],
+    ['Media Uploads (All)', '=IFERROR(COUNTA(Media_Tracking!A:A)-1, 0)'],
+    ['Media Upload Errors', '=IFERROR(COUNTIF(Media_Tracking!I:I,"Error"), 0)']
+  ];
+  dash.getRange(5, 1, stats.length, 2).setValues(stats);
+
+  dash.setColumnWidth(1, 260);
+  dash.autoResizeColumns(1, 2);
+}
+
+/* ===========================================================
+   OPTIONAL helper: stream future uploads to Media_Tracking
+   =========================================================== */
+function wiat_appendMedia_(opts){
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = wiatEnsureSheetWithHeaders_(ss, 'Media_Tracking', MEDIA_HEADERS());
+  var kb = opts.bytesOrKb != null ? (opts.bytesOrKb > 2048 ? Math.round(opts.bytesOrKb/1024) : opts.bytesOrKb) : '';
+  sh.appendRow([
+    new Date(),
+    opts.initials || '',
+    (opts.kind || '').toLowerCase(),
+    opts.itemNumber || '',
+    opts.filename || '',
+    opts.fileId || '',
+    opts.fileUrl || '',
+    kb || '',
+    opts.status || 'Success',
+    opts.error || ''
+  ]);
 }
