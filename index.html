@@ -1051,6 +1051,7 @@ let state = {
   edu: '',
   participantGroup: '',
   readModality: '',
+  isSigner: false,
   sessionStartTime: null,
   
   currentIndex: 0,
@@ -2236,6 +2237,7 @@ function checkWelcomeReady() {
   state.initials = document.getElementById('initials').value.trim();
   state.edu = document.getElementById('edu').value.trim();
   state.participantGroup = group ? group.value : '';
+  state.isSigner = state.participantGroup && state.participantGroup !== 'hearing-nonsigner';
 
   // Show modality selection only after group is chosen
   const modalityBlock = document.getElementById('modality-selection');
@@ -2560,6 +2562,49 @@ function renderPassage(passageId) {
   slot.innerHTML = html;
 }
 
+function setupVideoResponse(id, block, idx) {
+  const startBtn = document.getElementById(`${id}_start`);
+  const stopBtn = document.getElementById(`${id}_stop`);
+  const timerEl = document.getElementById(`${id}_timer`);
+  let mediaRecorder = null;
+  let chunks = [];
+  let stream = null;
+  let sec = 0;
+  let timer = null;
+
+  startBtn.addEventListener('click', async () => {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      chunks = [];
+      mediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+      mediaRecorder.onstop = async () => {
+        const blob = new Blob(chunks, { type: 'video/mp4' });
+        uploadBlob('video', blob, { questionIndex: idx }).catch(()=>{});
+        block.dataset.videoRecorded = 'true';
+      };
+      mediaRecorder.start();
+      startBtn.classList.add('hidden');
+      stopBtn.classList.remove('hidden');
+      timerEl.classList.remove('hidden');
+      sec = 0;
+      timerEl.textContent = '00:00';
+      timer = setInterval(() => { sec++; timerEl.textContent = formatMMSS(sec); }, 1000);
+    } catch (err) {
+      alert('Unable to access camera or microphone.');
+    }
+  });
+
+  stopBtn.addEventListener('click', () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    startBtn.classList.remove('hidden');
+    stopBtn.classList.add('hidden');
+    timerEl.classList.add('hidden');
+    clearInterval(timer);
+  });
+}
+
 function renderQAFields(trial) {
   const holder = document.getElementById('qa-fields');
   holder.innerHTML = '';
@@ -2569,11 +2614,25 @@ function renderQAFields(trial) {
     const id = `ans_${trial.item}_${idx}`;
     const block = document.createElement('div');
     block.className = 'q-block';
-    block.innerHTML = `
-      <label for="${id}">${q.text}</label>
-      <textarea id="${id}" data-scoring-key="${q.scoringKey || ''}" placeholder="Type your answer here..."></textarea>
-    `;
-    holder.appendChild(block);
+    block.dataset.scoringKey = q.scoringKey || '';
+    if (state.isSigner) {
+      block.innerHTML = `
+        <label>${q.text}</label>
+        <div class="recording-controls">
+          <button id="${id}_start" class="danger" type="button">Record Video Response</button>
+          <button id="${id}_stop" class="hidden" type="button">Stop</button>
+          <span class="recording-timer hidden" id="${id}_timer">00:00</span>
+        </div>
+      `;
+      holder.appendChild(block);
+      setupVideoResponse(id, block, idx);
+    } else {
+      block.innerHTML = `
+        <label for="${id}">${q.text}</label>
+        <textarea id="${id}" data-scoring-key="${q.scoringKey || ''}" placeholder="Type your answer here..."></textarea>
+      `;
+      holder.appendChild(block);
+    }
   });
 }
 
@@ -3462,8 +3521,19 @@ function handleQASubmit(e) {
     trialPoints += Number(scored.points || 0);
   });
 
+  // For signers, capture video responses
+  if (state.isSigner) {
+    document.querySelectorAll('#qa-fields .q-block').forEach(block => {
+      if (!block.querySelector('textarea')) {
+        const key = block.dataset.scoringKey || '';
+        const recorded = block.dataset.videoRecorded === 'true';
+        answers.push({ key, answer: recorded ? '[video]' : '', points: 0, note: 'Signed response' });
+      }
+    });
+  }
+
   // NOW that answers exist, decide if all are manual-review items
-  const allManual = answers.length > 0 && answers.every(a => MANUAL_REVIEW.has(a.key));
+  const allManual = state.isSigner || (answers.length > 0 && answers.every(a => MANUAL_REVIEW.has(a.key)));
 
   // update zero streak and totals (manual-review items shouldn't penalize)
   if (!allManual) {
@@ -3496,7 +3566,7 @@ function handleQASubmit(e) {
     explanation: '',
     autoScore: trialPoints,
     scoreConfidence: conf,
-    needsReview: allManual || /review/i.test(notesJoined),
+    needsReview: allManual || /review/i.test(notesJoined) || state.isSigner,
     scoringNotes: notesJoined,
     finalScore: trialPoints,
     consecutiveZeros: state.consecutiveZeros,
