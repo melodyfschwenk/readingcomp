@@ -3222,20 +3222,21 @@ function handleStopRecording() {
   const durText = (document.getElementById('recording-timer').textContent || '00:00').trim();
   const durSec = durText.split(':').reduce((m, s) => m * 60 + (+s || 0), 0);
 
-    gsPost('item_completed', {
-  initials: state.initials,
-  itemNumber: trial.item,
-  endTime: new Date().toISOString(),
-  duration: durSec,
-  response: '[read-aloud]',
-  explanation: '',
-  autoScore: '',
-  scoreConfidence: '',
-  needsReview: false,
-  scoringNotes: 'read-aloud',
-  finalScore: '',
-  itemType: 'read-aloud'
-});
+  gsPost('item_completed', {
+    initials: state.initials,
+    itemNumber: trial.item,
+    endTime: new Date().toISOString(),
+    duration: durSec,
+    response: '[read-aloud]',
+    explanation: '',
+    autoScore: '',
+    scoreConfidence: '',
+    needsReview: false,
+    scoringNotes: 'read-aloud',
+    finalScore: '',
+    consecutiveZeros: state.consecutiveZeros,
+    itemType: 'read-aloud'
+  });
 
 
   goNextOrFinish();
@@ -3268,6 +3269,8 @@ function handleSkipRecording() {
     needsReview: false,
     scoringNotes: 'read-aloud skipped by user',
     finalScore: '',
+    consecutiveZeros: state.consecutiveZeros,
+    skipScore: true,
     itemType: 'read-aloud'
   });
 
