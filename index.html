@@ -707,6 +707,7 @@
 
     <div style="margin-top: 20px; text-align: center;">
       <button id="start-study" class="primary" disabled>Start Assessment</button>
+      <button id="opt-in-autoend" class="secondary hidden" type="button" style="margin-left: 10px;">Enable auto-end after 6 zeros</button>
     </div>
   </div>
 
@@ -1057,6 +1058,8 @@ let state = {
   currentIndex: 0,
   totalPoints: 0,
   consecutiveZeros: 0,
+  signerAutoEndOptIn: false,
+  applyAutoEnd: true,
   gateItemsFailed: [],
 
   results: [],
@@ -3063,6 +3066,11 @@ function renderTrial(trial) {
 }
 
 function goNextOrFinish() {
+  if (state.applyAutoEnd && state.consecutiveZeros >= 6) {
+    finishAssessment('Auto-ended after six consecutive zero scores.', 'Thank you for your time. Please continue with the next tasks.');
+    return;
+  }
+
   state.currentIndex += 1;
   if (state.currentIndex >= state.sequence.length) {
     finishAssessment();
@@ -3267,10 +3275,9 @@ function handleSkipRecording() {
 }
 
     
-        function handleQASkip() {
+function handleQASkip() {
   const trial = currentTrial();
-
-  state.consecutiveZeros += 1;
+  if (state.applyAutoEnd) state.consecutiveZeros += 1;
   state.results.push({
     item: trial.item,
     type: 'qa',
@@ -3428,13 +3435,13 @@ function downloadLocalBackup() {
 /* ===========================
    Finish
    =========================== */
-async function finishAssessment(reason = '') {
+async function finishAssessment(reason = '', displayMsg = 'Thank you.') {
     stopMedia();
 Timers.stopAll();
 
   showScreen('screen-finish');
   const msg = document.getElementById('finish-msg');
-  msg.textContent = 'Thank you.';
+  msg.textContent = displayMsg;
   // Ensure no stats or scores are shown
   const stats = document.getElementById('final-stats');
   if (stats) {
@@ -3500,6 +3507,18 @@ async function enterSetup() {
       ? 'Ready. You can start the assessment.'
       : 'Recording setup failed. You can still continue; read-aloud recordings will be unavailable until you allow access.';
 
+  // Show opt-in button for signers using video recording
+  const autoBtn = document.getElementById('opt-in-autoend');
+  if (state.isSigner && state.useVideoRecording) {
+    autoBtn.classList.remove('hidden');
+    autoBtn.addEventListener('click', () => {
+      state.signerAutoEndOptIn = true;
+      autoBtn.classList.add('hidden');
+    });
+  } else {
+    autoBtn.classList.add('hidden');
+  }
+
   // ALWAYS allow proceeding, even if setup failed
   document.getElementById('start-study').disabled = false;
 }
@@ -3535,8 +3554,8 @@ function handleQASubmit(e) {
   // NOW that answers exist, decide if all are manual-review items
   const allManual = state.isSigner || (answers.length > 0 && answers.every(a => MANUAL_REVIEW.has(a.key)));
 
-  // update zero streak and totals (manual-review items shouldn't penalize)
-  if (!allManual) {
+  // update zero streak and totals
+  if (state.applyAutoEnd && (!allManual || state.isSigner)) {
     if (trialPoints === 0) state.consecutiveZeros += 1;
     else state.consecutiveZeros = 0;
   }
@@ -3691,6 +3710,7 @@ document.addEventListener('DOMContentLoaded', () => {
     state.currentIndex = 0;
     state.totalPoints = 0;
     state.consecutiveZeros = 0;
+    state.applyAutoEnd = !(state.isSigner && state.useVideoRecording && !state.signerAutoEndOptIn);
 
     const pb = document.getElementById('pause-btn');
     if (pb) pb.classList.remove('hidden');
