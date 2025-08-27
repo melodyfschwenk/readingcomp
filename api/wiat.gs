@@ -182,9 +182,12 @@ function handleItemCompleted(ss, data) {
   }
 
   const autoScore = data.autoScore !== undefined && data.autoScore !== '' ? Number(data.autoScore) : '';
-  const finalScore = data.finalScore !== undefined && data.finalScore !== ''
-    ? Number(data.finalScore)
-    : (data.autoScore !== undefined && data.autoScore !== '' ? Number(data.autoScore) : 0);
+  const skipScore = String(data.skipScore).toLowerCase() === 'true';
+  const finalScore = skipScore
+    ? ''
+    : (data.finalScore !== undefined && data.finalScore !== ''
+        ? Number(data.finalScore)
+        : (data.autoScore !== undefined && data.autoScore !== '' ? Number(data.autoScore) : 0));
   const needsReview = String(data.needsReview).toLowerCase() === 'true';
 
   if (targetRow > 0) {
@@ -220,12 +223,15 @@ function handleItemCompleted(ss, data) {
   }
 
   const progressSheet = getOrCreateSheet(ss, 'Item_Progress', ['Timestamp','Initials','Item','Event','Details']);
+  const detail = skipScore
+    ? 'Recording skipped'
+    : `Score: ${autoScore}, Confidence: ${data.scoreConfidence}, Review: ${needsReview ? 'YES' : 'NO'}`;
   progressSheet.appendRow([
     new Date(),
     idKey,
     data.itemNumber,
     'Completed',
-    `Score: ${autoScore}, Confidence: ${data.scoreConfidence}, Review: ${needsReview ? 'YES' : 'NO'}`
+    detail
   ]);
 
   updateSessionTotals(ss, idKey, Number(finalScore) || 0, Number(data.consecutiveZeros) || 0);
